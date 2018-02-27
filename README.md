@@ -14,6 +14,8 @@ Files:
 - drawCoreCon.m- draws the core tensor for the conditional Dirichlet distribution
 - drawCoreUni.m- draws the core tensor for the uniform Dirichlet distribution
 - drawZ.m- draws topics for a specific sample
+- drawZc.c- C version of drawZ function
+- drawZsc.c- C version of drawZs function
 - drchrnd.m- generates probabilities from the Dirichlet distribution
 - multi.m- draws a single sample from the multinomial distribution
 - opt.m- separate file that computes tests for our optimization problem
