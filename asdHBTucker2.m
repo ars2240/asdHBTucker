@@ -266,6 +266,6 @@ function samp = drawZs(samp,phi,psi,r)
     %r = restaurant list
     
     for i=1:size(samp,1)
-    	samp(i,:)=drawZ(samp(i,:),phi,psi,r);
+    	samp(i,:)=drawZc(samp(i,:),phi,psi,r);
     end
 end
