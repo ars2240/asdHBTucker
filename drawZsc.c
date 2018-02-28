@@ -32,15 +32,16 @@ void drawZsc(double *sampIn, double *sampOut, size_t sampCols,
         double *r1, double *r2, size_t r1Size,const mwSize *phiDims,
         const mwSize *psi1Dims, const mwSize *psi2Dims)
 {
-    for(int j=0; j<sampRows; j++){
-        int x = sampIn[0+j*sampCols]; //get evidence variable
-        int y = sampIn[1+j*sampCols]; //get response variable
-        int z = sampIn[4+j*sampCols]; //get other topic
+    int j;
+    for(j=0; j<sampRows; j++){
+        int x = sampIn[0*sampRows+j]; //get evidence variable
+        int y = sampIn[1*sampRows+j]; //get response variable
+        int z = sampIn[4*sampRows+j]; //get other topic
 
         // initialize sampOut
         mwSize i;
         for(i=0; i<sampCols; i++){
-            sampOut[i+j*sampCols] = sampIn[i+j*sampCols];
+            sampOut[i*sampRows+j] = sampIn[i*sampRows+j];
         }
 
         // find z in restaurant list
@@ -76,10 +77,10 @@ void drawZsc(double *sampIn, double *sampOut, size_t sampCols,
         }
         //free(pdf1);
 
-        sampOut[3+j*sampCols] = r1[z-1]; //set topic
+        sampOut[3*sampRows+j] = r1[z-1]; //set topic
 
         // sample other z
-        y = sampIn[2+j*sampCols]; // get response variable
+        y = sampIn[2*sampRows+j]; // get response variable
 
         // get pdf from phi and psi
         size = phiDims[2];
@@ -99,12 +100,13 @@ void drawZsc(double *sampIn, double *sampOut, size_t sampCols,
         }
         //free(pdf2);
 
-        sampOut[4+j*sampCols] = r2[z-1]; //set topic   
+        sampOut[4*sampRows+j] = r2[z-1]; //set topic   
     }
 }
 
 // generate random uniform number
 double get_random() {
+    srand((int)time(NULL));
     return ((double)rand() / (double)RAND_MAX);
 }
 
@@ -170,7 +172,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
     
     sIn = mxGetPr(prhs[0]);
     ncols = mxGetN(prhs[0]);
-    ncols = mxGetM(prhs[0]);
+    nrows = mxGetM(prhs[0]);
     core = mxGetPr(prhs[1]);
     coreDims = mxGetDimensions(prhs[1]);
     aux1 = mxGetPr(mxGetCell(prhs[2],0));

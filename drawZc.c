@@ -103,6 +103,7 @@ void drawZc(double *sampIn, double *sampOut, size_t sampSize, double *phi,
 
 // generate random uniform number
 double get_random() {
+    srand((int)time(NULL));
     return ((double)rand() / (double)RAND_MAX);
 }
 
