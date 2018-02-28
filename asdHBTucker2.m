@@ -112,7 +112,7 @@ function [phi, psi ,tree] = asdHBTucker2(x,L,gam)
     end
     
     %draw latent topic z's
-    samples=drawZs(samples,phi,psi,r);
+    samples=drawZsc(samples,phi,psi,r);
     
     %gibbs sampler
     cont=1;
@@ -160,7 +160,7 @@ function [phi, psi ,tree] = asdHBTucker2(x,L,gam)
         end
 
         %redraw latent topic z's
-        samples=drawZs(samples,phi,psi,r);
+        samples=drawZsc(samples,phi,psi,r);
         
         %redraw tree
         for i=1:dims(1)
@@ -258,14 +258,14 @@ function [phi, psi ,tree] = asdHBTucker2(x,L,gam)
     end
 end
 
-function samp = drawZs(samp,phi,psi,r)
-    %draws latent topic z's
-    %samp = sample matrix
-    %phi = tucker decomposition tensor core tensor
-    %psi = tucker decomposition matrices
-    %r = restaurant list
-    
-    for i=1:size(samp,1)
-    	samp(i,:)=drawZc(samp(i,:),phi,psi,r);
-    end
-end
+% function samp = drawZs(samp,phi,psi,r)
+%     %draws latent topic z's
+%     %samp = sample matrix
+%     %phi = tucker decomposition tensor core tensor
+%     %psi = tucker decomposition matrices
+%     %r = restaurant list
+%     
+%     for i=1:size(samp,1)
+%     	samp(i,:)=drawZc(samp(i,:),phi,psi,r);
+%     end
+% end
