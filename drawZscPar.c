@@ -42,7 +42,7 @@ void drawZsc(double *sampIn, double *sampOut, size_t sampCols,
         int z = sampIn[4*sampRows+j]; //get other topic
 
         // initialize sampOut
-        mwSize i;
+        int i;
         for(i=0; i<sampCols; i++){
             sampOut[i*sampRows+j] = sampIn[i*sampRows+j];
         }
@@ -109,7 +109,7 @@ void drawZsc(double *sampIn, double *sampOut, size_t sampCols,
 
 // generate random uniform number
 double get_random() {
-    srand((int)time(NULL));
+    srand(time(NULL)); // randomize seed
     return ((double)rand() / (double)RAND_MAX);
 }
 
@@ -132,7 +132,6 @@ int multi(double *pdf, double sum, int size){
     }
     
     double n = 0;
-    srand(time(NULL)); // randomize seed
     n = get_random(); // get uniform random variable
     
     // find bin that n is in
