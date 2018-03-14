@@ -15,11 +15,17 @@
 
 #include "mex.h"
 #include <math.h>
+#include <omp.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include <omp.h>
 
+// forward declarations
 void drawZsc(double *sampIn, double *sampOut, size_t sampCols,
+        size_t sampRows, double *phi, double *psi1, double *psi2,
+        double *r1, double *r2, size_t r1Size,const mwSize *phiDims,
+        const mwSize *psi1Dims, const mwSize *psi2Dims);
+void drawZ(int j, double *sampIn, double *sampOut, size_t sampCols,
         size_t sampRows, double *phi, double *psi1, double *psi2,
         double *r1, double *r2, size_t r1Size,const mwSize *phiDims,
         const mwSize *psi1Dims, const mwSize *psi2Dims);
@@ -27,7 +33,7 @@ double get_random();
 int multi(double *pdf, double sum, int size);
 void mexFunction(int nlhs, mxArray *plhs[],
         int nrhs, const mxArray *prhs[]);
-/* The computational routine */
+
 void drawZsc(double *sampIn, double *sampOut, size_t sampCols,
         size_t sampRows, double *phi, double *psi1, double *psi2,
         double *r1, double *r2, size_t r1Size,const mwSize *phiDims,
@@ -35,76 +41,86 @@ void drawZsc(double *sampIn, double *sampOut, size_t sampCols,
 {
     int j;
     
-    #pragma omp parallel for 
+    #pragma omp parallel for private(j)
     for(j=0; j<sampRows; j++){
-        int x = sampIn[0*sampRows+j]; //get evidence variable
-        int y = sampIn[1*sampRows+j]; //get response variable
-        int z = sampIn[4*sampRows+j]; //get other topic
-
-        // initialize sampOut
-        int i;
-        for(i=0; i<sampCols; i++){
-            sampOut[i*sampRows+j] = sampIn[i*sampRows+j];
-        }
-
-        // find z in restaurant list
-        i = 0;
-        int found = 0;
-        while(i<r1Size && found==0){
-            if(r1[i]==z){
-                found = 1;
-                z = i+1;
-            } else{
-                i++;
-            }
-        }
-        if(found==0){
-            z = 1;
-        }
-
-        // get pdf from phi and psi
-        int size = phiDims[1];
-        double pdf1[size];
-        double sum = 0;
-        for(i=0; i<size; i++){
-            pdf1[i] = phi[x-1+i*phiDims[0]+(z-1)*phiDims[0]*phiDims[1]];
-            pdf1[i] = psi1[y-1+i*psi1Dims[0]]*pdf1[i];
-            sum = sum + pdf1[i];
-        }
-
-        // draw new z
-        if(sum==0){
-            z = 1;
-        } else{
-            z = multi(pdf1,sum,size);
-        }
-        //free(pdf1);
-
-        sampOut[3*sampRows+j] = r1[z-1]; //set topic
-
-        // sample other z
-        y = sampIn[2*sampRows+j]; // get response variable
-
-        // get pdf from phi and psi
-        size = phiDims[2];
-        double pdf2[size];
-        sum = 0;
-        for(i=0; i<size; i++){
-            pdf2[i] = phi[x-1+(z-1)*phiDims[0]+i*phiDims[0]*phiDims[1]];
-            pdf2[i] = psi2[y-1+i*psi2Dims[0]]*pdf2[i];
-            sum = sum + pdf2[i];
-        }
-
-        // draw new z
-        if(sum==0){
-            z = 1;
-        } else{
-            z = multi(pdf2,sum,size);
-        }
-        //free(pdf2);
-
-        sampOut[4*sampRows+j] = r2[z-1]; //set topic   
+        drawZ(j,sampIn,sampOut,sampCols,sampRows,phi,psi1,psi2,r1,r2,
+            r1Size,phiDims,psi1Dims,psi2Dims);  
     }
+    
+}
+
+void drawZ(int j, double *sampIn, double *sampOut, size_t sampCols,
+        size_t sampRows, double *phi, double *psi1, double *psi2,
+        double *r1, double *r2, size_t r1Size,const mwSize *phiDims,
+        const mwSize *psi1Dims, const mwSize *psi2Dims)
+{
+    int x = sampIn[0*sampRows+j]; //get evidence variable
+    int y = sampIn[1*sampRows+j]; //get response variable
+    int z = sampIn[4*sampRows+j]; //get other topic
+
+    // initialize sampOut
+    int i;
+    for(i=0; i<sampCols; i++){
+        sampOut[i*sampRows+j] = sampIn[i*sampRows+j];
+    }
+
+    // find z in restaurant list
+    i = 0;
+    int found = 0;
+    while(i<r1Size && found==0){
+        if(r1[i]==z){
+            found = 1;
+            z = i+1;
+        } else{
+            i++;
+        }
+    }
+    if(found==0){
+        z = 1;
+    }
+
+    // get pdf from phi and psi
+    int size = phiDims[1];
+    double pdf1[size];
+    double sum = 0;
+    for(i=0; i<size; i++){
+        pdf1[i] = phi[x-1+i*phiDims[0]+(z-1)*phiDims[0]*phiDims[1]];
+        pdf1[i] = psi1[y-1+i*psi1Dims[0]]*pdf1[i];
+        sum = sum + pdf1[i];
+    }
+
+    // draw new z
+    if(sum==0){
+        z = 1;
+    } else{
+        z = multi(pdf1,sum,size);
+    }
+    //free(pdf1);
+
+    sampOut[3*sampRows+j] = r1[z-1]; //set topic
+
+    // sample other z
+    y = sampIn[2*sampRows+j]; // get response variable
+
+    // get pdf from phi and psi
+    size = phiDims[2];
+    double pdf2[size];
+    sum = 0;
+    for(i=0; i<size; i++){
+        pdf2[i] = phi[x-1+(z-1)*phiDims[0]+i*phiDims[0]*phiDims[1]];
+        pdf2[i] = psi2[y-1+i*psi2Dims[0]]*pdf2[i];
+        sum = sum + pdf2[i];
+    }
+
+    // draw new z
+    if(sum==0){
+        z = 1;
+    } else{
+        z = multi(pdf2,sum,size);
+    }
+    //free(pdf2);
+
+    sampOut[4*sampRows+j] = r2[z-1]; //set topic
 }
 
 // generate random uniform number

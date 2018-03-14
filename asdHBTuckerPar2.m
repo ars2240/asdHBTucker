@@ -7,6 +7,7 @@ function [phi, psi ,tree] = asdHBTuckerPar2(x,L,gam)
     %L = levels of hierarchical trees
     %gam = hyper parameter(s) of CRP
     
+    tStart=tic;
     dims=size(x); %dimensions of tensor
     
     %adjustment if using constant gam across dims
@@ -26,13 +27,17 @@ function [phi, psi ,tree] = asdHBTuckerPar2(x,L,gam)
     end
     
     %initialize sample matrix
+    sStart=tic;
     samples=zeros(l1NormX,5+sum(L));
     s=find(x>0); %find nonzero elements
     v=x(s(:,1),s(:,2),s(:,3)); %get nonzero values
     v=v.vals; %extract values
     samples(:,1:3)=repelem(s,v,1); %set samples
+    [~,xStarts,~]=unique(samples(:,1)); %find starting value of Xs
+    sampTime=toc(sStart);
     
     %initialize tree
+    treeStart=tic;
     samples(:,6)=1; %sit at root table
     samples(:,6+L(1))=1; %sit at root table
     tree=cell(2,1); %initialize
@@ -84,6 +89,7 @@ function [phi, psi ,tree] = asdHBTuckerPar2(x,L,gam)
            end
        end
     end
+    treeTime=toc(treeStart);
     
     %calculate dimensions of core
     coreDims=zeros(1,3);
@@ -98,21 +104,28 @@ function [phi, psi ,tree] = asdHBTuckerPar2(x,L,gam)
     phi=zeros(coreDims(1),coreDims(2),coreDims(3));
     
     %draw matrices p(y|z)
+    matStart=tic;
     psi=cell(2,1); %initialize
     for i=2:3
         %draw values from dirichlet distribution with uniform prior
         psi{i-1}=drchrnd(repelem(1/dims(i),dims(i)),coreDims(i))';
     end
+    matTime=toc(matStart);
     
+    coreStart=tic;
     [~,ir,~]=unique(samples(:,1)); %get rows with unique x's
     s=samples(ir,:); %subset
     for i=1:dims(1)
         %draw core tensor p(z|x)
         phi(i,:,:)=drawCoreUni(s(i,:),coreDims,L,r);
     end
+    coreTime=toc(coreStart);
     
+    %save('asd.mat','phi','psi','r','samples');
     %draw latent topic z's
+    zStart=tic;
     samples=drawZscPar(samples,phi,psi,r);
+    zTime=toc(zStart);
     
     %gibbs sampler
     cont=1;
@@ -132,6 +145,7 @@ function [phi, psi ,tree] = asdHBTuckerPar2(x,L,gam)
         psi{2}=zeros(dims(3),coreDims(3));
 
         %redraw matrices p(y|z)
+        matStart=tic;
         for i=2:3
             [u,~,ir]=unique(samples(:,2+i));
             samps=accumarray(ir,1:size(samples,1),[],@(r){samples(r,:)});
@@ -148,114 +162,45 @@ function [phi, psi ,tree] = asdHBTuckerPar2(x,L,gam)
                 psiT(:,j)=drchrnd(pdf,1);
             end
             psi{i-1}=psiT;
-        end        
+        end
+        matTime=matTime+toc(matStart);
         
         %redraw core tensor p(z|x)
         %subset to get samples with x
+        coreStart=tic;
         [~,~,ir]=unique(samples(:,1));
         samps=accumarray(ir,1:size(samples,1),[],@(r){samples(r,:)});
         for i=1:dims(1)
             %redraw core tensor p(z|x)
             phi(i,:,:)=drawCoreCon(samps{i},coreDims,L,r);
         end
+        coreTime=coreTime+toc(coreStart);
 
         %redraw latent topic z's
+        zStart=tic;
         samples=drawZscPar(samples,phi,psi,r);
+        zTime=zTime+toc(zStart);
         
         %redraw tree
-        for i=1:dims(1)
-           %whether or not sample has patient=i
-           b=samples(:,1)==i;
-           
-           for j=1:2
-               curRes=1; %set current restaurant as root
-               col=5+(j-1)*L(1); %starting column
-               
-               %all samples, excluding the one being resampled
-               ex=samples(~b,:);
-               s=samples;
-               
-               for k=2:L(j)
-                   %get label of new table
-                   newRes=find(~ismember(1:max(r{j}+1),r{j}),1);
-                   
-                   new=0; %set boolean for new table to false
-                   
-                   if ~isempty(tree{j}{curRes})
-                       %add new restaurant to list
-                       rList=[tree{j}{curRes} newRes];
-                       [rList, order]=sort(rList);
-
-                       %get number of samples in that restaurant
-                       [~,ir,~]=unique(ex(:,1));
-
-                       %compute CRP part of pdf
-                       pdf=histc(ex(ir,col+k)',rList);
-
-                       %get counts
-                       cts1=accumarray(ex(:,[1+j col+k]),1,[dims(1+j) max(rList)]);
-                       cts1=cts1(:,rList);
-                       cts2=accumarray(s(:,[1+j col+k]),1,[dims(1+j) max(rList)]);
-                       cts2=cts2(:,rList);
-
-                       %compute contribution to pdf
-                       pdf=log(pdf); %take long to prevent overflow
-                       pdf=pdf+gammaln(sum(cts1,1)+1);
-                       pdf=pdf-sum(gammaln(cts1+1/dims(1+j)),1);
-                       pdf=pdf+sum(gammaln(cts2+1/dims(1+j)),1);
-                       pdf=pdf-gammaln(sum(cts2,1)+1);
-                       pdf=exp(pdf);
-                       [~,l]=max(order);
-                       pdf(l)=gam(j);
-                       
-                       %pick new table
-                       nextRes=rList(multi(pdf));
-
-                       ex=ex(ex(:,col+k)==nextRes,:);
-                       s=s(s(:,col+k)==nextRes,:);
-                       if nextRes==newRes
-                           new=1;
-                       end
-                   else
-                       new=1; %set boolean for new table to false
-                       nextRes=newRes;
-                   end
-                   
-                   samples(b,col+k)=nextRes; %sit at table
-                   
-                   %if new table
-                   if new==1
-                       r{j}=[r{j} newRes]; %add to restaurant list
-                   
-                       %add new table to tree
-                       tree{j}{curRes}=[tree{j}{curRes} newRes];
-                       tree{j}{newRes}=[]; %add new table to tree
-                   end
-                   
-                   curRes=nextRes; %cycle restaurants
-                   
-               end
-               
-               %handle abandoned tables
-               rList=unique(samples(:,(col+1):(col+L(j))));
-               in=ismember(r{j},rList);
-               r{j}=r{j}(in);
-               r{j}=sort(r{j});
-               for k=find(~in)
-                  tree{j}{k}=[];
-               end
-               for k=1:max(r{j})
-                  tree{j}{k}=tree{j}{k}(ismember(tree{j}{k},r{j}));
-               end
-           end
-        end
-        
+        treeStart=tic;
+        [samples,tree,r] = redrawTree(dims,samples,L,tree,r,gam,xStarts);
+        treeTime=treeTime+toc(treeStart);
         
         nIter=nIter+1;
         if nIter>=10
             cont=0;
         end
     end
+    
+    tTime=toc(tStart);
+    
+    %print times
+    fprintf('Sample Init time= %5.2f\n',sampTime);
+    fprintf('Matrix time= %5.2f\n',matTime);
+    fprintf('Core time= %5.2f\n',coreTime);
+    fprintf('Z time= %5.2f\n',zTime);
+    fprintf('Tree time= %5.2f\n',treeTime);
+    fprintf('Total time= %5.2f\n',tTime);
 end
 
 % function samp = drawZs(samp,phi,psi,r)

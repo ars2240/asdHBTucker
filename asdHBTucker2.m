@@ -31,6 +31,7 @@ function [phi, psi ,tree] = asdHBTucker2(x,L,gam)
     v=x(s(:,1),s(:,2),s(:,3)); %get nonzero values
     v=v.vals; %extract values
     samples(:,1:3)=repelem(s,v,1); %set samples
+    [~,xStarts,~]=unique(samples(:,1)); %find starting value of Xs
     
     %initialize tree
     samples(:,6)=1; %sit at root table
@@ -163,92 +164,7 @@ function [phi, psi ,tree] = asdHBTucker2(x,L,gam)
         samples=drawZsc(samples,phi,psi,r);
         
         %redraw tree
-        for i=1:dims(1)
-           %whether or not sample has patient=i
-           b=samples(:,1)==i;
-           
-           for j=1:2
-               curRes=1; %set current restaurant as root
-               col=5+(j-1)*L(1); %starting column
-               
-               %all samples, excluding the one being resampled
-               ex=samples(~b,:);
-               s=samples;
-               
-               for k=2:L(j)
-                   %get label of new table
-                   newRes=find(~ismember(1:max(r{j}+1),r{j}),1);
-                   
-                   new=0; %set boolean for new table to false
-                   
-                   if ~isempty(tree{j}{curRes})
-                       %add new restaurant to list
-                       rList=[tree{j}{curRes} newRes];
-                       [rList, order]=sort(rList);
-
-                       %get number of samples in that restaurant
-                       [~,ir,~]=unique(ex(:,1));
-
-                       %compute CRP part of pdf
-                       pdf=histc(ex(ir,col+k)',rList);
-
-                       %get counts
-                       cts1=accumarray(ex(:,[1+j col+k]),1,[dims(1+j) max(rList)]);
-                       cts1=cts1(:,rList);
-                       cts2=accumarray(s(:,[1+j col+k]),1,[dims(1+j) max(rList)]);
-                       cts2=cts2(:,rList);
-
-                       %compute contribution to pdf
-                       pdf=log(pdf); %take long to prevent overflow
-                       pdf=pdf+gammaln(sum(cts1,1)+1);
-                       pdf=pdf-sum(gammaln(cts1+1/dims(1+j)),1);
-                       pdf=pdf+sum(gammaln(cts2+1/dims(1+j)),1);
-                       pdf=pdf-gammaln(sum(cts2,1)+1);
-                       pdf=exp(pdf);
-                       [~,l]=max(order);
-                       pdf(l)=gam(j);
-                       
-                       %pick new table
-                       nextRes=rList(multi(pdf));
-
-                       ex=ex(ex(:,col+k)==nextRes,:);
-                       s=s(s(:,col+k)==nextRes,:);
-                       if nextRes==newRes
-                           new=1;
-                       end
-                   else
-                       new=1; %set boolean for new table to false
-                       nextRes=newRes;
-                   end
-                   
-                   samples(b,col+k)=nextRes; %sit at table
-                   
-                   %if new table
-                   if new==1
-                       r{j}=[r{j} newRes]; %add to restaurant list
-                   
-                       %add new table to tree
-                       tree{j}{curRes}=[tree{j}{curRes} newRes];
-                       tree{j}{newRes}=[]; %add new table to tree
-                   end
-                   
-                   curRes=nextRes; %cycle restaurants
-                   
-               end
-               
-               %handle abandoned tables
-               rList=unique(samples(:,(col+1):(col+L(j))));
-               in=ismember(r{j},rList);
-               r{j}=r{j}(in);
-               r{j}=sort(r{j});
-               for k=find(~in)
-                  tree{j}{k}=[];
-               end
-               for k=1:max(r{j})
-                  tree{j}{k}=tree{j}{k}(ismember(tree{j}{k},r{j}));
-               end
-           end
-        end
+        [samples,tree,r] = redrawTree(dims,samples,L,tree,r,gam,xStarts);
         
         
         nIter=nIter+1;
