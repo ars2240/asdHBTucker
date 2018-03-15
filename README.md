@@ -1,13 +1,12 @@
 Simulink Project: asdHBTucker
 
 Author: Adam Sandler
-Date: 2/27/18
+Date: 3/15/18
 
 Files:
 - AsdHBTucker.prj- Simulink Project file
 - asdHBTucker.mat- data file with phi, psi, and tree from newest iteration
-- asdHBTucker2.m- sequential hierarchical Bayesian Tucker decomposition function
-- asdHBTuckerPar.m- parallel hierarchical Bayesian Tucker decomposition function
+- asdHBTucker3.m- hierarchical Bayesian Tucker decomposition function
 - asdSparse.csv- tensor of ASD data
 - asdTens.m- main run file
 - crp.m- draws new restaurant from Chinese Restaurant Process (CRP)
@@ -17,6 +16,7 @@ Files:
 - drawZc.c- C version of drawZ function
 - drawZsc.c- C version of drawZs function
 - drchrnd.m- generates probabilities from the Dirichlet distribution
+- init_options.m- option initialization
 - multi.m- draws a single sample from the multinomial distribution
 - opt.m- separate file that computes tests for our optimization problem
 - redrawTree.c- draws the tree from the CRP

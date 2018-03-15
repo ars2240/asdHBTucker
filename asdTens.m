@@ -1,9 +1,12 @@
-% asdSparse=csvread('asdSparse.csv',1,1);
-% asd=sptensor(asdSparse(:,1:3),asdSparse(:,4));
+asdSparse=csvread('asdSparse.csv',1,1);
+asd=sptensor(asdSparse(:,1:3),asdSparse(:,4));
+options=init_options();
 % mex drawZscPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
 % [phi, psi, tree]=asdHBTuckerPar2(asd,2,0.5);
-asd=poissrnd(2,20,20,20);
-asd=sptensor(asd);
+% asd=poissrnd(2,20,20,20);
+% asd=sptensor(asd);
+% options.par=1;
 mex drawZsc.c;
-[phi, psi, tree]=asdHBTucker2(asd,2,0.5);
+options.time=1;
+[phi, psi, tree]=asdHBTucker3(asd,2,0.5,options);
 save('asdHBTucker.mat','phi','psi','tree');
