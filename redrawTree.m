@@ -7,8 +7,10 @@ function [samples,tree,r] = redrawTree(dims,samples,L,tree,r,gam,xStarts)
            col=5+(j-1)*L(1); %starting column
 
            %all samples, excluding the one being resampled
-           ex=samples;
-           ex(xStarts(i):xEnds(i),:)=[];
+           b=ones(1,size(samples,1));
+           b(xStarts(i):xEnds(i))=0;
+           b=bool(b);
+           ex=samples(b);
            s=samples(xStarts(i):xEnds(i),:);
 
            new=0; %set boolean for new table to false
@@ -50,11 +52,13 @@ function [samples,tree,r] = redrawTree(dims,samples,L,tree,r,gam,xStarts)
                    nextRes=rList(multi(pdf));
 
                    if k~=L(j)
+                       %get indices of samples in next restaurant
+                       %and subset data sets
                        sub=ex(ir,col+k)==nextRes;
                        irEnd=[ir(2:size(ir))-1;size(ex,1)];
                        x=1:size(ir);
                        x=x(sub);
-                       pos=mems(x,ir,irEnd);
+                       pos=elems(ir(x),irEnd(x));
                        ex=ex(pos,:);
                        [~,ir,~]=unique(ex(:,1));
                    end
@@ -95,8 +99,4 @@ function [samples,tree,r] = redrawTree(dims,samples,L,tree,r,gam,xStarts)
            end
        end
     end
-end
-
-function y = mems(x,ir,irEnd)
-    y=ir(x):irEnd(x);
 end

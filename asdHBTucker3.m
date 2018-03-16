@@ -52,11 +52,8 @@ function [phi, psi ,tree] = asdHBTucker3(x,L,gam,options)
        for j=1:dims(1)
            s=samples;
            curRes=1; %restaurant
+           ir=xStarts;
            for k=2:L(i)
-               %subset to get samples in restaurant
-               s=s(s(:,col+k-1)==curRes,:);
-               
-               [~,ir,~]=unique(s(:,1)); %get rows with unique x's
                
                %get count of customers at table
                tab=histc(s(ir,col+k)',tree{i}{curRes});
@@ -89,6 +86,20 @@ function [phi, psi ,tree] = asdHBTucker3(x,L,gam,options)
                end
                
                samples(samples(:,1)==j,col+k)=label; %sit at table
+               
+               curRes=label; %update restaurant
+               
+               if k~=L(i)
+                   %get indices of samples in next restaurant
+                   %and subset data sets
+                   sub=s(ir,col+k)==label;
+                   irEnd=[ir(2:size(ir))-1;size(ex,1)];
+                   x=1:size(ir);
+                   x=x(sub);
+                   pos=elems(ir(x),irEnd(x));
+                   s=s(pos,:);
+                   [~,ir,~]=unique(s(:,1));
+               end
            end
        end
     end

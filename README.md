@@ -16,6 +16,7 @@ Files:
 - drawZc.c- C version of drawZ function
 - drawZsc.c- C version of drawZs function
 - drchrnd.m- generates probabilities from the Dirichlet distribution
+- elems.m- returns all values between two vectors
 - init_options.m- option initialization
 - multi.m- draws a single sample from the multinomial distribution
 - opt.m- separate file that computes tests for our optimization problem
