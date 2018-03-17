@@ -6,22 +6,22 @@ function [samples,tree,r] = redrawTree(dims,samples,L,tree,r,gam,xStarts)
            curRes=1; %set current restaurant as root
            col=5+(j-1)*L(1); %starting column
 
-           %all samples, excluding the one being resampled
-           b=ones(1,size(samples,1));
-           b(xStarts(i):xEnds(i))=0;
-           b=bool(b);
-           ex=samples(b);
-           s=samples(xStarts(i):xEnds(i),:);
-
            new=0; %set boolean for new table to false
 
            %get number of samples in that restaurant
            ir=[xStarts(1:(i-1));
                (xStarts((i+1):dims(1))-xEnds(i)-1+xStarts(i))];
+           
+           %get counts
+           cts=accumarray(samples(:,[1+j 3+j]),1);
 
            for k=2:L(j)
                %get label of new table
                newRes=find(~ismember(1:max(r{j}+1),r{j}),1);
+               
+               if newRes>size(cts,2)
+                   cts = [cts zeros(dims(1+j),1)];
+               end
 
                if ~isempty(tree{j}{curRes})
                    %add new restaurant to list
@@ -29,14 +29,12 @@ function [samples,tree,r] = redrawTree(dims,samples,L,tree,r,gam,xStarts)
                    [rList, order]=sort(rList);
 
                    %compute CRP part of pdf
-                   pdf=histc(ex(ir,col+k)',rList);
+                   pdf=histc(samples(ir,col+k)',rList);
 
                    %get counts
-                   cts1=accumarray(ex(:,[1+j col+k]),1,[dims(1+j) max(rList)]);
-                   cts1=cts1(:,rList);
-                   cts2=accumarray(s(:,[1+j col+k]),1,[dims(1+j) max(rList)]);
-                   cts2=cts2(:,rList);
-                   cts2=cts1+cts2;
+                   ctsT=accumarray(samples(xStarts(i):xEnds(i),[1+j 3+j]),1,[dims(1+j) max(rList)]);
+                   cts1=cts(:,rList)-ctsT(:,rList);
+                   cts2=cts(:,rList);
 
                    %compute contribution to pdf
                    [~,l]=max(order);
@@ -50,18 +48,6 @@ function [samples,tree,r] = redrawTree(dims,samples,L,tree,r,gam,xStarts)
 
                    %pick new table
                    nextRes=rList(multi(pdf));
-
-                   if k~=L(j)
-                       %get indices of samples in next restaurant
-                       %and subset data sets
-                       sub=ex(ir,col+k)==nextRes;
-                       irEnd=[ir(2:size(ir))-1;size(ex,1)];
-                       x=1:size(ir);
-                       x=x(sub);
-                       pos=elems(ir(x),irEnd(x));
-                       ex=ex(pos,:);
-                       [~,ir,~]=unique(ex(:,1));
-                   end
                    
                    if nextRes==newRes
                        new=1;

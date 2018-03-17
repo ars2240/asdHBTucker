@@ -4,6 +4,7 @@ function [ options ] = init_options( )
 % time = whether or not time is printed
 
 options.par = 0;
-options.time = 0; 
+options.time = 0;
+options.maxIter = 10;
 
 end

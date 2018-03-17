@@ -37,6 +37,7 @@ function [phi, psi ,tree] = asdHBTucker3(x,L,gam,options)
     v=v.vals; %extract values
     samples(:,1:3)=repelem(s,v,1); %set samples
     [~,xStarts,~]=unique(samples(:,1)); %find starting value of Xs
+    xEnds = [xStarts(2:dims(1))-1;size(samples,1)];
     sampTime=toc(sStart);
     
     %initialize tree
@@ -85,7 +86,7 @@ function [phi, psi ,tree] = asdHBTucker3(x,L,gam,options)
                    label=tree{i}{curRes}(nT); %get label of table
                end
                
-               samples(samples(:,1)==j,col+k)=label; %sit at table
+               samples(xStarts(j):xEnds(j),col+k)=label; %sit at table
                
                curRes=label; %update restaurant
                
@@ -103,7 +104,8 @@ function [phi, psi ,tree] = asdHBTucker3(x,L,gam,options)
            end
        end
     end
-    treeTime=toc(treeStart);
+    treeTimeInit=toc(treeStart);
+    treeTime=0;
     
     %calculate dimensions of core
     coreDims=zeros(1,3);
@@ -127,8 +129,7 @@ function [phi, psi ,tree] = asdHBTucker3(x,L,gam,options)
     matTime=toc(matStart);
     
     coreStart=tic;
-    [~,ir,~]=unique(samples(:,1)); %get rows with unique x's
-    s=samples(ir,:); %subset
+    s=samples(xStarts,:); %subset
     for i=1:dims(1)
         %draw core tensor p(z|x)
         phi(i,:,:)=drawCoreUni(s(i,:),coreDims,L,r);
@@ -211,11 +212,10 @@ function [phi, psi ,tree] = asdHBTucker3(x,L,gam,options)
         treeTime=treeTime+toc(treeStart);
         
         nIter=nIter+1;
-        if nIter>=10
+        if nIter>=options.maxIter
             cont=0;
         end
     end
-    
     tTime=toc(tStart);
     
     %print times
@@ -224,6 +224,7 @@ function [phi, psi ,tree] = asdHBTucker3(x,L,gam,options)
         fprintf('Matrix time= %5.2f\n',matTime);
         fprintf('Core time= %5.2f\n',coreTime);
         fprintf('Z time= %5.2f\n',zTime);
+        fprintf('Tree Init time= %5.2f\n',treeTimeInit);
         fprintf('Tree time= %5.2f\n',treeTime);
         fprintf('Total time= %5.2f\n',tTime);
     end
