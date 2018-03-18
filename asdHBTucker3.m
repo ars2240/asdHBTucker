@@ -1,17 +1,21 @@
-function [phi, psi ,tree] = asdHBTucker3(x,L,gam,options)
+function [phi, psi ,tree] = asdHBTucker3(x,options)
     %performs 3-mode condition probablility Bayesian Tucker decomposition 
     %on a counting tensor
     %P(mode 2, mode 3 | mode 1)
     % = P(mode 2 | topic 2) P(mode 3| topic 3) P(topic 2, topic 3| mode 1)
     %x = counting tensor to be decomposed
-    %L = levels of hierarchical trees
-    %gam = hyper parameter(s) of CRP
     %options = 
     % options.par = whether or not z's are computed in parallel
     % options.time = whether or not time is printed
+    % options.maxIter = number of Gibbs sample iterations
+    % options.gam = hyper parameter(s) of CRP
+    % options.L = levels of hierarchical trees
     
     tStart=tic;
     dims=size(x); %dimensions of tensor
+    
+    gam=options.gam;
+    L=options.L;
     
     %adjustment if using constant gam across dims
     if length(gam)==1
@@ -31,33 +35,31 @@ function [phi, psi ,tree] = asdHBTucker3(x,L,gam,options)
     
     %initialize sample matrix
     sStart=tic;
-    samples=zeros(l1NormX,5+sum(L));
+    samples=zeros(l1NormX,5);
     s=find(x>0); %find nonzero elements
     v=x(s(:,1),s(:,2),s(:,3)); %get nonzero values
     v=v.vals; %extract values
     samples(:,1:3)=repelem(s,v,1); %set samples
     [~,xStarts,~]=unique(samples(:,1)); %find starting value of Xs
-    xEnds = [xStarts(2:dims(1))-1;size(samples,1)];
     sampTime=toc(sStart);
     
     %initialize tree
     treeStart=tic;
-    samples(:,6)=1; %sit at root table
-    samples(:,6+L(1))=1; %sit at root table
+    paths=zeros(dims(1),sum(L));
+    paths(:,1)=1; %sit at root table
+    paths(:,1+L(1))=1; %sit at root table
     tree=cell(2,1); %initialize
     r=cell(2,1); %initialize
     for i=1:2
        tree{i}{1}=[];
        r{i}=1;
-       col=5+(i-1)*L(1);
+       col=(i-1)*L(1);
        for j=1:dims(1)
-           s=samples;
            curRes=1; %restaurant
-           ir=xStarts;
            for k=2:L(i)
                
                %get count of customers at table
-               tab=histc(s(ir,col+k)',tree{i}{curRes});
+               tab=histc(paths(:,col+k)',tree{i}{curRes});
                
                new=0; %set boolean for new table to false
                
@@ -86,26 +88,14 @@ function [phi, psi ,tree] = asdHBTucker3(x,L,gam,options)
                    label=tree{i}{curRes}(nT); %get label of table
                end
                
-               samples(xStarts(j):xEnds(j),col+k)=label; %sit at table
+               paths(j,col+k)=label; %sit at table
                
                curRes=label; %update restaurant
                
-               if k~=L(i)
-                   %get indices of samples in next restaurant
-                   %and subset data sets
-                   sub=s(ir,col+k)==label;
-                   irEnd=[ir(2:size(ir))-1;size(ex,1)];
-                   x=1:size(ir);
-                   x=x(sub);
-                   pos=elems(ir(x),irEnd(x));
-                   s=s(pos,:);
-                   [~,ir,~]=unique(s(:,1));
-               end
            end
        end
     end
-    treeTimeInit=toc(treeStart);
-    treeTime=0;
+    treeTime=toc(treeStart);
     
     %calculate dimensions of core
     coreDims=zeros(1,3);
@@ -129,10 +119,9 @@ function [phi, psi ,tree] = asdHBTucker3(x,L,gam,options)
     matTime=toc(matStart);
     
     coreStart=tic;
-    s=samples(xStarts,:); %subset
     for i=1:dims(1)
         %draw core tensor p(z|x)
-        phi(i,:,:)=drawCoreUni(s(i,:),coreDims,L,r);
+        phi(i,:,:)=drawCoreUni(paths(i,:),coreDims,L,r);
     end
     coreTime=toc(coreStart);
     
@@ -192,7 +181,7 @@ function [phi, psi ,tree] = asdHBTucker3(x,L,gam,options)
         samps=accumarray(ir,1:size(samples,1),[],@(r){samples(r,:)});
         for i=1:dims(1)
             %redraw core tensor p(z|x)
-            phi(i,:,:)=drawCoreCon(samps{i},coreDims,L,r);
+            phi(i,:,:)=drawCoreCon(samps{i},paths(i,:),coreDims,L,r);
         end
         coreTime=coreTime+toc(coreStart);
 
@@ -208,7 +197,7 @@ function [phi, psi ,tree] = asdHBTucker3(x,L,gam,options)
         
         %redraw tree
         treeStart=tic;
-        [samples,tree,r] = redrawTree(dims,samples,L,tree,r,gam,xStarts);
+        [samples,paths,tree,r] = redrawTree(dims,samples,paths,L,tree,r,gam);
         treeTime=treeTime+toc(treeStart);
         
         nIter=nIter+1;
@@ -224,7 +213,6 @@ function [phi, psi ,tree] = asdHBTucker3(x,L,gam,options)
         fprintf('Matrix time= %5.2f\n',matTime);
         fprintf('Core time= %5.2f\n',coreTime);
         fprintf('Z time= %5.2f\n',zTime);
-        fprintf('Tree Init time= %5.2f\n',treeTimeInit);
         fprintf('Tree time= %5.2f\n',treeTime);
         fprintf('Total time= %5.2f\n',tTime);
     end

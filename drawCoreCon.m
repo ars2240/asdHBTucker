@@ -1,6 +1,7 @@
 %draws core p(z|x) with conditional prior
-function p = drawCoreCon(samps,coreDims,L,r)
-    %samps = rows with x, y, z, tree path values for specific x
+function p = drawCoreCon(samps,paths,coreDims,L,r)
+    %samps = rows with x, y, z values for specific x
+    %path = row with tree path values for specific x
     %coreDims = dimensions of core tensor
     %L = levels of hierarchical tree
     %r = restaurant lists
@@ -10,9 +11,9 @@ function p = drawCoreCon(samps,coreDims,L,r)
     prob{2}=zeros(1,coreDims(3));
 
     %get restaurants for patient
-    res{1}=samps(1,6:(5+L(1)));
+    res{1}=paths(1:L(1));
     res{1}=find(ismember(r{1},res{1}));
-    res{2}=samps(1,(6+L(1)):(5+L(1)+L(2)));
+    res{2}=paths((1+L(1)):(L(1)+L(2)));
     res{2}=find(ismember(r{2},res{2}));
 
     %get topics and locations in restaurant

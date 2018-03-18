@@ -1,26 +1,32 @@
-function [samples,tree,r] = redrawTree(dims,samples,L,tree,r,gam,xStarts)
+function [samples,paths,tree,r] = redrawTree(dims,samples,paths,L,tree,r,gam)
+    %dims = dimensions of tensor
+    %samps = x, y, z values
+    %path = tree paths
+    %L = levels of hierarchical tree
+    %tree = hierarchical tree
+    %r = restaurant lists
+    %gamma = hyper parameter of CRP
 
-    xEnds = [xStarts(2:dims(1))-1;size(samples,1)];
-    for i=1:dims(1)
-       for j=1:2
+    for j=1:2
+        
+       %get counts
+       cts=accumarray(samples(:,[1+j 3+j 1]),1,[dims(1+j),max(r{j}),dims(1)]);
+       ctsA=sum(cts,3);
+       
+       col=(j-1)*L(1); %starting column
+       
+       for i=1:dims(1)
            curRes=1; %set current restaurant as root
-           col=5+(j-1)*L(1); %starting column
 
            new=0; %set boolean for new table to false
-
-           %get number of samples in that restaurant
-           ir=[xStarts(1:(i-1));
-               (xStarts((i+1):dims(1))-xEnds(i)-1+xStarts(i))];
-           
-           %get counts
-           cts=accumarray(samples(:,[1+j 3+j]),1);
 
            for k=2:L(j)
                %get label of new table
                newRes=find(~ismember(1:max(r{j}+1),r{j}),1);
                
                if newRes>size(cts,2)
-                   cts = [cts zeros(dims(1+j),1)];
+                   cts=padarray(cts,[0 1 0],'post');
+                   ctsA=padarray(ctsA,[0 1],'post');
                end
 
                if ~isempty(tree{j}{curRes})
@@ -29,12 +35,11 @@ function [samples,tree,r] = redrawTree(dims,samples,L,tree,r,gam,xStarts)
                    [rList, order]=sort(rList);
 
                    %compute CRP part of pdf
-                   pdf=histc(samples(ir,col+k)',rList);
+                   pdf=histc(paths(:,col+k)',rList);
 
                    %get counts
-                   ctsT=accumarray(samples(xStarts(i):xEnds(i),[1+j 3+j]),1,[dims(1+j) max(rList)]);
-                   cts1=cts(:,rList)-ctsT(:,rList);
-                   cts2=cts(:,rList);
+                   cts1=ctsA(:,rList)-cts(:,rList,i);
+                   cts2=ctsA(:,rList);
 
                    %compute contribution to pdf
                    [~,l]=max(order);
@@ -57,7 +62,7 @@ function [samples,tree,r] = redrawTree(dims,samples,L,tree,r,gam,xStarts)
                    nextRes=newRes;
                end
 
-               samples(xStarts(i):xEnds(i),col+k)=nextRes; %sit at table
+               paths(i,col+k)=nextRes; %sit at table
 
                %if new table
                if new==1
@@ -72,17 +77,18 @@ function [samples,tree,r] = redrawTree(dims,samples,L,tree,r,gam,xStarts)
 
            end
 
-           %handle abandoned tables
-           rList=reshape(samples(xStarts,(col+1):(col+L(j))),[],1);
-           in=ismember(r{j},rList);
-           r{j}=r{j}(in);
-           r{j}=sort(r{j});
-           for k=find(~in)
-              tree{j}{k}=[];
-           end
-           for k=1:max(r{j})
-              tree{j}{k}=tree{j}{k}(ismember(tree{j}{k},r{j}));
-           end
+       end
+       
+       %handle abandoned tables
+       rList=reshape(paths(:,(col+1):(col+L(j))),[],1);
+       in=ismember(r{j},rList);
+       r{j}=r{j}(in);
+       r{j}=sort(r{j});
+       for k=find(~in)
+          tree{j}{k}=[];
+       end
+       for k=1:max(r{j})
+          tree{j}{k}=tree{j}{k}(ismember(tree{j}{k},r{j}));
        end
     end
 end
