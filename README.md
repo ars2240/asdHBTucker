@@ -1,7 +1,7 @@
 Simulink Project: asdHBTucker
 
 Author: Adam Sandler
-Date: 3/15/18
+Date: 3/25/18
 
 Files:
 - AsdHBTucker.prj- Simulink Project file
@@ -18,6 +18,7 @@ Files:
 - drchrnd.m- generates probabilities from the Dirichlet distribution
 - elems.m- returns all values between two vectors
 - init_options.m- option initialization
+- logisticReg.m- uses a logistic regression model to learn & predict ASD
 - multi.m- draws a single sample from the multinomial distribution
 - opt.m- separate file that computes tests for our optimization problem
 - redrawTree.c- draws the tree from the CRP
