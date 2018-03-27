@@ -16,6 +16,8 @@ function [phi, psi ,tree] = asdHBTucker3(x,options)
     
     gam=options.gam;
     L=options.L;
+    LL=0; %initialize log-likelihood
+    ent=0; %initialize entropy
     
     %adjustment if using constant gam across dims
     if length(gam)==1
@@ -40,7 +42,6 @@ function [phi, psi ,tree] = asdHBTucker3(x,options)
     v=x(s(:,1),s(:,2),s(:,3)); %get nonzero values
     v=v.vals; %extract values
     samples(:,1:3)=repelem(s,v,1); %set samples
-    [~,xStarts,~]=unique(samples(:,1)); %find starting value of Xs
     sampTime=toc(sStart);
     
     %initialize tree
@@ -65,7 +66,9 @@ function [phi, psi ,tree] = asdHBTucker3(x,options)
                
                %check to see if nonzero number of customers
                if sum(tab)~=0
-                   nT=crp(tab,gam(i)); %draw new table
+                   [nT, p]=crp(tab,gam(i)); %draw new table
+                   LL=LL+log(p); %increment log-likelihood
+                   ent=ent+entropy(p); %increment entropy
                    
                    %check to see if table is unoccupied
                    if nT>length(tab)
@@ -114,14 +117,19 @@ function [phi, psi ,tree] = asdHBTucker3(x,options)
     psi=cell(2,1); %initialize
     for i=2:3
         %draw values from dirichlet distribution with uniform prior
-        psi{i-1}=drchrnd(repelem(1/dims(i),dims(i)),coreDims(i))';
+        [psiT,p]=drchrnd(repelem(1/dims(i),dims(i)),coreDims(i));
+        psi{i-1}=psiT';
+        LL=LL+sum(log(p));
+        ent=ent+entropy(p);
     end
     matTime=toc(matStart);
     
     coreStart=tic;
     for i=1:dims(1)
         %draw core tensor p(z|x)
-        phi(i,:,:)=drawCoreUni(paths(i,:),coreDims,L,r);
+        [phi(i,:,:),p]=drawCoreUni(paths(i,:),coreDims,L,r);
+        LL=LL+sum(log(p));
+        ent=ent+entropy(p);
     end
     coreTime=toc(coreStart);
     
@@ -132,14 +140,27 @@ function [phi, psi ,tree] = asdHBTucker3(x,options)
         case 1
             samples=drawZscPar(samples,phi,psi,r);
         otherwise
-            samples=drawZsc(samples,phi,psi,r);
+            [samples,p]=drawZsc(samples,phi,psi,r);
+            LL=LL+sum(log(p));
+            ent=ent+entropy(p);
     end
     zTime=toc(zStart);
+    
+    if options.print==1
+        output_header = sprintf('%6s %13s %10s',...
+            'iter', 'loglikelihood', 'entropy');
+        fprintf('%s\n', output_header);
+        fprintf('%6i %13.2e %10.2e\n',...
+            0, LL, ent);
+    end
     
     %gibbs sampler
     cont=1;
     nIter=0;
     while cont==1
+        LL=0; %reset log-likelihood
+        ent=0; %reset entropy
+        
         %recalculate dimensions of core
         for i=1:2
            %set core dimensions to the number of topics in each mode
@@ -168,7 +189,9 @@ function [phi, psi ,tree] = asdHBTucker3(x,options)
                 if loc(j)~=0
                     pdf=pdf+histc(samps{loc(j)}(:,i)',1:dim);
                 end
-                psiT(:,j)=drchrnd(pdf,1);
+                [psiT(:,j),p]=drchrnd(pdf,1);
+                LL=LL+log(p);
+                ent=ent+entropy(p);
             end
             psi{i-1}=psiT;
         end
@@ -181,7 +204,9 @@ function [phi, psi ,tree] = asdHBTucker3(x,options)
         samps=accumarray(ir,1:size(samples,1),[],@(r){samples(r,:)});
         for i=1:dims(1)
             %redraw core tensor p(z|x)
-            phi(i,:,:)=drawCoreCon(samps{i},paths(i,:),coreDims,L,r);
+            [phi(i,:,:),p]=drawCoreCon(samps{i},paths(i,:),coreDims,L,r);
+            LL=LL+sum(log(p));
+            ent=ent+entropy(p);
         end
         coreTime=coreTime+toc(coreStart);
 
@@ -191,16 +216,31 @@ function [phi, psi ,tree] = asdHBTucker3(x,options)
             case 1
                 samples=drawZscPar(samples,phi,psi,r);
             otherwise
-                samples=drawZsc(samples,phi,psi,r);
+                [samples,p]=drawZsc(samples,phi,psi,r);
+                LL=LL+sum(log(p));
+                ent=ent+entropy(p);
         end
         zTime=zTime+toc(zStart);
         
         %redraw tree
         treeStart=tic;
-        [samples,paths,tree,r] = redrawTree(dims,samples,paths,L,tree,r,gam);
+        [samples,paths,tree,r,LLtree,entTree] = redrawTree(dims,samples,paths,L,tree,r,gam);
+        LL=LL+LLtree;
+        ent=ent+entTree;
         treeTime=treeTime+toc(treeStart);
         
+        %increment iteration counter
         nIter=nIter+1;
+        
+        %print loglikelihood & entropy
+        if options.print==1
+            if mod(nIter,options.freq)==0
+                fprintf('%6i %13.2e %10.2e\n',...
+                    nIter, LL, ent);
+            end
+        end
+        
+        %check if to continue
         if nIter>=options.maxIter
             cont=0;
         end

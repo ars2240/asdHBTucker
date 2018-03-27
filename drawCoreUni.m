@@ -1,5 +1,5 @@
 %draws core p(z|x) with uniform prior
-function p = drawCoreUni(paths,coreDims,L,r)
+function [phi,p] = drawCoreUni(paths,coreDims,L,r)
     %path = row with tree path values for specific x
     %coreDims = dimensions of core tensor
     %L = levels of hierarchical tree
@@ -16,11 +16,12 @@ function p = drawCoreUni(paths,coreDims,L,r)
     res{2}=find(ismember(r{2},res{2}));
 
     %draw values from dirichlet distribution with uniform prior
-    vals{1}=drchrnd(repelem(1/L(1),L(1)),1);
-    vals{2}=drchrnd(repelem(1/L(2),L(2)),1);
+    [vals{1},p1]=drchrnd(repelem(1/L(1),L(1)),1);
+    [vals{2},p2]=drchrnd(repelem(1/L(2),L(2)),1);
 
     %set values
     prob{1}(res{1})=vals{1};
     prob{2}(res{2})=vals{2};
-    p=prob{1}'*prob{2};
+    phi=prob{1}'*prob{2};
+    p=[p1;p2];
 end

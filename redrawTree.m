@@ -1,4 +1,4 @@
-function [samples,paths,tree,r] = redrawTree(dims,samples,paths,L,tree,r,gam)
+function [samples,paths,tree,r,LL,ent] = redrawTree(dims,samples,paths,L,tree,r,gam)
     %dims = dimensions of tensor
     %samps = x, y, z values
     %path = tree paths
@@ -7,6 +7,9 @@ function [samples,paths,tree,r] = redrawTree(dims,samples,paths,L,tree,r,gam)
     %r = restaurant lists
     %gamma = hyper parameter of CRP
 
+    LL=0; %initialize log-likelihood
+    ent=0; %initialize entropy
+    
     for j=1:2
         
        %get counts
@@ -44,15 +47,20 @@ function [samples,paths,tree,r] = redrawTree(dims,samples,paths,L,tree,r,gam)
                    %compute contribution to pdf
                    [~,l]=max(order);
                    pdf(l)=gam(j);
-                   pdf=log(pdf); %take long to prevent overflow
+                   pdf=log(pdf); %take log to prevent overflow
                    pdf=pdf+gammaln(sum(cts1,1)+1);
                    pdf=pdf-sum(gammaln(cts1+1/dims(1+j)),1);
                    pdf=pdf+sum(gammaln(cts2+1/dims(1+j)),1);
                    pdf=pdf-gammaln(sum(cts2,1)+1);
                    pdf=exp(pdf);
+                   pdf=pdf/sum(pdf); %normalize
 
                    %pick new table
-                   nextRes=rList(multi(pdf));
+                   next=multi(pdf);
+                   nextRes=rList(next);
+                   p=pdf(next);
+                   LL=LL+log(p); %increment log-likelihood
+                   ent=ent+entropy(p); %increment entropy
                    
                    if nextRes==newRes
                        new=1;

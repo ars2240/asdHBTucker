@@ -1,5 +1,5 @@
 %draws core p(z|x) with conditional prior
-function p = drawCoreCon(samps,paths,coreDims,L,r)
+function [phi,p] = drawCoreCon(samps,paths,coreDims,L,r)
     %samps = rows with x, y, z values for specific x
     %path = row with tree path values for specific x
     %coreDims = dimensions of core tensor
@@ -27,11 +27,12 @@ function p = drawCoreCon(samps,paths,coreDims,L,r)
     prior{2}=prior{2}+repelem(1/L(2),L(2)); 
 
     %draw values from dirichlet distribution with prior
-    vals{1}=drchrnd(prior{1},1);
-    vals{2}=drchrnd(prior{2},1);
+    [vals{1},p1]=drchrnd(prior{1},1);
+    [vals{2},p2]=drchrnd(prior{2},1);
 
     %set values
     prob{1}(res{1})=vals{1};
     prob{2}(res{2})=vals{2};
-    p=prob{1}'*prob{2};
+    phi=prob{1}'*prob{2};
+    p=[p1;p2];
 end

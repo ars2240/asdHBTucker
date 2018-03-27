@@ -1,7 +1,7 @@
 Simulink Project: asdHBTucker
 
 Author: Adam Sandler
-Date: 3/25/18
+Date: 3/27/18
 
 Files:
 - AsdHBTucker.prj- Simulink Project file
@@ -17,6 +17,7 @@ Files:
 - drawZsc.c- C version of drawZs function
 - drchrnd.m- generates probabilities from the Dirichlet distribution
 - elems.m- returns all values between two vectors
+- entropy.m- calculates entropy of probability vector
 - init_options.m- option initialization
 - logisticReg.m- uses a logistic regression model to learn & predict ASD
 - multi.m- draws a single sample from the multinomial distribution

@@ -1,6 +1,15 @@
-function r = drchrnd(a,n)
+function [r, p] = drchrnd(a,n)
     %take n samples from a dirichlet distribution with prior a
-    p = length(a);
-    r = gamrnd(repmat(a,n,1),1,n,p);
-    r = r ./ repmat(sum(r,2),1,p);
+    
+    l = length(a);
+    A = repmat(a,n,1);
+    r = gamrnd(A,1,n,l);
+    d = repmat(sum(r,2),1,l);
+    
+    %calculate pdf
+    p = gampdf(r,A,1);
+    p = sum(p,2);
+    
+    %normalize
+    r = r ./ d;
 end

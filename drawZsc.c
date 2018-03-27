@@ -18,18 +18,19 @@
 #include <stdlib.h>
 #include <time.h>
 
-void drawZsc(double *sampIn, double *sampOut, size_t sampCols,
+void drawZsc(double *sampIn, double *sampOut, double *p, size_t sampCols,
         size_t sampRows, double *phi, double *psi1, double *psi2,
-        double *r1, double *r2, size_t r1Size,const mwSize *phiDims,
+        double *r1, double *r2, size_t r2Size,const mwSize *phiDims,
         const mwSize *psi1Dims, const mwSize *psi2Dims);
 double get_random();
-int multi(double *pdf, double sum, int size);
+void normalize(double *pdf, double sum, int size);
+int multi(double *pdf, int size);
 void mexFunction(int nlhs, mxArray *plhs[],
         int nrhs, const mxArray *prhs[]);
 /* The computational routine */
-void drawZsc(double *sampIn, double *sampOut, size_t sampCols,
+void drawZsc(double *sampIn, double *sampOut, double *p, size_t sampCols,
         size_t sampRows, double *phi, double *psi1, double *psi2,
-        double *r1, double *r2, size_t r1Size,const mwSize *phiDims,
+        double *r1, double *r2, size_t r2Size,const mwSize *phiDims,
         const mwSize *psi1Dims, const mwSize *psi2Dims)
 {
     int j;
@@ -47,8 +48,8 @@ void drawZsc(double *sampIn, double *sampOut, size_t sampCols,
         // find z in restaurant list
         i = 0;
         int found = 0;
-        while(i<r1Size && found==0){
-            if(r1[i]==z){
+        while(i<r2Size && found==0){
+            if(r2[i]==z){
                 found = 1;
                 z = i+1;
             } else{
@@ -72,8 +73,11 @@ void drawZsc(double *sampIn, double *sampOut, size_t sampCols,
         // draw new z
         if(sum==0){
             z = 1;
+            p[2*j] = 1.0;
         } else{
-            z = multi(pdf1,sum,size);
+            normalize(pdf1,sum,size);
+            z = multi(pdf1,size);
+            p[2*j] = pdf1[z-1];
         }
         //free(pdf1);
 
@@ -95,8 +99,11 @@ void drawZsc(double *sampIn, double *sampOut, size_t sampCols,
         // draw new z
         if(sum==0){
             z = 1;
+            p[2*j+1] = 1.0;
         } else{
-            z = multi(pdf2,sum,size);
+            normalize(pdf2,sum,size);
+            z = multi(pdf2,size);
+            p[2*j+1] = pdf2[z-1];
         }
         //free(pdf2);
 
@@ -110,17 +117,21 @@ double get_random() {
     return ((double)rand() / (double)RAND_MAX);
 }
 
-/* generates single value from multinomial pdf
-  pdf = vector of probabilities
-  x = sample */
-int multi(double *pdf, double sum, int size){
-    double cdf[size];
-    int x, i;
+//normalizes pdf
+void normalize(double *pdf, double sum, int size){
+    int i;
     
-    // normalize
     for(i=0; i<size; i++){
         pdf[i] = pdf[i]/sum;
     }
+}
+
+/* generates single value from multinomial pdf
+  pdf = vector of probabilities
+  x = sample */
+int multi(double *pdf, int size){
+    double cdf[size];
+    int x, i;
     
     // compute cdf
     cdf[0]=pdf[0];
@@ -153,11 +164,11 @@ void mexFunction(int nlhs, mxArray *plhs[],
                  int nrhs, const mxArray *prhs[])
 {
     /* variable declarations */
-    double *sIn, *sOut; // sample row
+    double *sIn, *sOut, *prob; // sample row
     double *core; // tucker decomposition tensor core tensor
     double *aux1, *aux2; // tucker decomposition matrices
     double *res1, *res2; // restaurant lists
-    size_t ncols, nrows, res1Size; // number of columns of sample
+    size_t ncols, nrows, res2Size; // number of columns of sample
     const mwSize *coreDims, *aux1Dims, *aux2Dims;
     
     /* Check number of inputs and outputs */
@@ -165,9 +176,9 @@ void mexFunction(int nlhs, mxArray *plhs[],
         mexErrMsgIdAndTxt("MyToolbox:arrayProduct:nrhs",
                           "Four inputs required.");
     }
-    if(nlhs != 1) {
+    if(nlhs != 2) {
         mexErrMsgIdAndTxt("MyToolbox:arrayProduct:nlhs",
-                          "One output required.");
+                          "Two outputs required.");
     }
     
     sIn = mxGetPr(prhs[0]);
@@ -180,16 +191,18 @@ void mexFunction(int nlhs, mxArray *plhs[],
     aux2 = mxGetPr(mxGetCell(prhs[2],1));
     aux2Dims = mxGetDimensions(mxGetCell(prhs[2],1));
     res1 = mxGetPr(mxGetCell(prhs[3],0));
-    res1Size = mxGetN(mxGetCell(prhs[3],0));
+    res2Size = mxGetN(mxGetCell(prhs[3],1));
     res2 = mxGetPr(mxGetCell(prhs[3],1));
     
     /* create the output matrix */
     plhs[0] = mxCreateDoubleMatrix((mwSize)nrows,(mwSize)ncols,mxREAL);
+    plhs[1] = mxCreateDoubleMatrix(2*nrows,1,mxREAL);
 
     /* get a pointer to the real data in the output matrix */
     sOut = mxGetPr(plhs[0]);
+    prob = mxGetPr(plhs[1]);
     
     /* call the computational routine */
-    drawZsc(sIn,sOut,ncols,nrows,core,aux1,aux2,res1,res2,res1Size,coreDims,
-            aux1Dims,aux2Dims);
+    drawZsc(sIn,sOut,prob,ncols,nrows,core,aux1,aux2,res1,res2,res2Size,
+            coreDims,aux1Dims,aux2Dims);
 }
