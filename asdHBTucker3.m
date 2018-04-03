@@ -5,11 +5,14 @@ function [phi, psi ,tree] = asdHBTucker3(x,options)
     % = P(mode 2 | topic 2) P(mode 3| topic 3) P(topic 2, topic 3| mode 1)
     %x = counting tensor to be decomposed
     %options = 
-    % options.par = whether or not z's are computed in parallel
-    % options.time = whether or not time is printed
-    % options.maxIter = number of Gibbs sample iterations
-    % options.gam = hyper parameter(s) of CRP
-    % options.L = levels of hierarchical trees
+    % par = whether or not z's are computed in parallel
+    % time = whether or not time is printed
+    % print = whether or not loglikelihood & perplexity are printed
+    % freq = how frequent loglikelihood & perplexity are printed
+    % maxIter = number of Gibbs sample iterations
+    % gam = hyper parameter(s) of CRP
+    % L = levels of hierarchical trees
+    % prior = value to add to prior
     
     tStart=tic;
     dims=size(x); %dimensions of tensor
@@ -117,19 +120,20 @@ function [phi, psi ,tree] = asdHBTucker3(x,options)
     psi=cell(2,1); %initialize
     for i=2:3
         %draw values from dirichlet distribution with uniform prior
-        [psiT,p]=drchrnd(repelem(1/dims(i),dims(i)),coreDims(i));
+        a=repelem(1/dims(i)+options.prior,dims(i));
+        [psiT,p]=drchrnd(a,coreDims(i),options);
         psi{i-1}=psiT';
-        LL=LL+sum(log(p));
-        ent=ent+entropy(p);
+        LL=LL+sum(p);
+        ent=ent+entropy(exp(p));
     end
     matTime=toc(matStart);
     
     coreStart=tic;
     for i=1:dims(1)
         %draw core tensor p(z|x)
-        [phi(i,:,:),p]=drawCoreUni(paths(i,:),coreDims,L,r);
-        LL=LL+sum(log(p));
-        ent=ent+entropy(p);
+        [phi(i,:,:),p]=drawCoreUni(paths(i,:),coreDims,L,r,options);
+        LL=LL+sum(p);
+        ent=ent+entropy(exp(p));
     end
     coreTime=toc(coreStart);
     
@@ -138,7 +142,9 @@ function [phi, psi ,tree] = asdHBTucker3(x,options)
     zStart=tic;
     switch options.par
         case 1
-            samples=drawZscPar(samples,phi,psi,r);
+            [samples,p]=drawZscPar(samples,phi,psi,r);
+            LL=LL+sum(log(p));
+            ent=ent+entropy(p);
         otherwise
             [samples,p]=drawZsc(samples,phi,psi,r);
             LL=LL+sum(log(p));
@@ -185,13 +191,13 @@ function [phi, psi ,tree] = asdHBTucker3(x,options)
             for j=1:coreDims(i)
                 %draw values from dirichlet distribution with uniform prior
                 %plus counts of occurances of both y & z
-                pdf=repelem(1/dim,dim);
+                pdf=repelem(1/dim+options.prior,dim);
                 if loc(j)~=0
                     pdf=pdf+histc(samps{loc(j)}(:,i)',1:dim);
                 end
-                [psiT(:,j),p]=drchrnd(pdf,1);
-                LL=LL+log(p);
-                ent=ent+entropy(p);
+                [psiT(:,j),p]=drchrnd(pdf,1,options);
+                LL=LL+sum(p);
+                ent=ent+entropy(exp(p));
             end
             psi{i-1}=psiT;
         end
@@ -204,9 +210,9 @@ function [phi, psi ,tree] = asdHBTucker3(x,options)
         samps=accumarray(ir,1:size(samples,1),[],@(r){samples(r,:)});
         for i=1:dims(1)
             %redraw core tensor p(z|x)
-            [phi(i,:,:),p]=drawCoreCon(samps{i},paths(i,:),coreDims,L,r);
-            LL=LL+sum(log(p));
-            ent=ent+entropy(p);
+            [phi(i,:,:),p]=drawCoreCon(samps{i},paths(i,:),coreDims,L,r,options);
+            LL=LL+sum(p);
+            ent=ent+entropy(exp(p));
         end
         coreTime=coreTime+toc(coreStart);
 
@@ -214,7 +220,9 @@ function [phi, psi ,tree] = asdHBTucker3(x,options)
         zStart=tic;
         switch options.par
             case 1
-                samples=drawZscPar(samples,phi,psi,r);
+                [samples,p]=drawZscPar(samples,phi,psi,r);
+                LL=LL+sum(log(p));
+                ent=ent+entropy(p);
             otherwise
                 [samples,p]=drawZsc(samples,phi,psi,r);
                 LL=LL+sum(log(p));

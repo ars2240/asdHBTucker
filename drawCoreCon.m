@@ -1,10 +1,12 @@
 %draws core p(z|x) with conditional prior
-function [phi,p] = drawCoreCon(samps,paths,coreDims,L,r)
+function [phi,p] = drawCoreCon(samps,paths,coreDims,L,r,options)
     %samps = rows with x, y, z values for specific x
     %path = row with tree path values for specific x
     %coreDims = dimensions of core tensor
     %L = levels of hierarchical tree
     %r = restaurant lists
+    %options = 
+    % prior = value to add to prior
 
     %initialize probability vectors
     prob{1}=zeros(1,coreDims(2));
@@ -23,12 +25,12 @@ function [phi,p] = drawCoreCon(samps,paths,coreDims,L,r)
     prior{2}=histc(samps(:,5)',res{2}); %calculate counts
 
     %add prior to uniform prior
-    prior{1}=prior{1}+repelem(1/L(1),L(1));
-    prior{2}=prior{2}+repelem(1/L(2),L(2)); 
+    prior{1}=prior{1}+repelem(1/L(1)+options.prior,L(1));
+    prior{2}=prior{2}+repelem(1/L(2)+options.prior,L(2)); 
 
     %draw values from dirichlet distribution with prior
-    [vals{1},p1]=drchrnd(prior{1},1);
-    [vals{2},p2]=drchrnd(prior{2},1);
+    [vals{1},p1]=drchrnd(prior{1},1,options);
+    [vals{2},p2]=drchrnd(prior{2},1,options);
 
     %set values
     prob{1}(res{1})=vals{1};

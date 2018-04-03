@@ -1,9 +1,11 @@
 %draws core p(z|x) with uniform prior
-function [phi,p] = drawCoreUni(paths,coreDims,L,r)
+function [phi,p] = drawCoreUni(paths,coreDims,L,r,options)
     %path = row with tree path values for specific x
     %coreDims = dimensions of core tensor
     %L = levels of hierarchical tree
     %r = restaurant lists
+    %options = 
+    % prior = value to add to prior
     
     %initialize probability vectors
     prob{1}=zeros(1,coreDims(2));
@@ -16,8 +18,8 @@ function [phi,p] = drawCoreUni(paths,coreDims,L,r)
     res{2}=find(ismember(r{2},res{2}));
 
     %draw values from dirichlet distribution with uniform prior
-    [vals{1},p1]=drchrnd(repelem(1/L(1),L(1)),1);
-    [vals{2},p2]=drchrnd(repelem(1/L(2),L(2)),1);
+    [vals{1},p1]=drchrnd(repelem(1/L(1)+options.prior,L(1)),1,options);
+    [vals{2},p2]=drchrnd(repelem(1/L(2)+options.prior,L(2)),1,options);
 
     %set values
     prob{1}(res{1})=vals{1};
