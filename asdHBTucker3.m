@@ -12,7 +12,6 @@ function [phi, psi ,tree] = asdHBTucker3(x,options)
     % maxIter = number of Gibbs sample iterations
     % gam = hyper parameter(s) of CRP
     % L = levels of hierarchical trees
-    % prior = value to add to prior
     
     tStart=tic;
     dims=size(x); %dimensions of tensor
@@ -120,8 +119,7 @@ function [phi, psi ,tree] = asdHBTucker3(x,options)
     psi=cell(2,1); %initialize
     for i=2:3
         %draw values from dirichlet distribution with uniform prior
-        a=repelem(1/dims(i)+options.prior,dims(i));
-        [psiT,p]=drchrnd(a,coreDims(i),options);
+        [psiT,p]=drchrnd(repelem(1/dims(i),dims(i)),coreDims(i),options);
         psi{i-1}=psiT';
         LL=LL+sum(p);
         ent=ent+entropy(exp(p));
@@ -191,7 +189,7 @@ function [phi, psi ,tree] = asdHBTucker3(x,options)
             for j=1:coreDims(i)
                 %draw values from dirichlet distribution with uniform prior
                 %plus counts of occurances of both y & z
-                pdf=repelem(1/dim+options.prior,dim);
+                pdf=repelem(1/dim,dim);
                 if loc(j)~=0
                     pdf=pdf+histc(samps{loc(j)}(:,i)',1:dim);
                 end

@@ -18,6 +18,7 @@ options.freq = 100;
 options.gam = 0.5;
 options.L = 2;
 options.prior = 0;
-options.tol = eps();
+options.tol = 0;
+options.minA = 0.1;
 
 end

@@ -8,6 +8,6 @@ options=init_options();
 options.par=0;
 options.maxIter = 10;
 options.freq = 1;
-% options.prior = .01;
+% options.prior = 10;
 [phi, psi, tree]=asdHBTucker3(asd,options);
 save('asdHBTucker.mat','phi','psi','tree');

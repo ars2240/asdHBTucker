@@ -1,7 +1,7 @@
 Simulink Project: asdHBTucker
 
 Author: Adam Sandler
-Date: 3/27/18
+Date: 4/7/18
 
 Files:
 - AsdHBTucker.prj- Simulink Project file
@@ -23,3 +23,4 @@ Files:
 - multi.m- draws a single sample from the multinomial distribution
 - opt.m- separate file that computes tests for our optimization problem
 - redrawTree.c- draws the tree from the CRP
+- rgamma.c- samples small-shape gamma RVs via accept-reject
