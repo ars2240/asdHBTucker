@@ -1,7 +1,7 @@
 function x = rgamma(A,B,r,c,options)
     % samples small-shape gamma RVs via accept-reject
     % based on paper - arXiv:1302.1884
-    % A,B = parameters of gamma distribution
+    % A,B = parameters of gamma distribution (shape, scale)
     % r,c = rows and columns of output array
     % x = log of RNs drawn from gamma dist
     % options = 
@@ -31,10 +31,10 @@ function x = rgamma(A,B,r,c,options)
                 x(i,j)=log(gamrnd(A(i,j),B(i,j),1,1));
             else
                 Z(i,j)=rh(A(i,j));
+                x(i,j)=log(B(i,j))-Z(i,j)/A(i,j);
             end
         end
     end
-    x = log(1./B)-Z./A;
 end
 
 function x = eta(z,w,L)
@@ -61,7 +61,7 @@ function z = rh(a)
         else
             z=log(rand)/L;
         end
-        if h(z,a)/eta(z,w,L)>rand
+        if (h(z,a)/eta(z,w,L))>rand
             con=0;
         end
     end

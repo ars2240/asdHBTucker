@@ -9,6 +9,8 @@ function [ options ] = init_options( )
 % L = levels of hierarchical trees
 % prior = value to add to prior
 % tol = tolerance for zeros of dirichlet distribution
+% minA = all A's above this value will be drawn normally
+% topicModel = type of hierarchical tree
 
 options.par = 1;
 options.time = 1;
@@ -20,5 +22,6 @@ options.L = 2;
 options.prior = 0;
 options.tol = 0;
 options.minA = 0.1;
+options.topicModel = 'IndepTrees';
 
 end

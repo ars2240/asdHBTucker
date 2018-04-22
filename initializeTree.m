@@ -1,4 +1,19 @@
-function [paths,tree,r,LL,ent]= initializeTree(L,dims,gam,LL,ent)
+function [paths,tree,r,LL,ent]= initializeTree(L,dims,gam)
+    %Initializes hierarchical tree from the CRP
+    %Inputs
+    % L = levels of hierarchical tree
+    % dims = dimensions of tensor
+    % gam = hyper parameter of CRP
+    %Outputs
+    % path = tree paths
+    % tree = hierarchical tree
+    % r = restaurant lists
+    % LL = log-likelihood
+    % ent = entropy
+    
+    LL=0; %initialize log-likelihood
+    ent=0; %initialize entropy
+    
     paths=zeros(dims(1),sum(L));
     paths(:,1)=1; %sit at root table
     paths(:,1+L(1))=1; %sit at root table

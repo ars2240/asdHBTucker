@@ -22,7 +22,6 @@ void drawZsc(double *sampIn, double *sampOut, double *p, size_t sampCols,
         size_t sampRows, double *phi, double *psi1, double *psi2,
         double *r1, double *r2, size_t r2Size,const mwSize *phiDims,
         const mwSize *psi1Dims, const mwSize *psi2Dims);
-double get_random();
 void normalize(double *pdf, double sum, int size);
 int multi(double *pdf, int size);
 void mexFunction(int nlhs, mxArray *plhs[],
@@ -34,6 +33,7 @@ void drawZsc(double *sampIn, double *sampOut, double *p, size_t sampCols,
         const mwSize *psi1Dims, const mwSize *psi2Dims)
 {
     int j;
+    srand48(time(NULL)); // randomize seed
     for(j=0; j<sampRows; j++){
         int x = sampIn[0*sampRows+j]; //get evidence variable
         int y = sampIn[1*sampRows+j]; //get response variable
@@ -111,12 +111,6 @@ void drawZsc(double *sampIn, double *sampOut, double *p, size_t sampCols,
     }
 }
 
-// generate random uniform number
-double get_random() {
-    srand((int)time(NULL));
-    return ((double)rand() / (double)RAND_MAX);
-}
-
 //normalizes pdf
 void normalize(double *pdf, double sum, int size){
     int i;
@@ -140,8 +134,7 @@ int multi(double *pdf, int size){
     }
     
     double n = 0;
-    srand(time(NULL)); // randomize seed
-    n = get_random(); // get uniform random variable
+    n = drand48(); // get uniform random variable
     
     // find bin that n is in
     i = 0;

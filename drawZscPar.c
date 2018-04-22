@@ -25,14 +25,14 @@ void drawZsc(double *sampIn, double *sampOut, double *p, size_t sampCols,
         size_t sampRows, double *phi, double *psi1, double *psi2,
         double *r1, double *r2, size_t r2Size,const mwSize *phiDims,
         const mwSize *psi1Dims, const mwSize *psi2Dims);
-void drawZ(double *sampIn, double *sampOut, double *p, size_t sampCols,
+void drawZ(int j, double *sampIn, double *sampOut, double *p, size_t sampCols,
         size_t sampRows, double *phi, double *psi1, double *psi2,
         double *r1, double *r2, size_t r2Size,const mwSize *phiDims,
         const mwSize *psi1Dims, const mwSize *psi2Dims);
-double get_random();
-int multi(double *pdf, double sum, int size);
+int multi(double *pdf, int size);
 void mexFunction(int nlhs, mxArray *plhs[],
         int nrhs, const mxArray *prhs[]);
+void normalize(double *pdf, double sum, int size);
 
 void drawZsc(double *sampIn, double *sampOut, double *p, size_t sampCols,
         size_t sampRows, double *phi, double *psi1, double *psi2,
@@ -43,13 +43,14 @@ void drawZsc(double *sampIn, double *sampOut, double *p, size_t sampCols,
     
     #pragma omp parallel for private(j)
     for(j=0; j<sampRows; j++){
+        srand48(time(NULL)+omp_get_thread_num()); // randomize seed
         drawZ(j,sampIn,sampOut,p,sampCols,sampRows,phi,psi1,psi2,r1,r2,
             r2Size,phiDims,psi1Dims,psi2Dims);  
     }
     
 }
 
-void drawZ(double *sampIn, double *sampOut, double *p, size_t sampCols,
+void drawZ(int j, double *sampIn, double *sampOut, double *p, size_t sampCols,
         size_t sampRows, double *phi, double *psi1, double *psi2,
         double *r1, double *r2, size_t r2Size,const mwSize *phiDims,
         const mwSize *psi1Dims, const mwSize *psi2Dims)
@@ -129,12 +130,6 @@ void drawZ(double *sampIn, double *sampOut, double *p, size_t sampCols,
     sampOut[4*sampRows+j] = r2[z-1]; //set topic
 }
 
-// generate random uniform number
-double get_random() {
-    srand(time(NULL)); // randomize seed
-    return ((double)rand() / (double)RAND_MAX);
-}
-
 //normalizes pdf
 void normalize(double *pdf, double sum, int size){
     int i;
@@ -158,8 +153,7 @@ int multi(double *pdf, int size){
     }
     
     double n = 0;
-    srand(time(NULL)); // randomize seed
-    n = get_random(); // get uniform random variable
+    n = drand48(); // get uniform random variable
     
     // find bin that n is in
     i = 0;

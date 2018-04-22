@@ -14,6 +14,9 @@ function [phi, psi ,tree] = asdHBTucker3(x,options)
     % L = levels of hierarchical trees
     
     tStart=tic;
+    
+    rng('shuffle'); %seed RNG
+    
     dims=size(x); %dimensions of tensor
     
     gam=options.gam;
@@ -48,7 +51,16 @@ function [phi, psi ,tree] = asdHBTucker3(x,options)
     
     %initialize tree
     treeStart=tic;
-    [paths,tree,r,LL,ent]=initializeTree(L,dims,gam,LL,ent);
+    switch options.topicModel
+        case 'IndepTrees'
+            [paths,tree,r,LLtree,entTree]=initializeTree(L,dims,gam);
+        case 'PAM'
+            
+        otherwise
+            error('Error. \nNo topic model type selected');
+    end
+    LL=LL+LLtree;
+    ent=ent+entTree;
     treeTime=toc(treeStart);
     
     %calculate dimensions of core
@@ -179,7 +191,15 @@ function [phi, psi ,tree] = asdHBTucker3(x,options)
         
         %redraw tree
         treeStart=tic;
-        [samples,paths,tree,r,LLtree,entTree] = redrawTree(dims,samples,paths,L,tree,r,gam);
+        switch options.topicModel
+            case 'IndepTrees'
+                [samples,paths,tree,r,LLtree,entTree] = redrawTree(dims,...
+                    samples,paths,L,tree,r,gam);
+            case 'PAM'
+
+            otherwise
+                error('Error. \nNo topic model type selected');
+        end
         LL=LL+LLtree;
         ent=ent+entTree;
         treeTime=treeTime+toc(treeStart);

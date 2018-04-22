@@ -43,9 +43,11 @@ for i=1:nFolds
     logReg=glmfit(cvTrainPhi,cvTrainASD,'binomial');
     
     %prediction
+    %pred=glmval(logReg,cvTrainPhi,'logit');
     pred=glmval(logReg,cvTestPhi,'logit');
     
     %compute AUC of ROC curve
+    %[~,~,~,AUC(i)]=perfcurve(cvTrainASD,pred,1);
     [~,~,~,AUC(i)]=perfcurve(cvTestASD,pred,1);
 end
 
