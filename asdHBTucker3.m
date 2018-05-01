@@ -60,6 +60,10 @@ function [phi, psi ,tree] = asdHBTucker3(x,options)
             
         case 'None'
             paths=repmat([1:L(1),1:L(2)],dims(1),1);
+            r=cell(2,1); %initialize
+            r{1}=1:L(1);
+            r{2}=1:L(2);
+            tree=cell(2,1); %initialize
             LLtree=0;
             entTree=0;
         otherwise

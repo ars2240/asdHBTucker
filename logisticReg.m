@@ -24,6 +24,7 @@ nFolds=5; %set number of folds
 nTrain=sum(ind); %size of training set
 cvInd=crossvalind('Kfold',nTrain,nFolds); %split data into k folds
 AUC=zeros(nFolds,1); %initialize AUC vector
+AUCtr=zeros(nFolds,1); %initialize AUC vector
 
 %disable certain warnings
 warning off stats:glmfit:IterationLimit;
@@ -43,11 +44,11 @@ for i=1:nFolds
     logReg=glmfit(cvTrainPhi,cvTrainASD,'binomial');
     
     %prediction
-    %pred=glmval(logReg,cvTrainPhi,'logit');
+    predtr=glmval(logReg,cvTrainPhi,'logit');
     pred=glmval(logReg,cvTestPhi,'logit');
     
     %compute AUC of ROC curve
-    %[~,~,~,AUC(i)]=perfcurve(cvTrainASD,pred,1);
+    [~,~,~,AUCtr(i)]=perfcurve(cvTrainASD,predtr,1);
     [~,~,~,AUC(i)]=perfcurve(cvTestASD,pred,1);
 end
 
@@ -58,8 +59,14 @@ warning on MATLAB:nearlySingularMatrix;
 
 %t-test that mean AUC = 0.5
 [~,p]=ttest(AUC,.5);
+[~,ptr]=ttest(AUCtr,.5);
 
 %print values
+fprintf('Test set\n');
 fprintf('Mean AUC = %1.4f\n',mean(AUC));
 fprintf('StDev AUC = %1.4f\n',std(AUC));
 fprintf('p-value = %1.4f\n',p);
+fprintf('Training set\n');
+fprintf('Mean AUC = %1.4f\n',mean(AUCtr));
+fprintf('StDev AUC = %1.4f\n',std(AUCtr));
+fprintf('p-value = %1.4f\n',ptr);
