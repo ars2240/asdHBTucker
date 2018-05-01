@@ -47,6 +47,8 @@ function [phi, psi ,tree] = asdHBTucker3(x,options)
     v=x(s(:,1),s(:,2),s(:,3)); %get nonzero values
     v=v.vals; %extract values
     samples(:,1:3)=repelem(s,v,1); %set samples
+    %[~,xStarts]=unique(samples(:,1));
+    %xEnds=[xStarts(2:length(xStarts))-1;size(samples,1)];
     sampTime=toc(sStart);
     
     %initialize tree
@@ -56,6 +58,10 @@ function [phi, psi ,tree] = asdHBTucker3(x,options)
             [paths,tree,r,LLtree,entTree]=initializeTree(L,dims,gam);
         case 'PAM'
             
+        case 'None'
+            paths=repmat([1:L(1),1:L(2)],dims(1),1);
+            LLtree=0;
+            entTree=0;
         otherwise
             error('Error. \nNo topic model type selected');
     end
@@ -71,29 +77,31 @@ function [phi, psi ,tree] = asdHBTucker3(x,options)
        coreDims(i+1)=length(r{i});
     end
     
-    %initialize tucker decomposition
-    %core tensor
-    phi=zeros(coreDims(1),coreDims(2),coreDims(3));
-    
     %draw matrices p(y|z)
     matStart=tic;
     psi=cell(2,1); %initialize
     for i=2:3
         %draw values from dirichlet distribution with uniform prior
-        [psiT,p]=drchrnd(repelem(1/dims(i),dims(i)),coreDims(i),options);
+        switch options.pType
+            case 0
+                prior=repelem(1/dims(i),dims(i));
+            case 1
+                prior=repelem(1,dims(i));
+            otherwise
+                error('Error. \nNo prior type selected');
+        end
+        [psiT,p]=drchrnd(prior,coreDims(i),options);
         psi{i-1}=psiT';
         LL=LL+sum(p);
         ent=ent+entropy(exp(p));
     end
     matTime=toc(matStart);
     
+    %draw core tensor p(z|x)
     coreStart=tic;
-    for i=1:dims(1)
-        %draw core tensor p(z|x)
-        [phi(i,:,:),p]=drawCoreUni(paths(i,:),coreDims,L,r,options);
-        LL=LL+sum(p);
-        ent=ent+entropy(exp(p));
-    end
+    [phi,p]=drawCoreUni(paths,coreDims,L,r,options);
+    LL=LL+sum(p);
+    ent=ent+entropy(exp(p));
     coreTime=toc(coreStart);
     
     %save('asd.mat','phi','psi','r','samples');
@@ -132,9 +140,6 @@ function [phi, psi ,tree] = asdHBTucker3(x,options)
            coreDims(i+1)=length(r{i});
         end
 
-        %reinitialize tucker decomposition
-        %core tensor
-        phi=zeros(coreDims(1),coreDims(2),coreDims(3));
         %matrices
         psi{1}=zeros(dims(2),coreDims(2));
         psi{2}=zeros(dims(3),coreDims(3));
@@ -150,11 +155,18 @@ function [phi, psi ,tree] = asdHBTucker3(x,options)
             for j=1:coreDims(i)
                 %draw values from dirichlet distribution with uniform prior
                 %plus counts of occurances of both y & z
-                pdf=repelem(1/dim,dim);
-                if loc(j)~=0
-                    pdf=pdf+histc(samps{loc(j)}(:,i)',1:dim);
+                switch options.pType
+                    case 0
+                        prior=repelem(1/dim,dim);
+                    case 1
+                        prior=repelem(1,dim);
+                    otherwise
+                        error('Error. \nNo prior type selected');
                 end
-                [psiT(:,j),p]=drchrnd(pdf,1,options);
+                if loc(j)~=0
+                    prior=prior+histc(samps{loc(j)}(:,i)',1:dim);
+                end
+                [psiT(:,j),p]=drchrnd(prior,1,options);
                 LL=LL+sum(p);
                 ent=ent+entropy(exp(p));
             end
@@ -165,14 +177,10 @@ function [phi, psi ,tree] = asdHBTucker3(x,options)
         %redraw core tensor p(z|x)
         %subset to get samples with x
         coreStart=tic;
-        [~,~,ir]=unique(samples(:,1));
-        samps=accumarray(ir,1:size(samples,1),[],@(r){samples(r,:)});
-        for i=1:dims(1)
-            %redraw core tensor p(z|x)
-            [phi(i,:,:),p]=drawCoreCon(samps{i},paths(i,:),coreDims,L,r,options);
-            LL=LL+sum(p);
-            ent=ent+entropy(exp(p));
-        end
+        %redraw core tensor p(z|x)
+        [phi,p]=drawCoreCon(samples,paths,coreDims,L,r,options);
+        LL=LL+sum(p);
+        ent=ent+entropy(exp(p));
         coreTime=coreTime+toc(coreStart);
 
         %redraw latent topic z's
@@ -196,7 +204,10 @@ function [phi, psi ,tree] = asdHBTucker3(x,options)
                 [samples,paths,tree,r,LLtree,entTree] = redrawTree(dims,...
                     samples,paths,L,tree,r,gam);
             case 'PAM'
-
+                
+            case 'None'
+                LLtree=0;
+                entTree=0;
             otherwise
                 error('Error. \nNo topic model type selected');
         end

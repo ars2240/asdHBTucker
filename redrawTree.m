@@ -18,7 +18,7 @@ function [samples,paths,tree,r,LL,ent] = redrawTree(dims,samples,paths,L,tree,r,
        
        col=(j-1)*L(1); %starting column
        
-       for i=1:dims(1)
+       for i=randperm(dims(1))
            curRes=1; %set current restaurant as root
 
            new=0; %set boolean for new table to false

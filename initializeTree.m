@@ -23,7 +23,7 @@ function [paths,tree,r,LL,ent]= initializeTree(L,dims,gam)
        tree{i}{1}=[];
        r{i}=1;
        col=(i-1)*L(1);
-       for j=1:dims(1)
+       for j=randperm(dims(1))
            curRes=1; %restaurant
            for k=2:L(i)
                

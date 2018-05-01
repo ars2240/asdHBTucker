@@ -1,39 +1,53 @@
 %draws core p(z|x) with conditional prior
-function [phi,p] = drawCoreCon(samps,paths,coreDims,L,r,options)
-    %samps = rows with x, y, z values for specific x
-    %path = row with tree path values for specific x
+function [phi,p] = drawCoreCon(samples,paths,coreDims,L,r,options)
+    %sampless = rows with x, y, z values
+    %path = row with tree path values
     %coreDims = dimensions of core tensor
     %L = levels of hierarchical tree
     %r = restaurant lists
     %options = passed to drchrnd
+    
+    %initialize tucker decomposition
+    %core tensor
+    phi=zeros(coreDims(1),coreDims(2),coreDims(3));
 
-    %initialize probability vectors
-    prob{1}=zeros(1,coreDims(2));
-    prob{2}=zeros(1,coreDims(3));
+    %get counts
+    cts=accumarray(samples(:,[4 5 1]),1);
+    while max(r{1})>size(cts,1)
+        cts=padarray(cts,[1 0 0],'post');
+    end
+    while max(r{2})>size(cts,2)
+        cts=padarray(cts,[0 1 0],'post');
+    end
+    cts=cts(r{1},r{2},:);
+    
+    len = L(1)*L(2); %size of z-space
+    
+    p = zeros(1,coreDims(1)); %initialize probability matrix
+    
+    for i=1:coreDims(1)
+        %get restaurants for patient
+        res{1}=paths(i,1:L(1));
+        res{1}=ismember(r{1},res{1});
+        res{2}=paths(i,(1+L(1)):(L(1)+L(2)));
+        res{2}=ismember(r{2},res{2});
 
-    %get restaurants for patient
-    res{1}=paths(1:L(1));
-    res{1}=find(ismember(r{1},res{1}));
-    res{2}=paths((1+L(1)):(L(1)+L(2)));
-    res{2}=find(ismember(r{2},res{2}));
+        %add prior to uniform prior
+        switch options.pType
+            case 0
+                prior=repelem(1/len,len);
+            case 1
+                prior=repelem(1,len);
+            otherwise
+                error('Error. \nNo prior type selected');
+        end
+        prior=prior+reshape(cts(res{1},res{2},i),[1,len]);
 
-    %get topics and locations in restaurant
-    prior{1}=histc(samps(:,4)',res{1}); %calculate counts
+        %draw values from dirichlet distribution with prior
+        [vals,p(i)]=drchrnd(prior,1,options);
 
-    %get topics and locations in restaurant
-    prior{2}=histc(samps(:,5)',res{2}); %calculate counts
-
-    %add prior to uniform prior
-    prior{1}=prior{1}+repelem(1/L(1),L(1));
-    prior{2}=prior{2}+repelem(1/L(2),L(2)); 
-
-    %draw values from dirichlet distribution with prior
-    [vals{1},p1]=drchrnd(prior{1},1,options);
-    [vals{2},p2]=drchrnd(prior{2},1,options);
-
-    %set values
-    prob{1}(res{1})=vals{1};
-    prob{2}(res{2})=vals{2};
-    phi=prob{1}'*prob{2};
-    p=[p1;p2];
+        %set values
+        phi(i,res{1},res{2})=reshape(vals,[L(1),L(2)]);
+    end
+    
 end
