@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.io
 from scipy import interp
+from scipy import stats
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_curve, auc
 from sklearn.model_selection import StratifiedKFold
@@ -32,7 +33,7 @@ y[1::2] = 0
 # split set into training & test sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=12345)
 
-lam_v = [.000001, .001, 1, 1000, 1000000]
+lam_v = [1E-9, 1E-6, 1E-3, 1, 1E3, 1E6, 1E9]
 
 # #############################################################################
 # Classification and ROC analysis
@@ -84,4 +85,7 @@ for lam in lam_v:
     plt.legend(loc="lower right", prop={'size': 6})
     plt.savefig('plots/logreg_AUC_' + str(lam) + '.png')
 
-    print(r'Lambda = %10.5f, Mean ROC (AUC = %0.2f $\pm$ %0.2f)' % (lam, mean_auc, std_auc))
+    results = stats.ttest_1samp(aucs, popmean=0.5)
+    p_val = results[1]
+
+    print(r'Lambda = %6.3e, Mean ROC (AUC = %0.4f $\pm$ %0.4f), p-value = %0.4f' % (lam, mean_auc, std_auc, p_val))
