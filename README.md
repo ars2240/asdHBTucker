@@ -1,7 +1,7 @@
 Simulink Project: asdHBTucker
 
 Author: Adam Sandler
-Date: 5/6/18
+Date: 5/7/18
 
 Files:
 - AsdHBTucker.prj- Simulink Project file
@@ -23,6 +23,7 @@ Files:
 - ldaTests.R- computes LDA decomposition baseline tests
 - logistic_reg.py- predict using logistic regression with regularization
 - logisticReg.m- uses a logistic regression model to learn & predict ASD
+- logisticRegPCA.m- predict using logistic regression, using first X PCs
 - multi.m- draws a single sample from the multinomial distribution
 - opt.m- separate file that computes tests for our optimization problem
 - redrawTree.c- draws the tree from the CRP
