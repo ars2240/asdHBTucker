@@ -1,7 +1,7 @@
 Simulink Project: asdHBTucker
 
 Author: Adam Sandler
-Date: 4/10/18
+Date: 5/6/18
 
 Files:
 - AsdHBTucker.prj- Simulink Project file
@@ -20,6 +20,8 @@ Files:
 - entropy.m- calculates entropy of probability vector
 - init_options.m- option initialization
 - initializeTree.m- initializes hierarchical tree from the CRP
+- ldaTests.R- computes LDA decomposition baseline tests
+- logistic_reg.py- predict using logistic regression with regularization
 - logisticReg.m- uses a logistic regression model to learn & predict ASD
 - multi.m- draws a single sample from the multinomial distribution
 - opt.m- separate file that computes tests for our optimization problem

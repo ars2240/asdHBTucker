@@ -8,7 +8,7 @@ options=init_options();
 % options.par=0;
 % options.maxIter = 10;
 % options.freq = 1;
-options.L = 10;
+options.L = 20;
 options.topicModel = 'None';
 [phi, psi, tree]=asdHBTucker3(asd,options);
 save('asdHBTucker.mat','phi','psi','tree');
