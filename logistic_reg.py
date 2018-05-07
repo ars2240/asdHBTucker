@@ -20,7 +20,8 @@ from sklearn.metrics import roc_curve, auc
 from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import train_test_split
 
-mdict = scipy.io.loadmat('asdHBTucker_gam0.1')  # import dataset from matlab
+fname = 'asdHBTucker_gam0.5'
+mdict = scipy.io.loadmat(fname)  # import dataset from matlab
 
 # reformat data
 phi = mdict.get('phi')
@@ -83,7 +84,7 @@ for lam in lam_v:
     plt.ylabel('True Positive Rate')
     plt.title('Receiver operating characteristic example')
     plt.legend(loc="lower right", prop={'size': 6})
-    plt.savefig('plots/logreg_AUC_' + str(lam) + '.png')
+    plt.savefig('plots/logreg_AUC_' + str(lam) + '_' + str(fname) + '.png')
 
     results = stats.ttest_1samp(aucs, popmean=0.5)
     p_val = results[1]
