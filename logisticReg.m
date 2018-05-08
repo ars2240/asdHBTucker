@@ -1,4 +1,4 @@
-load('asdHBTucker_10top.mat'); %load tensor
+load('asdHBTucker_gam0.1.mat'); %load tensor
 
 %run only once, keep constant
 %or use seed

@@ -1,4 +1,4 @@
-load('asdHBTucker_gam0.5.mat'); %load tensor
+load('asdHBTucker_gam0.1.mat'); %load tensor
 
 %run only once, keep constant
 %or use seed
@@ -20,7 +20,7 @@ warning off stats:pca:ColRankDefX;
 
 warning on stats:pca:ColRankDefX;
 
-nPCs=40; %number of PCs
+nPCs=100; %number of PCs
 phiMat=phiPCs(:,1:nPCs);
 
 %split data based on index into training and testing sets
