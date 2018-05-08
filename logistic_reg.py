@@ -1,7 +1,7 @@
 # logistic_reg.py
 #
 # Author: Adam Sandler
-# Date: 5/6/18
+# Date: 5/8/18
 #
 # Computes logistic regression tests with regularization parameter
 #
@@ -20,7 +20,7 @@ from sklearn.metrics import roc_curve, auc
 from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import train_test_split
 
-fname = 'asdHBTucker_gam0.5'
+fname = 'asdHBTucker_gam0.1'
 mdict = scipy.io.loadmat(fname)  # import dataset from matlab
 
 # reformat data
@@ -32,16 +32,18 @@ y[::2] = 1
 y[1::2] = 0
 
 # split set into training & test sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=12345)
+X, X_test, y, y_test = train_test_split(X, y, test_size=0.3, random_state=12345)
 
 lam_v = [1E-9, 1E-6, 1E-3, 1, 1E3, 1E6, 1E9]
 
 # #############################################################################
 # Classification and ROC analysis
 
+print('%9s\t %6s\t %6s\t %6s' % ('lambda', 'mean', 'stdev', 'pval'))
+
 # Run classifier with cross-validation and plot ROC curves
 for lam in lam_v:
-    cv = StratifiedKFold(n_splits=5)
+    cv = StratifiedKFold(n_splits=5, random_state=12345)
     classifier = LogisticRegression(C=1 / lam)
 
     tprs = []
@@ -89,4 +91,4 @@ for lam in lam_v:
     results = stats.ttest_1samp(aucs, popmean=0.5)
     p_val = results[1]
 
-    print(r'Lambda = %6.3e, Mean ROC (AUC = %0.4f $\pm$ %0.4f), p-value = %0.4f' % (lam, mean_auc, std_auc, p_val))
+    print('%6.3e\t %0.4f\t %0.4f\t %0.4f' % (lam, mean_auc, std_auc, p_val))
