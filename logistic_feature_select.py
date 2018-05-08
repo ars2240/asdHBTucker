@@ -47,7 +47,7 @@ for nfeat in nfeat_v:
     X_new = SelectKBest(mutual_info_classif, k=nfeat).fit_transform(X, y)
 
     # Run classifier with cross-validation and plot ROC curves
-    cv = StratifiedKFold(n_splits=5)
+    cv = StratifiedKFold(n_splits=5, random_state=12345)
     classifier = LogisticRegression(C=1E10)
 
     tprs = []
