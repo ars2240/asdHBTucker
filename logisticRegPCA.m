@@ -20,7 +20,7 @@ warning off stats:pca:ColRankDefX;
 
 warning on stats:pca:ColRankDefX;
 
-nPCs=100; %number of PCs
+nPCs=50; %number of PCs
 phiMat=phiPCs(:,1:nPCs);
 
 %split data based on index into training and testing sets
@@ -29,7 +29,7 @@ trainASD=asd(ind);
 testPhi=phiMat(~ind,:);
 testASD=asd(~ind);
 
-nFolds=5; %set number of folds
+nFolds=10; %set number of folds
 nTrain=sum(ind); %size of training set
 cvInd=crossvalind('Kfold',nTrain,nFolds); %split data into k folds
 AUC=zeros(nFolds,1); %initialize AUC vector

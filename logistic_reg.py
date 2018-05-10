@@ -34,20 +34,21 @@ y[1::2] = 0
 # split set into training & test sets
 X, X_test, y, y_test = train_test_split(X, y, test_size=0.3, random_state=12345)
 
-lam_v = [1E-9, 1E-6, 1E-3, 1, 1E3, 1E6, 1E9]
+lam_v = [1E-15, 1E-9, 1E-6, 1E-3, 1, 1E3, 1E6, 1E9]
 
 # #############################################################################
 # Classification and ROC analysis
 
-print('%9s\t %6s\t %6s\t %6s' % ('lambda', 'mean', 'stdev', 'pval'))
+print('%6s\t %9s\t %6s\t %6s\t %6s' % ('dset', 'lambda', 'mean', 'stdev', 'pval'))
 
 # Run classifier with cross-validation and plot ROC curves
 for lam in lam_v:
-    cv = StratifiedKFold(n_splits=5, random_state=12345)
+    cv = StratifiedKFold(n_splits=10, random_state=12345)
     classifier = LogisticRegression(C=1 / lam)
 
     tprs = []
     aucs = []
+    aucs_tr = []
     mean_fpr = np.linspace(0, 1, 100)
 
     i = 0
@@ -61,6 +62,13 @@ for lam in lam_v:
         aucs.append(roc_auc)
         plt.plot(fpr, tpr, lw=1, alpha=0.3,
                  label='ROC fold %d (AUC = %0.2f)' % (i, roc_auc))
+
+        # Compute AUC on Training set
+        probas_ = classifier.fit(X[train], y[train]).predict_proba(X[train])
+        # Compute ROC curve and area the curve
+        fpr, tpr, thresholds = roc_curve(y[train], probas_[:, 1])
+        roc_auc = auc(fpr, tpr)
+        aucs_tr.append(roc_auc)
 
         i += 1
     plt.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r',
@@ -91,4 +99,8 @@ for lam in lam_v:
     results = stats.ttest_1samp(aucs, popmean=0.5)
     p_val = results[1]
 
-    print('%6.3e\t %0.4f\t %0.4f\t %0.4f' % (lam, mean_auc, std_auc, p_val))
+    results = stats.ttest_1samp(aucs_tr, popmean=0.5)
+    p_val_tr = results[1]
+
+    print('%6s\t %6.3e\t %0.4f\t %0.4f\t %0.4f' % ('valid', lam, mean_auc, std_auc, p_val))
+    print('%6s\t %6.3e\t %0.4f\t %0.4f\t %0.4f' % ('train', lam, np.mean(aucs_tr), np.std(aucs_tr), p_val_tr))

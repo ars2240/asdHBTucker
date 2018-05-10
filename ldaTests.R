@@ -5,6 +5,7 @@ library(pROC);
 library(tidytext);
 library(tm);
 library(topicmodels);
+library(R.matlab);
 
 #load data
 asdSparse <- read.csv("~/Documents/Northwestern/Research/Code/asdSparse.csv", row.names = 1, header= T, check.names=F); #import from csv
@@ -24,34 +25,34 @@ gvDTM=cast_dtm(geneVar,row,col,value);
 pwDTM=cast_dtm(pathways,row,pathway,value);
 cDTM=cast_dtm(asdSparse,row,concat,value);
 
-# #find number of topics
-# #Warning: takes a few hours
-# minTop=2;
-# maxTop=40;
-# step=2;
-# gvNTop = FindTopicsNumber(gvDTM, topics = seq(minTop, maxTop, by = step),
-#   metrics = c("Griffiths2004", "CaoJuan2009", "Arun2010", "Deveaud2014"),
-#   method = "Gibbs", control = list(), mc.cores = 2L, verbose = FALSE)
-# pwNTop = FindTopicsNumber(pwDTM, topics = seq(minTop, maxTop, by = step),
-#   metrics = c("Griffiths2004", "CaoJuan2009", "Arun2010", "Deveaud2014"),
-#   method = "Gibbs", control = list(), mc.cores = 2L, verbose = FALSE)
-# cNTop = FindTopicsNumber(cDTM, topics = seq(minTop, maxTop, by = step),
-#   metrics = c("Griffiths2004", "CaoJuan2009", "Arun2010", "Deveaud2014"),
-#   method = "Gibbs", control = list(), mc.cores = 2L, verbose = FALSE)
-# 
-# #plot
-# jpeg('geneticVariantNumberOfTopics.jpg');
-# FindTopicsNumber_plot(gvNTop);
-# dev.off();
-# jpeg('pathwaysNumberOfTopics.jpg');
-# FindTopicsNumber_plot(pwNTop);
-# dev.off();
-# jpeg('concatenateNumberOfTopics.jpg');
-# FindTopicsNumber_plot(cNTop);
-# dev.off();
+#find number of topics
+#Warning: takes a few hours
+minTop=2;
+maxTop=40;
+step=2;
+gvNTop = FindTopicsNumber(gvDTM, topics = seq(minTop, maxTop, by = step),
+  metrics = c("Griffiths2004", "CaoJuan2009", "Arun2010", "Deveaud2014"),
+  method = "Gibbs", control = list(), mc.cores = 2L, verbose = FALSE)
+pwNTop = FindTopicsNumber(pwDTM, topics = seq(minTop, maxTop, by = step),
+  metrics = c("Griffiths2004", "CaoJuan2009", "Arun2010", "Deveaud2014"),
+  method = "Gibbs", control = list(), mc.cores = 2L, verbose = FALSE)
+cNTop = FindTopicsNumber(cDTM, topics = seq(minTop, maxTop, by = step),
+  metrics = c("Griffiths2004", "CaoJuan2009", "Arun2010", "Deveaud2014"),
+  method = "Gibbs", control = list(), mc.cores = 2L, verbose = FALSE)
+
+#plot
+jpeg('geneticVariantNumberOfTopics.jpg');
+FindTopicsNumber_plot(gvNTop);
+dev.off();
+jpeg('pathwaysNumberOfTopics.jpg');
+FindTopicsNumber_plot(pwNTop);
+dev.off();
+jpeg('concatenateNumberOfTopics.jpg');
+FindTopicsNumber_plot(cNTop);
+dev.off();
 
 #perform LDA with set number of topics
-nTopics=40;
+nTopics=20;
 gvLDA=LDA(gvDTM,nTopics);
 pwLDA=LDA(pwDTM,nTopics);
 cLDA=LDA(cDTM,nTopics);
@@ -66,6 +67,12 @@ cPos=posterior(cLDA)$topics;
 gvPos=data.frame(gvPos[order(as.numeric(rownames(gvPos))),]);
 pwPos=data.frame(pwPos[order(as.numeric(rownames(pwPos))),]);
 cPos=data.frame(cPos[order(as.numeric(rownames(cPos))),]);
+write.csv(gvPos, paste("~/Documents/Northwestern/Research/Code/gvLDA_", nTopics, ".csv", sep=""));
+write.csv(pwPos, paste("~/Documents/Northwestern/Research/Code/pwLDA_", nTopics, ".csv", sep=""));
+write.csv(cPos, paste("~/Documents/Northwestern/Research/Code/cLDA_", nTopics, ".csv", sep=""));
+# gvPos=read.csv(paste("~/Documents/Northwestern/Research/Code/gvLDA_", nTopics, ".csv", sep=""), row.names = 1);
+# pwPos=read.csv(paste("~/Documents/Northwestern/Research/Code/pwLDA_", nTopics, ".csv", sep=""), row.names = 1);
+# cPos=read.csv(paste("~/Documents/Northwestern/Research/Code/cLDA_", nTopics, ".csv", sep=""), row.names = 1);
 c2Pos=cbind(gvPos,pwPos);
 colnames(c2Pos)=paste("X",1:ncol(c2Pos), sep="");
 
@@ -77,11 +84,14 @@ cPos$asd=rep(c(1,0),nDocs/2);
 c2Pos$asd=rep(c(1,0),nDocs/2);
 
 # 70% of the sample size
-smp_size <- floor(0.7 * nDocs)
+#smp_size <- floor(0.7 * nDocs)
 
 # set the seed to make your partition reproductible
 set.seed(12345)
-train_ind <- sample(seq_len(nDocs), size = smp_size)
+#train_ind <- sample(seq_len(nDocs), size = smp_size)
+
+data <- readMat("~/Documents/Northwestern/Research/Code/cvInd.mat")
+train_ind <- which(data$ind==1)
 
 # take those in training set
 gvPos=gvPos[train_ind,];
@@ -90,7 +100,7 @@ cPos=cPos[train_ind,];
 c2Pos=c2Pos[train_ind,];
 
 #create folds for cross validation
-nFolds=5;
+nFolds=10;
 folds=createFolds(1:smp_size,k=nFolds);
 
 #initialize AUC vectors

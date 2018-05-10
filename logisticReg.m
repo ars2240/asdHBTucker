@@ -1,4 +1,7 @@
-load('asdHBTucker_gam0.1.mat'); %load tensor
+% load('asdHBTucker_20top.mat'); %load tensor
+phi1 = csvread('gvLDA_40.csv',1,1);
+phi2 = csvread('pwLDA_40.csv',1,1);
+phi = [phi1, phi2];
 
 %run only once, keep constant
 %or use seed
@@ -20,7 +23,7 @@ trainASD=asd(ind);
 testPhi=phiMat(~ind,:);
 testASD=asd(~ind);
 
-nFolds=5; %set number of folds
+nFolds=10; %set number of folds
 nTrain=sum(ind); %size of training set
 cvInd=crossvalind('Kfold',nTrain,nFolds); %split data into k folds
 AUC=zeros(nFolds,1); %initialize AUC vector
