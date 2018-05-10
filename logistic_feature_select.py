@@ -41,17 +41,18 @@ nfeat_v = [10, 25, 50, 75, 100, 200]
 # #############################################################################
 # Classification and ROC analysis
 
-print('%6s\t %6s\t %6s\t %6s' % ('nfeat', 'mean', 'stdev', 'pval'))
+print('%6s\t %6s\t %6s\t %6s\t %6s' % ('dset', 'nfeat', 'mean', 'stdev', 'pval'))
 
 for nfeat in nfeat_v:
     X_new = SelectKBest(mutual_info_classif, k=nfeat).fit_transform(X, y)
 
     # Run classifier with cross-validation and plot ROC curves
-    cv = StratifiedKFold(n_splits=5, random_state=12345)
-    classifier = LogisticRegression(C=1E10)
+    cv = StratifiedKFold(n_splits=10, random_state=12345)
+    classifier = LogisticRegression(C=1e15)
 
     tprs = []
     aucs = []
+    aucs_tr = []
     mean_fpr = np.linspace(0, 1, 100)
 
     i = 0
@@ -65,6 +66,13 @@ for nfeat in nfeat_v:
         aucs.append(roc_auc)
         plt.plot(fpr, tpr, lw=1, alpha=0.3,
                  label='ROC fold %d (AUC = %0.2f)' % (i, roc_auc))
+
+        # Compute AUC on Training set
+        probas_ = classifier.fit(X_new[train], y[train]).predict_proba(X_new[train])
+        # Compute ROC curve and area the curve
+        fpr, tpr, thresholds = roc_curve(y[train], probas_[:, 1])
+        roc_auc = auc(fpr, tpr)
+        aucs_tr.append(roc_auc)
 
         i += 1
     plt.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r',
@@ -95,4 +103,8 @@ for nfeat in nfeat_v:
     results = stats.ttest_1samp(aucs, popmean=0.5)
     p_val = results[1]
 
-    print('%6d\t %0.4f\t %0.4f\t %0.4f' % (nfeat, mean_auc, std_auc, p_val))
+    results = stats.ttest_1samp(aucs_tr, popmean=0.5)
+    p_val_tr = results[1]
+
+    print('%6s\t %6d\t %0.4f\t %0.4f\t %0.4f' % ('valid', nfeat, mean_auc, std_auc, p_val))
+    print('%6s\t %6d\t %0.4f\t %0.4f\t %0.4f' % ('train', nfeat, np.mean(aucs_tr), np.std(aucs_tr), p_val_tr))
