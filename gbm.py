@@ -39,7 +39,7 @@ X, X_test, y, y_test = train_test_split(X, y, test_size=0.3, random_state=12345)
 
 print('%6s\t %9s\t %6s\t %6s\t %6s' % ('dset', 'N', 'mean', 'stdev', 'pval'))
 
-N_v = [1000]
+N_v = [100]
 
 for N in N_v:
     # Run classifier with cross-validation and plot ROC curves
@@ -55,7 +55,7 @@ for N in N_v:
     for train, test in cv.split(X, y):
         probas_ = classifier.fit(X[train], y[train]).predict_proba(X[test])
         # Compute ROC curve and area the curve
-        fpr, tpr, thresholds = roc_curve(y[test], probas_[:, 1])
+        fpr, tpr, _ = roc_curve(y[test], probas_[:, 1])
         tprs.append(interp(mean_fpr, fpr, tpr))
         tprs[-1][0] = 0.0
         roc_auc = auc(fpr, tpr)
@@ -66,7 +66,7 @@ for N in N_v:
         # Compute AUC on Training set
         probas_ = classifier.fit(X[train], y[train]).predict_proba(X[train])
         # Compute ROC curve and area the curve
-        fpr, tpr, thresholds = roc_curve(y[train], probas_[:, 1])
+        fpr, tpr, _ = roc_curve(y[train], probas_[:, 1])
         roc_auc = auc(fpr, tpr)
         aucs_tr.append(roc_auc)
 
