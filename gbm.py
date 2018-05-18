@@ -1,9 +1,9 @@
 # gbm.py
 #
 # Author: Adam Sandler
-# Date: 5/8/18
+# Date: 5/17/18
 #
-# Computes Gradient Goosting classifier
+# Computes Gradient Boosting classifier
 #
 # Dependencies:
 #   Packages: matplotlib, numpy, scipy, sklearn
