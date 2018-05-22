@@ -1,9 +1,10 @@
 Simulink Project: asdHBTucker
 
 Author: Adam Sandler
-Date: 5/8/18
+Date: 5/21/18
 
 Files:
+- asdGeneSelect.m- method for selecting specific genes based on logistic regression
 - AsdHBTucker.prj- Simulink Project file
 - asdHBTucker.mat- data file with phi, psi, and tree from newest iteration
 - asdHBTucker3.m- hierarchical Bayesian Tucker decomposition function

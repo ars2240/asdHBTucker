@@ -1,7 +1,7 @@
-% load('asdHBTucker_20top.mat'); %load tensor
-phi1 = csvread('gvLDA_40.csv',1,1);
-phi2 = csvread('pwLDA_40.csv',1,1);
-phi = [phi1, phi2];
+load('asdHBTucker.mat'); %load tensor
+% phi1 = csvread('gvLDA_40.csv',1,1);
+% phi2 = csvread('pwLDA_40.csv',1,1);
+% phi = [phi1, phi2];
 
 %run only once, keep constant
 %or use seed
