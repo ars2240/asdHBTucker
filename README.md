@@ -1,7 +1,7 @@
 Simulink Project: asdHBTucker
 
 Author: Adam Sandler
-Date: 5/21/18
+Date: 5/29/18
 
 Files:
 - asdGeneSelect.m- method for selecting specific genes based on logistic regression
@@ -21,6 +21,7 @@ Files:
 - entropy.m- calculates entropy of probability vector
 - init_options.m- option initialization
 - initializeTree.m- initializes hierarchical tree from the CRP
+- initializePAM.m- initializes hierarchical DAG from the PAM
 - ldaTests.R- computes LDA decomposition baseline tests
 - logistic_reg.py- predict using logistic regression with regularization
 - logistic_feature_select.py- predict using logistic regression with MI feature selection
@@ -29,4 +30,5 @@ Files:
 - multi.m- draws a single sample from the multinomial distribution
 - opt.m- separate file that computes tests for our optimization problem
 - redrawTree.c- draws the tree from the CRP
+- redrawPAM.c- draws the DAG from the PAM
 - rgamma.c- samples small-shape gamma RVs via accept-reject

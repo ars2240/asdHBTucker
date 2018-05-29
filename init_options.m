@@ -14,6 +14,7 @@ function [ options ] = init_options( )
 % tol = tolerance for zeros of dirichlet distribution
 % minA = all A's above this value will be drawn normally
 % topicModel = type of hierarchical tree
+% topicsPerLevel = number of topics in each level, used in PAM
 
 options.par = 1;
 options.time = 1;
@@ -27,5 +28,8 @@ options.pType = 1;
 options.tol = 0;
 options.minA = 0.1;
 options.topicModel = 'IndepTrees';
+options.topicsPerLevel = cell(2,1);
+options.topicsPerLevel{1} = 10;
+options.topicsPerLevel{2} = 10;
 
 end

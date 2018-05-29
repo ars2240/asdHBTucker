@@ -1,7 +1,7 @@
-function [samples,paths,tree,r,LL,ent] = redrawTree(dims,samples,paths,L,tree,r,gam)
+function [paths,tree,r,LL,ent] = redrawTree(dims,samples,paths,L,tree,r,gam)
     %dims = dimensions of tensor
-    %samps = x, y, z values
-    %path = tree paths
+    %sampless = x, y, z values
+    %paths = tree paths
     %L = levels of hierarchical tree
     %tree = hierarchical tree
     %r = restaurant lists

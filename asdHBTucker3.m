@@ -57,7 +57,7 @@ function [phi, psi ,tree] = asdHBTucker3(x,options)
         case 'IndepTrees'
             [paths,tree,r,LLtree,entTree]=initializeTree(L,dims,gam);
         case 'PAM'
-            
+            [paths,tpl,prob,r,LLtree,entTree]=initializePAM(L,dims,options);
         case 'None'
             paths=repmat([1:L(1),1:L(2)],dims(1),1);
             r=cell(2,1); %initialize
@@ -205,10 +205,11 @@ function [phi, psi ,tree] = asdHBTucker3(x,options)
         treeStart=tic;
         switch options.topicModel
             case 'IndepTrees'
-                [samples,paths,tree,r,LLtree,entTree] = redrawTree(dims,...
-                    samples,paths,L,tree,r,gam);
+                [paths,tree,r,LLtree,entTree]=redrawTree(dims,paths,L,...
+                    tree,r,gam);
             case 'PAM'
-                
+                [paths,prob,LLtree,entTree]=redrawPAM(dims,samples,...
+                    paths,tpl,prob,L,options);
             case 'None'
                 LLtree=0;
                 entTree=0;

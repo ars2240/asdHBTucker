@@ -6,7 +6,11 @@ function [r, p] = drchrnd(a,n,options)
     
     a = a+options.prior;
     l = length(a);
-    A = repmat(a,n,1);
+    if size(a,1)==1
+        A = repmat(a,n,1);
+    else
+        A = a;
+    end
     if min(a)<options.minA
         r = rgamma(A,1,n,l,options);
         d = repmat(sum(exp(r),2),1,l);
@@ -18,8 +22,8 @@ function [r, p] = drchrnd(a,n,options)
     end
     
     %calculate pdf
-    b = sum(gammaln(a))-gammaln(sum(a));
-    p = r.*repmat(a-1,n,1);
+    b = sum(gammaln(A),2)-gammaln(sum(A,2));
+    p = r.*(A-1);
     p = sum(p,2);
     p = p-b;
     

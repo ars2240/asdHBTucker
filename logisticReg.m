@@ -1,4 +1,4 @@
-load('asdHBTucker.mat'); %load tensor
+load('asdHBTucker_gam0.1.mat'); %load tensor
 % phi1 = csvread('gvLDA_40.csv',1,1);
 % phi2 = csvread('pwLDA_40.csv',1,1);
 % phi = [phi1, phi2];
@@ -15,6 +15,7 @@ ind=crossvalind('HoldOut',nPat,pTest); %split data into test & train sets
 phiMat=tenmat(phi,1); %flatten tensor to matrix
 phiMat=phiMat(:,:); %convert to matrix
 phiMat=phiMat(:,sum(phiMat,1)>0); %remove columns of all zeros
+phiMat=zscore(phiMat); %normalize
 asd=logical(repmat([1;0],nPat/2,1)); %binary whether or not patient has ASD
 
 %split data based on index into training and testing sets
