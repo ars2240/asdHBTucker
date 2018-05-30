@@ -1,4 +1,4 @@
-load('asdHBTucker_gam0.1.mat'); %load tensor
+load('asdHBTucker.mat'); %load tensor
 % phi1 = csvread('gvLDA_40.csv',1,1);
 % phi2 = csvread('pwLDA_40.csv',1,1);
 % phi = [phi1, phi2];

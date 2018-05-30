@@ -1,4 +1,4 @@
-function [phi, psi ,tree] = asdHBTucker3(x,options)
+function [phi, psi, tree] = asdHBTucker3(x,options)
     %performs 3-mode condition probablility Bayesian Tucker decomposition 
     %on a counting tensor
     %P(mode 2, mode 3 | mode 1)
@@ -57,7 +57,7 @@ function [phi, psi ,tree] = asdHBTucker3(x,options)
         case 'IndepTrees'
             [paths,tree,r,LLtree,entTree]=initializeTree(L,dims,gam);
         case 'PAM'
-            [paths,tpl,prob,r,LLtree,entTree]=initializePAM(L,dims,options);
+            [paths,tpl,tree,r,LLtree,entTree]=initializePAM(L,dims,options);
         case 'None'
             paths=repmat([1:L(1),1:L(2)],dims(1),1);
             r=cell(2,1); %initialize
@@ -208,8 +208,8 @@ function [phi, psi ,tree] = asdHBTucker3(x,options)
                 [paths,tree,r,LLtree,entTree]=redrawTree(dims,paths,L,...
                     tree,r,gam);
             case 'PAM'
-                [paths,prob,LLtree,entTree]=redrawPAM(dims,samples,...
-                    paths,tpl,prob,L,options);
+                [paths,tree,LLtree,entTree]=redrawPAM(dims,samples,...
+                    paths,tpl,tree,L,options);
             case 'None'
                 LLtree=0;
                 entTree=0;
