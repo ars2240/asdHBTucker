@@ -12,7 +12,7 @@ Tensor decompsition:
     1. Compile appropriate MEX file (sample code provided but commented out in lines 5-6)
     Note: parallel verion requires OpenMP
     2. Adjust any settings in asdTens.m (see init_options.m for more info)
-    Note: for pre-processing of genes, uncomment-out (line 2):
+    Note: for pre-processing of genes, uncomment out (line 2):
         asd=asdGeneSelect(asdSparse, .1);
     and comment out (line 3):
         asd=sptensor(asdSparse(:,1:3),asdSparse(:,4));
