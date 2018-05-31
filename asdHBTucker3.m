@@ -138,83 +138,87 @@ function [phi, psi, tree] = asdHBTucker3(x,options)
         LL=0; %reset log-likelihood
         ent=0; %reset entropy
         
-        %recalculate dimensions of core
-        for i=1:2
-           %set core dimensions to the number of topics in each mode
-           coreDims(i+1)=length(r{i});
-        end
-
-        %matrices
-        psi{1}=zeros(dims(2),coreDims(2));
-        psi{2}=zeros(dims(3),coreDims(3));
-
-        %redraw matrices p(y|z)
-        matStart=tic;
-        for i=2:3
-            [u,~,ir]=unique(samples(:,2+i));
-            samps=accumarray(ir,1:size(samples,1),[],@(r){samples(r,:)});
-            dim=dims(i);
-            [~,loc]=ismember(r{i-1},u);
-            psiT=zeros(dim,coreDims(i));
-            for j=1:coreDims(i)
-                %draw values from dirichlet distribution with uniform prior
-                %plus counts of occurances of both y & z
-                switch options.pType
-                    case 0
-                        prior=repelem(1/dim,dim);
-                    case 1
-                        prior=repelem(1,dim);
-                    otherwise
-                        error('Error. \nNo prior type selected');
-                end
-                if loc(j)~=0
-                    prior=prior+histc(samps{loc(j)}(:,i)',1:dim);
-                end
-                [psiT(:,j),p]=drchrnd(prior,1,options);
-                LL=LL+sum(p);
-                ent=ent+entropy(exp(p));
+        for btIt=1:options.btReps
+            %recalculate dimensions of core
+            for i=1:2
+               %set core dimensions to the number of topics in each mode
+               coreDims(i+1)=length(r{i});
             end
-            psi{i-1}=psiT;
-        end
-        matTime=matTime+toc(matStart);
-        
-        %redraw core tensor p(z|x)
-        %subset to get samples with x
-        coreStart=tic;
-        %redraw core tensor p(z|x)
-        [phi,p]=drawCoreCon(samples,paths,coreDims,L,r,options);
-        LL=LL+sum(p);
-        ent=ent+entropy(exp(p));
-        coreTime=coreTime+toc(coreStart);
 
-        %redraw latent topic z's
-        zStart=tic;
-        switch options.par
-            case 1
-                [samples,p]=drawZscPar(samples,phi,psi,r);
-                LL=LL+sum(log(p));
-                ent=ent+entropy(p);
-            otherwise
-                [samples,p]=drawZsc(samples,phi,psi,r);
-                LL=LL+sum(log(p));
-                ent=ent+entropy(p);
+            %matrices
+            psi{1}=zeros(dims(2),coreDims(2));
+            psi{2}=zeros(dims(3),coreDims(3));
+
+            %redraw matrices p(y|z)
+            matStart=tic;
+            for i=2:3
+                [u,~,ir]=unique(samples(:,2+i));
+                samps=accumarray(ir,1:size(samples,1),[],@(r){samples(r,:)});
+                dim=dims(i);
+                [~,loc]=ismember(r{i-1},u);
+                psiT=zeros(dim,coreDims(i));
+                for j=1:coreDims(i)
+                    %draw values from dirichlet distribution with uniform prior
+                    %plus counts of occurances of both y & z
+                    switch options.pType
+                        case 0
+                            prior=repelem(1/dim,dim);
+                        case 1
+                            prior=repelem(1,dim);
+                        otherwise
+                            error('Error. \nNo prior type selected');
+                    end
+                    if loc(j)~=0
+                        prior=prior+histc(samps{loc(j)}(:,i)',1:dim);
+                    end
+                    [psiT(:,j),p]=drchrnd(prior,1,options);
+                    LL=LL+sum(p);
+                    ent=ent+entropy(exp(p));
+                end
+                psi{i-1}=psiT;
+            end
+            matTime=matTime+toc(matStart);
+
+            %redraw core tensor p(z|x)
+            %subset to get samples with x
+            coreStart=tic;
+            %redraw core tensor p(z|x)
+            [phi,p]=drawCoreCon(samples,paths,coreDims,L,r,options);
+            LL=LL+sum(p);
+            ent=ent+entropy(exp(p));
+            coreTime=coreTime+toc(coreStart);
+
+            %redraw latent topic z's
+            zStart=tic;
+            switch options.par
+                case 1
+                    [samples,p]=drawZscPar(samples,phi,psi,r);
+                    LL=LL+sum(log(p));
+                    ent=ent+entropy(p);
+                otherwise
+                    [samples,p]=drawZsc(samples,phi,psi,r);
+                    LL=LL+sum(log(p));
+                    ent=ent+entropy(p);
+            end
+            zTime=zTime+toc(zStart);
         end
-        zTime=zTime+toc(zStart);
         
         %redraw tree
         treeStart=tic;
-        switch options.topicModel
-            case 'IndepTrees'
-                [paths,tree,r,LLtree,entTree]=redrawTree(dims,paths,L,...
-                    tree,r,gam);
-            case 'PAM'
-                [paths,tree,LLtree,entTree]=redrawPAM(dims,samples,...
-                    paths,tpl,tree,L,options);
-            case 'None'
-                LLtree=0;
-                entTree=0;
-            otherwise
-                error('Error. \nNo topic model type selected');
+        for treeIt=1:options.treeReps
+            switch options.topicModel
+                case 'IndepTrees'
+                    [paths,tree,r,LLtree,entTree]=redrawTree(dims,paths,L,...
+                        tree,r,gam);
+                case 'PAM'
+                    [paths,tree,LLtree,entTree]=redrawPAM(dims,samples,...
+                        paths,tpl,tree,L,options);
+                case 'None'
+                    LLtree=0;
+                    entTree=0;
+                otherwise
+                    error('Error. \nNo topic model type selected');
+            end
         end
         LL=LL+LLtree;
         ent=ent+entTree;

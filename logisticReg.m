@@ -15,7 +15,7 @@ ind=crossvalind('HoldOut',nPat,pTest); %split data into test & train sets
 phiMat=tenmat(phi,1); %flatten tensor to matrix
 phiMat=phiMat(:,:); %convert to matrix
 phiMat=phiMat(:,sum(phiMat,1)>0); %remove columns of all zeros
-phiMat=zscore(phiMat); %normalize
+%phiMat=zscore(phiMat); %normalize
 asd=logical(repmat([1;0],nPat/2,1)); %binary whether or not patient has ASD
 
 %split data based on index into training and testing sets
