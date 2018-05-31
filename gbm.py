@@ -6,7 +6,7 @@
 # Computes Gradient Boosting classifier
 #
 # Dependencies:
-#   Packages: matplotlib, numpy, scipy, sklearn
+#   Packages: matplotlib, numpy, scipy, sklearn, xgboost
 #   Data: asdHBTucker
 
 # load packages
