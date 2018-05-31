@@ -31,10 +31,8 @@ Classification (Python):
     Required data files: asdHBTucker*.mat (output of Tensor decomposition)
     Required packages: matplotlib, numpy, scipy, sklearn
     
-    1. Ensure gbm.py, logistic_reg.py, logistic_feature_select.py, or
-    svm.py loads the right .mat file
-    2. Adjust any settings (number of features, regression factors, depth, 
-    and/or # of estimators
+    1. Ensure gbm.py, logistic_reg.py, logistic_feature_select.py, or svm.py loads the right .mat file
+    2. Adjust any settings (number of features, regression factors, depth, and/or # of estimators
     2. Run gbm.py, logistic_reg.py, logistic_feature_select.py, or svm.py
     3. Output will be in command line
 
