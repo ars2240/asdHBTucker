@@ -9,8 +9,7 @@ Tensor decompsition:
     Required data files: asdSparse.csv
     Required packages: Sandia NL Tensor Toolbox
     
-    1. Compile appropriate MEX file (sample code provided but commented out
-    in lines 5-6)
+    1. Compile appropriate MEX file (sample code provided but commented out in lines 5-6)
     Note: parallel verion requires OpenMP
     2. Adjust any settings in asdTens.m (see init_options.m for more info)
     Note: for pre-processing of genes, uncomment-out (line 2):
@@ -24,8 +23,7 @@ Classification (MatLab):
     Required data files: asdHBTucker*.mat (output of Tensor decomposition)
     
     1. Ensure logisticReg.m or logisticRegPCA.m loads the right .mat file
-    2. If, running ogisticRegPCA.m, adjust nPCs (number of principal 
-    components) in line 23
+    2. If, running ogisticRegPCA.m, adjust nPCs (number of principal components) in line 23
     2. Run logisticReg.m or logisticRegPCA.m
     3. Output will be in command line
 
