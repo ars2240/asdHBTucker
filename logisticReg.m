@@ -1,7 +1,8 @@
-load('asdHBTucker.mat'); %load tensor
+load('asdHBTucker_gam0.1.mat'); %load tensor
 % phi1 = csvread('gvLDA_40.csv',1,1);
 % phi2 = csvread('pwLDA_40.csv',1,1);
 % phi = [phi1, phi2];
+% phi = csvread('asdHBTucker_100_mRMR.csv',1,1);
 
 %run only once, keep constant
 %or use seed
@@ -19,9 +20,13 @@ phiMat=phiMat(:,sum(phiMat,1)>0); %remove columns of all zeros
 asd=logical(repmat([1;0],nPat/2,1)); %binary whether or not patient has ASD
 
 %split data based on index into training and testing sets
-trainPhi=phiMat(ind,:);
+cols=csvread('asdHBTucker_100_mRMR_cols.csv',1,1);
+cols=cols-1;
+trainPhi=phiMat(ind,cols);
+% trainPhi=phiMat(ind,:);
 trainASD=asd(ind);
-testPhi=phiMat(~ind,:);
+testPhi=phiMat(~ind,cols);
+% testPhi=phiMat(~ind,:);
 testASD=asd(~ind);
 
 nFolds=10; %set number of folds
@@ -65,8 +70,18 @@ warning on MATLAB:nearlySingularMatrix;
 [~,p]=ttest(AUC,.5);
 [~,ptr]=ttest(AUCtr,.5);
 
+logReg=glmfit(trainPhi,trainASD,'binomial');
+    
+%prediction
+predtr=glmval(logReg,trainPhi,'logit');
+pred=glmval(logReg,testPhi,'logit');
+
+%compute AUC of ROC curve
+[~,~,~,AUCtr2]=perfcurve(trainASD,predtr,1);
+[~,~,~,AUC2]=perfcurve(testASD,pred,1);
+
 %print values
-fprintf('Test set\n');
+fprintf('Validation set\n');
 fprintf('Mean AUC = %1.4f\n',mean(AUC));
 fprintf('StDev AUC = %1.4f\n',std(AUC));
 fprintf('p-value = %1.4f\n',p);
@@ -74,3 +89,7 @@ fprintf('Training set\n');
 fprintf('Mean AUC = %1.4f\n',mean(AUCtr));
 fprintf('StDev AUC = %1.4f\n',std(AUCtr));
 fprintf('p-value = %1.4f\n',ptr);
+fprintf('Test set\n');
+fprintf('AUC = %1.4f\n',AUC2);
+fprintf('Training set\n');
+fprintf('AUC = %1.4f\n',AUCtr2);

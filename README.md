@@ -1,7 +1,7 @@
 Simulink Project: asdHBTucker
 
 Author: Adam Sandler
-Date: 5/31/18
+Date: 6/1/18
 
 Instructions:
 
@@ -24,17 +24,18 @@ Classification (MatLab):
     
     1. Ensure logisticReg.m or logisticRegPCA.m loads the right .mat file
     2. If, running ogisticRegPCA.m, adjust nPCs (number of principal components) in line 23
-    2. Run logisticReg.m or logisticRegPCA.m
-    3. Output will be in command line
+    3. Run logisticReg.m or logisticRegPCA.m
+    4. Output will be in command line
 
 Classification (Python):
     Required data files: asdHBTucker*.mat (output of Tensor decomposition)
     Required packages: matplotlib, numpy, scipy, sklearn, xgboost (for gbm.py only)
     
-    1. Ensure gbm.py, logistic_reg.py, logistic_feature_select.py, or svm.py loads the right .mat file
-    2. Adjust any settings (number of features, regression factors, depth, and/or # of estimators
-    2. Run gbm.py, logistic_reg.py, logistic_feature_select.py, or svm.py
-    3. Output will be in command line
+    1. Make create a /plot/ folder (if one does not exist
+    2. Ensure gbm.py, logistic_reg.py, logistic_feature_select.py, or svm.py loads the right .mat file
+    3. Adjust any settings (number of features, regression factors, depth, and/or # of estimators
+    4. Run gbm.py, logistic_reg.py, logistic_feature_select.py, or svm.py
+    5. Output will be in command line
 
 
 Files:
@@ -43,6 +44,7 @@ Files:
 - asdHBTucker3.m- hierarchical Bayesian Tucker decomposition function
 - asdTens.m- main run file
 - crp.m- draws new restaurant from Chinese Restaurant Process (CRP)
+- createMRMRcsv.m- creates data csv for use in mRMR
 - drawCoreCon.m- draws the core tensor for the conditional Dirichlet distribution
 - drawCoreUni.m- draws the core tensor for the uniform Dirichlet distribution
 - drawZ.m- draws topics for a specific sample
@@ -61,6 +63,7 @@ Files:
 - logisticReg.m- uses a logistic regression model to learn & predict ASD
 - logisticRegPCA.m- predict using logistic regression, using first X PCs
 - multi.m- draws a single sample from the multinomial distribution
+- mRMR.r- selects features using mRMR method
 - opt.m- separate file that computes tests for our optimization problem
 - redrawTree.c- draws the tree from the CRP
 - redrawPAM.c- draws the DAG from the PAM
