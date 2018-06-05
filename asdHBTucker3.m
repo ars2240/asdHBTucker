@@ -124,11 +124,10 @@ function [phi, psi, tree] = asdHBTucker3(x,options)
     zTime=toc(zStart);
     
     if options.print==1
-        output_header = sprintf('%6s %13s %10s',...
-            'iter', 'loglikelihood', 'entropy');
-        fprintf('%s\n', output_header);
-        fprintf('%6i %13.2e %10.2e\n',...
-            0, LL, ent);
+        output_header=sprintf('%6s %13s %10s','iter','loglikelihood', ...
+            'entropy');
+        fprintf('%s\n',output_header);
+        fprintf('%6i %13.2e %10.2e\n',0,LL,ent);
     end
     
     %gibbs sampler
@@ -153,7 +152,7 @@ function [phi, psi, tree] = asdHBTucker3(x,options)
             matStart=tic;
             for i=2:3
                 [u,~,ir]=unique(samples(:,2+i));
-                samps=accumarray(ir,1:size(samples,1),[],@(r){samples(r,:)});
+                samps=accumarray(ir,1:size(samples,1),[],@(w){samples(w,:)});
                 dim=dims(i);
                 [~,loc]=ismember(r{i-1},u);
                 psiT=zeros(dim,coreDims(i));
@@ -208,8 +207,8 @@ function [phi, psi, tree] = asdHBTucker3(x,options)
         for treeIt=1:options.treeReps
             switch options.topicModel
                 case 'IndepTrees'
-                    [paths,tree,r,LLtree,entTree]=redrawTree(dims,paths,L,...
-                        tree,r,gam);
+                    [paths,tree,r,LLtree,entTree]=redrawTree(dims,...
+                        samples,paths,L,tree,r,gam);
                 case 'PAM'
                     [paths,tree,LLtree,entTree]=redrawPAM(dims,samples,...
                         paths,tpl,tree,L,options);

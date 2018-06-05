@@ -13,7 +13,8 @@ function [paths,tree,r,LL,ent] = redrawTree(dims,samples,paths,L,tree,r,gam)
     for j=1:2
         
        %get counts
-       cts=accumarray(samples(:,[1+j 3+j 1]),1,[dims(1+j),max(r{j}),dims(1)]);
+       cts=accumarray(samples(:,[1+j 3+j 1]),1,[dims(1+j),...
+           max(max(r{j}),max(samples(:,3+j))),dims(1)]);
        ctsA=sum(cts,3);
        
        col=(j-1)*L(1); %starting column
