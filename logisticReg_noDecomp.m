@@ -1,33 +1,20 @@
-load('asdHBTucker.mat'); %load tensor
-% phi1 = csvread('gvLDA_40.csv',1,1);
-% phi2 = csvread('pwLDA_40.csv',1,1);
-% phi = [phi1, phi2];
-% phi = csvread('asdHBTucker_100_mRMR.csv',1,1);
+asdSparse=csvread('asdSparse.csv',1,1);
 
 %run only once, keep constant
 %or use seed
+t=.1;
 pTest=.3; %percent of data in test
 rng(12345); %seed RNG
-nPat=size(phi,1); %number of patients
+nPat=max(asdSparse(:,1)); %number of patients
 ind=crossvalind('HoldOut',nPat,pTest); %split data into test & train sets
 %save('cvInd.mat','ind'); %save indices
 %load('cvInd.mat'); %load indices
 
-phiMat=tenmat(phi,1); %flatten tensor to matrix
-phiMat=phiMat(:,:); %convert to matrix
-phiMat=phiMat(:,sum(phiMat,1)>0); %remove columns of all zeros
-%phiMat=zscore(phiMat); %normalize
 asd=logical(repmat([1;0],nPat/2,1)); %binary whether or not patient has ASD
 
 %split data based on index into training and testing sets
-%cols=csvread('asdHBTucker_100_mRMR_cols.csv',1,1);
-%cols=cols-1;
-trainPhi=phiMat(ind,cols);
-% trainPhi=phiMat(ind,:);
 trainASD=asd(ind);
-testPhi=phiMat(~ind,cols);
-% testPhi=phiMat(~ind,:);
-testASD=asd(~ind);
+trainASDsp = asdSparse(ind(asdSparse(:,1)),:);
 
 nFolds=10; %set number of folds
 nTrain=sum(ind); %size of training set
@@ -44,8 +31,8 @@ for i=1:nFolds
     b=cvInd==i; %logical indices of test fold
     
     %split data based on index into training and testing sets
-    cvTestPhi=trainPhi(b,:);
-    cvTrainPhi=trainPhi(~b,:);
+    [cvTestPhi, cvTrainPhi]=asdGeneSelectCV(trainASDsp, trainASD(b), t, ...
+        ind, b);
     cvTestASD=trainASD(b,:);
     cvTrainASD=trainASD(~b,:);
     
@@ -70,16 +57,6 @@ warning on MATLAB:nearlySingularMatrix;
 [~,p]=ttest(AUC,.5);
 [~,ptr]=ttest(AUCtr,.5);
 
-%logReg=glmfit(trainPhi,trainASD,'binomial');
-    
-%prediction
-%predtr=glmval(logReg,trainPhi,'logit');
-%pred=glmval(logReg,testPhi,'logit');
-
-%compute AUC of ROC curve
-%[~,~,~,AUCtr2]=perfcurve(trainASD,predtr,1);
-%[~,~,~,AUC2]=perfcurve(testASD,pred,1);
-
 %print values
 fprintf('Validation set\n');
 fprintf('Mean AUC = %1.4f\n',mean(AUC));
@@ -89,7 +66,3 @@ fprintf('Training set\n');
 fprintf('Mean AUC = %1.4f\n',mean(AUCtr));
 fprintf('StDev AUC = %1.4f\n',std(AUCtr));
 fprintf('p-value = %1.4f\n',ptr);
-%fprintf('Test set\n');
-%fprintf('AUC = %1.4f\n',AUC2);
-%fprintf('Training set\n');
-%fprintf('AUC = %1.4f\n',AUCtr2);

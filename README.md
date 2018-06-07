@@ -40,6 +40,7 @@ Classification (Python):
 
 Files:
 - asdGeneSelect.m- method for pre-selecting specific genes based on logistic regression
+- asdGeneSelectCV.m- method for pre-selecting specific genes based on logistic regression, while cross-validating
 - AsdHBTucker.prj- Simulink Project file
 - asdHBTucker3.m- hierarchical Bayesian Tucker decomposition function
 - asdTens.m- main run file
@@ -62,6 +63,7 @@ Files:
 - logistic_feature_select.py- predict using logistic regression with MI feature selection
 - logisticReg.m- uses a logistic regression model to learn & predict ASD
 - logisticRegPCA.m- predict using logistic regression, using first X PCs
+- logisticReg_noDecomp.m- uses a logistic regression model to learn & predict ASD, uses gene selection rather than a decomposition
 - multi.m- draws a single sample from the multinomial distribution
 - mRMR.r- selects features using mRMR method
 - opt.m- separate file that computes tests for our optimization problem
