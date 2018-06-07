@@ -63,6 +63,7 @@ Files:
 - logistic_feature_select.py- predict using logistic regression with MI feature selection
 - logisticReg.m- uses a logistic regression model to learn & predict ASD
 - logisticRegPCA.m- predict using logistic regression, using first X PCs
+- logisticReg_mRMR.r- uses a logistic regression model to learn & predict ASD, with mRMR feature selection
 - logisticReg_noDecomp.m- uses a logistic regression model to learn & predict ASD, uses gene selection rather than a decomposition
 - multi.m- draws a single sample from the multinomial distribution
 - mRMR.r- selects features using mRMR method
