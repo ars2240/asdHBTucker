@@ -171,8 +171,10 @@ function [phi, psi, tree] = asdHBTucker3(x,options)
                         prior=prior+histc(samps{loc(j)}(:,i)',1:dim);
                     end
                     [psiT(:,j),p]=drchrnd(prior,1,options);
-                    LL=LL+sum(p);
-                    ent=ent+entropy(exp(p));
+                    if btIt==options.btReps
+                        LL=LL+sum(p);
+                        ent=ent+entropy(exp(p));
+                    end
                 end
                 psi{i-1}=psiT;
             end
@@ -183,8 +185,10 @@ function [phi, psi, tree] = asdHBTucker3(x,options)
             coreStart=tic;
             %redraw core tensor p(z|x)
             [phi,p]=drawCoreCon(samples,paths,coreDims,L,r,options);
-            LL=LL+sum(p);
-            ent=ent+entropy(exp(p));
+            if btIt==options.btReps
+                LL=LL+sum(p);
+                ent=ent+entropy(exp(p));
+            end
             coreTime=coreTime+toc(coreStart);
 
             %redraw latent topic z's
@@ -196,8 +200,10 @@ function [phi, psi, tree] = asdHBTucker3(x,options)
                     ent=ent+entropy(p);
                 otherwise
                     [samples,p]=drawZsc(samples,phi,psi,r);
-                    LL=LL+sum(log(p));
-                    ent=ent+entropy(p);
+            end
+            if btIt==options.btReps
+                LL=LL+sum(log(p));
+                ent=ent+entropy(p);
             end
             zTime=zTime+toc(zStart);
         end
