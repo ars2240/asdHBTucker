@@ -1,7 +1,7 @@
 Simulink Project: asdHBTucker
 
 Author: Adam Sandler
-Date: 6/1/18
+Date: 6/7/18
 
 Instructions:
 
@@ -32,9 +32,9 @@ Classification (Python):
     Required packages: matplotlib, numpy, scipy, sklearn, xgboost (for gbm.py only)
     
     1. Make create a /plot/ folder (if one does not exist
-    2. Ensure gbm.py, logistic_reg.py, logistic_feature_select.py, or svm.py loads the right .mat file
+    2. Ensure gbm.py, logistic_reg.py, logistic_feature_select.py, ran_forest.py, or svm.py loads the right .mat file
     3. Adjust any settings (number of features, regression factors, depth, and/or # of estimators
-    4. Run gbm.py, logistic_reg.py, logistic_feature_select.py, or svm.py
+    4. Run gbm.py, logistic_reg.py, logistic_feature_select.py, ran_forest.py, or svm.py
     5. Output will be in command line
 
 
@@ -65,7 +65,9 @@ Files:
 - multi.m- draws a single sample from the multinomial distribution
 - mRMR.r- selects features using mRMR method
 - opt.m- separate file that computes tests for our optimization problem
+- ran_forest.py- predict using random forest
 - redrawTree.c- draws the tree from the CRP
 - redrawPAM.c- draws the DAG from the PAM
 - rgamma.c- samples small-shape gamma RVs via accept-reject
+- roc_cv.py- computes and plots ROC for each CV
 - svm.py- uses SVM to learn & predict ASD
