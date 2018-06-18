@@ -44,6 +44,7 @@ Files:
 - AsdHBTucker.prj- Simulink Project file
 - asdHBTucker3.m- hierarchical Bayesian Tucker decomposition function
 - asdTens.m- main run file
+- asdTensCV.m- main run file, separates decomposition into CV folds
 - crp.m- draws new restaurant from Chinese Restaurant Process (CRP)
 - createMRMRcsv.m- creates data csv for use in mRMR
 - drawCoreCon.m- draws the core tensor for the conditional Dirichlet distribution
