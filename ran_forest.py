@@ -1,7 +1,7 @@
-# svm.py
+# ran_forest.py
 #
 # Author: Adam Sandler
-# Date: 6/7/18
+# Date: 6/18/18
 #
 # Computes Random Forest Classifier
 #
