@@ -34,16 +34,18 @@ X, X_test, y, y_test = train_test_split(X, y, test_size=0.3, random_state=12345)
 # #############################################################################
 # Classification and ROC analysis
 
-print('%6s\t %6s\t %6s\t %6s\t %6s' % ('dset', 'nfor', 'mean', 'stdev', 'pval'))
+print('%6s\t %6s\t %6s\t %6s\t %6s\t %6s' % ('dset', 'N', 'depth', 'mean', 'stdev', 'pval'))
 
-nfor_v = [1, 5, 10, 20]
+N_v = [1, 10, 100]
+d_v = [3, 5]
 
-for nfor in nfor_v:
-    # Run classifier with cross-validation and plot ROC curves
-    classifier = RandomForestClassifier(n_estimators=nfor)
+for N in N_v:
+    for d in d_v:
+        # Run classifier with cross-validation and plot ROC curves
+        classifier = RandomForestClassifier(max_depth=d, n_estimators=N)
 
-    pname = 'svm_AUC_' + str(nfor) + '_' + str(fname)
-    mean_auc, std_auc, p_val, mean_auc_tr, std_auc_tr, p_val_tr = roc(classifier, X, y, pname)
+        pname = 'ranforest_AUC_' + str(N) + '_' + str(d) + '_' + str(fname)
+        mean_auc, std_auc, p_val, mean_auc_tr, std_auc_tr, p_val_tr = roc(classifier, X, y, pname)
 
-    print('%6s\t %6d\t %0.4f\t %0.4f\t %0.4f' % ('valid', nfor, mean_auc, std_auc, p_val))
-    print('%6s\t %6d\t %0.4f\t %0.4f\t %0.4f' % ('train', nfor, mean_auc_tr, std_auc_tr, p_val_tr))
+        print('%6s\t %6d\t %6d\t %0.4f\t %0.4f\t %0.4f' % ('valid', N, d, mean_auc, std_auc, p_val))
+        print('%6s\t %6d\t %6d\t %0.4f\t %0.4f\t %0.4f' % ('train', N, d, mean_auc_tr, std_auc_tr, p_val_tr))
