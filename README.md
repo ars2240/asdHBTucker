@@ -1,7 +1,7 @@
 Simulink Project: asdHBTucker
 
 Author: Adam Sandler
-Date: 6/7/18
+Date: 6/18/18
 
 Instructions:
 
@@ -23,7 +23,7 @@ Classification (MatLab):
     Required data files: asdHBTucker*.mat (output of Tensor decomposition)
     
     1. Ensure logisticReg.m or logisticRegPCA.m loads the right .mat file
-    2. If, running ogisticRegPCA.m, adjust nPCs (number of principal components) in line 23
+    2. If running ogisticRegPCA.m, adjust nPCs (number of principal components) in line 23
     3. Run logisticReg.m or logisticRegPCA.m
     4. Output will be in command line
 
@@ -55,6 +55,7 @@ Files:
 - elems.m- returns all values between two vectors
 - entropy.m- calculates entropy of probability vector
 - gbm.py- uses a gradient boosting model to learn & predict ASD
+- gbm_mi.py- uses a gradient boosting model to learn & predict ASD, with MI feature selection
 - init_options.m- option initialization
 - initializeTree.m- initializes hierarchical tree from the CRP
 - initializePAM.m- initializes hierarchical DAG from the PAM
@@ -67,10 +68,13 @@ Files:
 - logisticReg_noDecomp.m- uses a logistic regression model to learn & predict ASD, uses gene selection rather than a decomposition
 - multi.m- draws a single sample from the multinomial distribution
 - mRMR.r- selects features using mRMR method
+- nn.py- uses a neural network model to learn & predict ASD
 - opt.m- separate file that computes tests for our optimization problem
 - ran_forest.py- predict using random forest
+- ran_forest_mi.py- predict using random forest, with MI feature selection
 - redrawTree.c- draws the tree from the CRP
 - redrawPAM.c- draws the DAG from the PAM
 - rgamma.c- samples small-shape gamma RVs via accept-reject
 - roc_cv.py- computes and plots ROC for each CV
+- roc_cv_nn.py- computes and plots ROC for each CV, for nn.py
 - svm.py- uses SVM to learn & predict ASD

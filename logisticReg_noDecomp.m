@@ -2,7 +2,8 @@ asdSparse=csvread('asdSparse.csv',1,1);
 
 %run only once, keep constant
 %or use seed
-t=.1;
+t=.01;
+test='exact'; % 'logistic regression' or 'exact
 pTest=.3; %percent of data in test
 rng(12345); %seed RNG
 nPat=max(asdSparse(:,1)); %number of patients
@@ -25,6 +26,7 @@ AUCtr=zeros(nFolds,1); %initialize AUC vector
 %disable certain warnings
 warning off stats:glmfit:IterationLimit;
 warning off stats:glmfit:IllConditioned;
+warning off stats:glmfit:PerfectSeparation;
 warning off MATLAB:nearlySingularMatrix;
 
 for i=1:nFolds
@@ -32,7 +34,7 @@ for i=1:nFolds
     
     %split data based on index into training and testing sets
     [cvTestPhi, cvTrainPhi]=asdGeneSelectCV(trainASDsp, trainASD(b), t, ...
-        ind, b);
+        ind, b, test);
     cvTestASD=trainASD(b,:);
     cvTrainASD=trainASD(~b,:);
     
@@ -51,6 +53,7 @@ end
 %re-enable certain warnings
 warning on stats:glmfit:IterationLimit;
 warning on stats:glmfit:IllConditioned;
+warning on stats:glmfit:PerfectSeparation;
 warning on MATLAB:nearlySingularMatrix;
 
 %t-test that mean AUC = 0.5
@@ -58,11 +61,6 @@ warning on MATLAB:nearlySingularMatrix;
 [~,ptr]=ttest(AUCtr,.5);
 
 %print values
-fprintf('Validation set\n');
-fprintf('Mean AUC = %1.4f\n',mean(AUC));
-fprintf('StDev AUC = %1.4f\n',std(AUC));
-fprintf('p-value = %1.4f\n',p);
-fprintf('Training set\n');
-fprintf('Mean AUC = %1.4f\n',mean(AUCtr));
-fprintf('StDev AUC = %1.4f\n',std(AUCtr));
-fprintf('p-value = %1.4f\n',ptr);
+fprintf('Set\t Mean\t StDev\t P-value\n');
+fprintf('Valid\t %1.4f\t %1.4f\t %1.4f\n',mean(AUC),std(AUC),p);
+fprintf('Train\t %1.4f\t %1.4f\t %1.4f\n',mean(AUCtr),std(AUCtr),ptr);

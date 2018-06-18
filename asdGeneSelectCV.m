@@ -1,4 +1,4 @@
-function [xMat, xtMat] = asdGeneSelectCV(xSparse, y, t, ind, b)
+function [xMat, xtMat] = asdGeneSelectCV(xSparse, y, t, ind, b, test)
     %performs logistic regression on genes to reduce tensor size
     %xSparse = sparse matrix to be turned into tensor
     %t = p-value threshold
@@ -15,20 +15,22 @@ function [xMat, xtMat] = asdGeneSelectCV(xSparse, y, t, ind, b)
     nGenes = size(xM,2);
 
     pval=ones(1,nGenes);
-    
-    %disable certain warnings
-    warning off stats:glmfit:PerfectSeparation;
 
     for i=1:nGenes
-        %logistic regression
-        [~,~,stats]=glmfit(xM(:,i),y,'binomial');
-        
-        pval(i)=stats.p(2);
+        switch test
+            case 'logistic regression'
+                %logistic regression
+                [~,~,stats]=glmfit(xM(:,i),y,'binomial');
+                pval(i)=stats.p(2);
+            case 'exact'
+                %exact test
+                %source: https://www.mathworks.com/matlabcentral/fileexchange/24379-fisher-s-exact-test-with-n-x-m-contingency-table
+                [~,pval(i),~] = FisherExactTest(xM(:,i),y);
+            otherwise
+                error('Error. \nNo text selected');
+        end
     end
 
-    %re-enable certain warnings
-    warning on stats:glmfit:PerfectSeparation;
-    
     ind = pval<t;
     fprintf('Threashold= %5.4f\n',t);
     fprintf('Number of Genes in Threshold= %5d\n',sum(ind));
