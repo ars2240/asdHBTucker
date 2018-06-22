@@ -1,4 +1,4 @@
-function [phi, psi, tree] = asdHBTucker3(x,options)
+function [phi, psi, tree, samples, paths] = asdHBTucker3(x,options)
     %performs 3-mode condition probablility Bayesian Tucker decomposition 
     %on a counting tensor
     %P(mode 2, mode 3 | mode 1)

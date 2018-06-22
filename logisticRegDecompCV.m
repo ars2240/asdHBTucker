@@ -1,17 +1,19 @@
-load('asdHBTucker.mat'); %load tensor
+load('asdHBTuckerCV.mat'); %load tensor
+
+asdSparse=csvread('asdSparse.csv',1,1);
+asdTens=sptensor(asdSparse(:,1:3),asdSparse(:,4));
 
 %run only once, keep constant
 %or use seed
 pTest=.3; %percent of data in test
 rng(12345); %seed RNG
-nPat=size(phi,1); %number of patients
+nPat=size(asdTens,1); %number of patients
 ind=crossvalind('HoldOut',nPat,pTest); %split data into test & train sets
 %save('cvInd.mat','ind'); %save indices
 %load('cvInd.mat'); %load indices
 
-trainPhi=tenmat(phi{nFolds+1},1); %flatten tensor to matrix
-trainPhi=trainPhi(:,:); %convert to matrix
-trainPhi=trainPhi(:,sum(phiMat,1)>0); %remove columns of all zeros
+%split data based on index into training and testing sets
+asdTens=asdTens(find(ind),:,:);
 
 %phiMat=zscore(phiMat); %normalize
 asd=logical(repmat([1;0],nPat/2,1)); %binary whether or not patient has ASD
@@ -36,10 +38,34 @@ for i=1:nFolds
     
     cvTrainPhi=tenmat(phi{i},1); %flatten tensor to matrix
     cvTrainPhi=cvTrainPhi(:,:); %convert to matrix
-    cvTrainPhi=cvTrainPhi(:,sum(phiMat,1)>0); %remove columns of all zeros
+    badInd=sum(cvTrainPhi,1)>0;
+    cvTrainPhi=cvTrainPhi(:,badInd); %remove columns of all zeros
+    
+    switch options.topicModel
+        case 'IndepTrees'
+            nPaths = newTreePaths(asdTens,samples{i},paths{i},tree{i},b,...
+                options);
+        case 'PAM'
+            error('Error. \nPAM code not written yet');
+        case 'None'
+            L=options.L;
+    
+            %adjustment if using constant L across dims
+            if length(L)==1
+                L=repelem(L,2);
+            end
+            
+            nPaths=repmat([1:L(1),1:L(2)],sum(dims),1);
+        otherwise
+            error('Error. \nNo topic model type selected');
+    end
+    
+    testPhi=newTopics(asdTens,psi{i},nPaths,b,options);
+    cvTestPhi=tenmat(testPhi,1); %flatten tensor to matrix
+    cvTestPhi=cvTestPhi(:,:); %convert to matrix
+    cvTestPhi=cvTestPhi(:,badInd); %remove columns of all zeros
     
     %split data based on index into training and testing sets
-    cvTestPhi=trainPhi(b,:);
     cvTestASD=trainASD(b,:);
     cvTrainASD=trainASD(~b,:);
     
