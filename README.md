@@ -70,8 +70,6 @@ Files:
 - logisticReg_noDecomp.m- uses a logistic regression model to learn & predict ASD, uses gene selection rather than a decomposition
 - multi.m- draws a single sample from the multinomial distribution
 - mRMR.r- selects features using mRMR method
-- newTopics.m- generates topics for new documents
-- newTreePaths.m- generates tree paths for new documents
 - nn.py- uses a neural network model to learn & predict ASD
 - opt.m- separate file that computes tests for our optimization problem
 - ran_forest.py- predict using random forest
