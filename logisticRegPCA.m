@@ -71,11 +71,6 @@ warning on MATLAB:nearlySingularMatrix;
 [~,ptr]=ttest(AUCtr,.5);
 
 %print values
-fprintf('Test set\n');
-fprintf('Mean AUC = %1.4f\n',mean(AUC));
-fprintf('StDev AUC = %1.4f\n',std(AUC));
-fprintf('p-value = %1.4f\n',p);
-fprintf('Training set\n');
-fprintf('Mean AUC = %1.4f\n',mean(AUCtr));
-fprintf('StDev AUC = %1.4f\n',std(AUCtr));
-fprintf('p-value = %1.4f\n',ptr);
+fprintf('Set\t Mean\t StDev\t P-value\n');
+fprintf('Valid\t %1.4f\t %1.4f\t %1.4f\n',mean(AUC),std(AUC),p);
+fprintf('Train\t %1.4f\t %1.4f\t %1.4f\n',mean(AUCtr),std(AUCtr),ptr);
