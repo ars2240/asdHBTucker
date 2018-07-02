@@ -1,3 +1,5 @@
+load('asdHBTuckerCV.mat'); %load tensor
+
 asdSparse=csvread('asdSparse.csv',1,1);
 asd=sptensor(asdSparse(:,1:3),asdSparse(:,4));
 
@@ -20,19 +22,13 @@ options.maxIter = 1000;
 options.freq = 10;
 options.treeReps = 1;
 options.btReps = 1;
+% options.par=0;
 % options.topicModel = 'PAM';
 
-phi=cell(nFolds,1);
 testPhi=cell(nFolds,1);
-psi=cell(nFolds,1);
-tree=cell(nFolds,1);
-samples=cell(nFolds,1);
-paths=cell(nFolds,1);
 for f=1:nFolds
     b=cvInd==f; %logical indices of test fold
-    ind=find(~b);
     
-    [phi{f}, psi{f}, tree{f}, samples{f}, paths{f}]=asdHBTucker3(asd(ind,:,:),options);
     testPhi{f} = asdHBTuckerNew(asd, psi{f}, samples{f}, paths{f}, tree{f}, b, options);
 end
-save('asdHBTuckerCV.mat','phi', 'testPhi', 'psi', 'tree', 'samples', 'paths', 'options');
+save('asdHBTuckerCVTest.mat', 'testPhi');

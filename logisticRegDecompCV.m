@@ -1,4 +1,5 @@
 load('asdHBTuckerCV.mat'); %load tensor
+load('asdHBTuckerCVTest.mat'); %load tensor
 
 asdSparse=csvread('asdSparse.csv',1,1);
 asdTens=sptensor(asdSparse(:,1:3),asdSparse(:,4));
@@ -41,27 +42,7 @@ for i=1:nFolds
     badInd=sum(cvTrainPhi,1)>0;
     cvTrainPhi=cvTrainPhi(:,badInd); %remove columns of all zeros
     
-    switch options.topicModel
-        case 'IndepTrees'
-            nPaths = newTreePaths(asdTens,samples{i},paths{i},tree{i},b,...
-                options);
-        case 'PAM'
-            error('Error. \nPAM code not written yet');
-        case 'None'
-            L=options.L;
-    
-            %adjustment if using constant L across dims
-            if length(L)==1
-                L=repelem(L,2);
-            end
-            
-            nPaths=repmat([1:L(1),1:L(2)],sum(dims),1);
-        otherwise
-            error('Error. \nNo topic model type selected');
-    end
-    
-    testPhi=newTopics(asdTens,psi{i},nPaths,b,options);
-    cvTestPhi=tenmat(testPhi,1); %flatten tensor to matrix
+    cvTestPhi=tenmat(testPhi{i},1); %flatten tensor to matrix
     cvTestPhi=cvTestPhi(:,:); %convert to matrix
     cvTestPhi=cvTestPhi(:,badInd); %remove columns of all zeros
     

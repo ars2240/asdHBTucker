@@ -209,25 +209,27 @@ function [phi, psi, tree, samples, paths] = asdHBTucker3(x,options)
         end
         
         %redraw tree
-        treeStart=tic;
-        for treeIt=1:options.treeReps
-            switch options.topicModel
-                case 'IndepTrees'
-                    [paths,tree,r,LLtree,entTree]=redrawTree(dims,...
-                        samples,paths,L,tree,r,gam);
-                case 'PAM'
-                    [paths,tree,LLtree,entTree]=redrawPAM(dims,samples,...
-                        paths,tpl,tree,L,options);
-                case 'None'
-                    LLtree=0;
-                    entTree=0;
-                otherwise
-                    error('Error. \nNo topic model type selected');
+        if nIter<(options.maxIter-1)
+            treeStart=tic;
+            for treeIt=1:options.treeReps
+                switch options.topicModel
+                    case 'IndepTrees'
+                        [paths,tree,r,LLtree,entTree]=redrawTree(dims,...
+                            samples,paths,L,tree,r,gam);
+                    case 'PAM'
+                        [paths,tree,LLtree,entTree]=redrawPAM(dims,samples,...
+                            paths,tpl,tree,L,options);
+                    case 'None'
+                        LLtree=0;
+                        entTree=0;
+                    otherwise
+                        error('Error. \nNo topic model type selected');
+                end
             end
+            treeTime=treeTime+toc(treeStart);
         end
         LL=LL+LLtree;
         ent=ent+entTree;
-        treeTime=treeTime+toc(treeStart);
         
         %increment iteration counter
         nIter=nIter+1;

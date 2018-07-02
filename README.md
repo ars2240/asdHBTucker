@@ -1,7 +1,7 @@
 Simulink Project: asdHBTucker
 
 Author: Adam Sandler
-Date: 6/22/18
+Date: 7/2/18
 
 Instructions:
 
@@ -45,6 +45,7 @@ Files:
 - asdHBTucker3.m- hierarchical Bayesian Tucker decomposition function
 - asdTens.m- main run file
 - asdTensCV.m- main run file, separates decomposition into CV folds
+- asdTensCVTest.m- main run file, computes groups for CV test folds
 - crp.m- draws new restaurant from Chinese Restaurant Process (CRP)
 - createMRMRcsv.m- creates data csv for use in mRMR
 - drawCoreCon.m- draws the core tensor for the conditional Dirichlet distribution
@@ -70,6 +71,8 @@ Files:
 - logisticReg_noDecomp.m- uses a logistic regression model to learn & predict ASD, uses gene selection rather than a decomposition
 - multi.m- draws a single sample from the multinomial distribution
 - mRMR.r- selects features using mRMR method
+- newTreePaths.m- draws tree for test documents
+- newTreePathsInit.m- draws tree for test documents
 - nn.py- uses a neural network model to learn & predict ASD
 - opt.m- separate file that computes tests for our optimization problem
 - ran_forest.py- predict using random forest
