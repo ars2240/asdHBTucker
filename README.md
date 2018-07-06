@@ -1,7 +1,7 @@
 Simulink Project: asdHBTucker
 
 Author: Adam Sandler
-Date: 7/2/18
+Date: 7/6/18
 
 Instructions:
 
@@ -56,6 +56,7 @@ Files:
 - drchrnd.m- generates probabilities from the Dirichlet distribution
 - elems.m- returns all values between two vectors
 - entropy.m- calculates entropy of probability vector
+- gatherCVData.m- collects all data into one file for CV classification
 - gbm.py- uses a gradient boosting model to learn & predict ASD
 - gbm_mi.py- uses a gradient boosting model to learn & predict ASD, with MI feature selection
 - init_options.m- option initialization
@@ -76,10 +77,12 @@ Files:
 - nn.py- uses a neural network model to learn & predict ASD
 - opt.m- separate file that computes tests for our optimization problem
 - ran_forest.py- predict using random forest
+- ran_forest2.py- predict using random forest, for CV datasets
 - ran_forest_mi.py- predict using random forest, with MI feature selection
 - redrawTree.c- draws the tree from the CRP
 - redrawPAM.c- draws the DAG from the PAM
 - rgamma.c- samples small-shape gamma RVs via accept-reject
 - roc_cv.py- computes and plots ROC for each CV
+- roc_cv2.py- computes and plots ROC for each CV, for CV datasets
 - roc_cv_nn.py- computes and plots ROC for each CV, for nn.py
 - svm.py- uses SVM to learn & predict ASD
