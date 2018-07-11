@@ -18,10 +18,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy import interp
 from scipy import stats
+from sklearn.feature_selection import mutual_info_classif
+from sklearn.feature_selection import SelectKBest
+from sklearn.decomposition import PCA
 from sklearn.metrics import roc_curve, auc
 
 
-def roc(classifier, mdict, pname, splits=10):
+def roc(classifier, mdict, pname, splits=10, fselect='None', nfeat=100):
 
     tprs = []
     aucs = []
@@ -37,7 +40,6 @@ def roc(classifier, mdict, pname, splits=10):
     i = 0
     for i in range(0, splits):
 
-        # reformat
         X = phi[(i, 0)]
         s = X.shape
         X = np.reshape(X, [s[0], s[1] * s[2]])
@@ -48,6 +50,16 @@ def roc(classifier, mdict, pname, splits=10):
         X_test = np.reshape(X_test, [s[0], s[1] * s[2]])
         y_test = testASD[(i, 0)]
         y_test = np.reshape(y_test, s[0])
+
+        # reformat
+        if fselect == 'MI':
+            model = SelectKBest(mutual_info_classif, k=nfeat).fit(X, y)
+            X = model.transform(X)
+            X_test = model.transform(X_test)
+        elif fselect == 'PCA':
+            model = PCA(n_components=nfeat).fit(X)
+            X = model.transform(X)
+            X_test = model.transform(X_test)
 
         # fit model
         model = classifier.fit(X, y)
