@@ -1,7 +1,7 @@
 Simulink Project: asdHBTucker
 
 Author: Adam Sandler
-Date: 7/6/18
+Date: 7/19/18
 
 Instructions:
 
@@ -41,6 +41,7 @@ Classification (Python):
 Files:
 - asdGeneSelect.m- method for pre-selecting specific genes based on logistic regression
 - asdGeneSelectCV.m- method for pre-selecting specific genes based on logistic regression, while cross-validating
+- asdGeneSelectCV2.m- method for pre-selecting specific genes based on logistic regression, while cross-validating, using genetic variants only
 - AsdHBTucker.prj- Simulink Project file
 - asdHBTucker3.m- hierarchical Bayesian Tucker decomposition function
 - asdTens.m- main run file
@@ -70,6 +71,7 @@ Files:
 - logisticRegPCA.m- predict using logistic regression, using first X PCs
 - logisticReg_mRMR.r- uses a logistic regression model to learn & predict ASD, with mRMR feature selection
 - logisticReg_noDecomp.m- uses a logistic regression model to learn & predict ASD, uses gene selection rather than a decomposition
+- logisticReg_noDecomp_genes.m- uses a logistic regression model to learn & predict ASD, uses gene selection rather than a decomposition, using genetic variants only
 - multi.m- draws a single sample from the multinomial distribution
 - mRMR.r- selects features using mRMR method
 - newTreePaths.m- draws tree for test documents
