@@ -20,8 +20,12 @@ function [xMat, xtMat] = asdGeneSelectCV2(xSparse, y, t, ind, b, test)
                 pval(i)=stats.p(2);
             case 'exact'
                 %exact test
-                %source: https://www.mathworks.com/matlabcentral/fileexchange/24379-fisher-s-exact-test-with-n-x-m-contingency-table
-                [~,pval(i),~] = FisherExactTest(xM(:,i),y);
+                ct = crosstab(xM(:,i)~=0,y);
+                if size(ct,1)~=2
+                    pval(i)=1;
+                else
+                    [~,pval(i),~] = fishertest(ct);
+                end
             otherwise
                 error('Error. \nNo text selected');
         end

@@ -1,7 +1,7 @@
 Simulink Project: asdHBTucker
 
 Author: Adam Sandler
-Date: 7/19/18
+Date: 7/20/18
 
 Instructions:
 
@@ -26,6 +26,12 @@ Classification (MatLab):
     2. If running ogisticRegPCA.m, adjust nPCs (number of principal components) in line 23
     3. Run logisticReg.m or logisticRegPCA.m
     4. Output will be in command line
+
+Classification - no decomposition (MatLab):
+    Required data files: asdSparseGenes.csv (sparse representation of patient and genetic variants counting tensor)
+    
+    1. Run logisticReg_noDecomp_genes.m
+    2. Output will be in command line
 
 Classification (Python):
     Required data files: asdHBTucker*.mat (output of Tensor decomposition)
