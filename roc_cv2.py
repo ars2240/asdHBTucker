@@ -58,8 +58,18 @@ def roc(classifier, mdict, pname, splits=10, fselect='None', nfeat=100):
             X_test = model.transform(X_test)
         elif fselect == 'PCA':
             model = PCA(n_components=nfeat).fit(X)
+            #plt.clf()
+            #plt.scatter(range(0, X.shape[1]), model.components_, color='black', s=1)
+            #plt.ylabel('PC value')
+            #plt.xlabel('Index')
+            #plt.savefig('plots/' + pname + '_pcVal_' + str(i+1) + '.png')
             X = model.transform(X)
             X_test = model.transform(X_test)
+            #bins =np.linspace(-.005, .025, 20)
+            #plt.hist(X[y == 0], bins=bins, alpha=0.5, label='non-ASD')
+            #plt.hist(X[y == 1], bins=bins, alpha=0.5, label='ASD')
+            #plt.legend(loc='upper right')
+            #plt.savefig('plots/' + pname + '_hist_' + str(i + 1) + '.png')
 
         # fit model
         model = classifier.fit(X, y)
@@ -106,6 +116,7 @@ def roc(classifier, mdict, pname, splits=10, fselect='None', nfeat=100):
     plt.title('Receiver operating characteristic example')
     plt.legend(loc="lower right", prop={'size': 6})
     plt.savefig('plots/' + pname + '.png')
+    plt.clf()
 
     results = stats.ttest_1samp(aucs, popmean=0.5)
     p_val = results[1]
