@@ -2,8 +2,8 @@ asdSparse=csvread('asdSparseGenes.csv',1,1);
 
 %run only once, keep constant
 %or use seed
-t=.01;
-test='exact'; % 'logistic regression' or 'exact
+t=.05;
+test='backward'; % 'logistic regression' or 'exact
 pTest=.3; %percent of data in test
 rng(12345); %seed RNG
 nPat=max(asdSparse(:,1)); %number of patients
@@ -27,6 +27,7 @@ AUCtr=zeros(nFolds,1); %initialize AUC vector
 warning off stats:glmfit:IterationLimit;
 warning off stats:glmfit:IllConditioned;
 warning off stats:glmfit:PerfectSeparation;
+warning off stats:LinearModel:RankDefDesignMat;
 warning off MATLAB:nearlySingularMatrix;
 
 for i=1:nFolds
@@ -54,6 +55,7 @@ end
 warning on stats:glmfit:IterationLimit;
 warning on stats:glmfit:IllConditioned;
 warning on stats:glmfit:PerfectSeparation;
+warning on stats:LinearModel:RankDefDesignMat;
 warning on MATLAB:nearlySingularMatrix;
 
 %t-test that mean AUC = 0.5

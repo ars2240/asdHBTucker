@@ -20,6 +20,7 @@ options.maxIter = 1000;
 options.freq = 10;
 options.treeReps = 1;
 options.btReps = 1;
+% options.par = 0;
 % options.topicModel = 'PAM';
 
 phi=cell(nFolds,1);
@@ -31,7 +32,7 @@ paths=cell(nFolds,1);
 for f=1:nFolds
     b=cvInd==f; %logical indices of test fold
     ind=find(~b);
-    
+    fprintf('Fold # %6i\n',f);
     [phi{f}, psi{f}, tree{f}, samples{f}, paths{f}]=asdHBTucker3(asd(ind,:,:),options);
     testPhi{f} = asdHBTuckerNew(asd, psi{f}, samples{f}, paths{f}, tree{f}, b, options);
 end

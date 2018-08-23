@@ -20,6 +20,7 @@ phiMat=phiMat(:,sum(phiMat,1)>0); %remove columns of all zeros
 asd=logical(repmat([1;0],nPat/2,1)); %binary whether or not patient has ASD
 
 %split data based on index into training and testing sets
+cols=1:size(phiMat,2);
 %cols=csvread('asdHBTucker_100_mRMR_cols.csv',1,1);
 %cols=cols-1;
 trainPhi=phiMat(ind,cols);

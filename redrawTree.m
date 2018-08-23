@@ -1,12 +1,20 @@
-function [paths,tree,r,LL,ent] = redrawTree(dims,samples,paths,L,tree,r,gam)
+function [paths,tree,r,LL,ent] = redrawTree(dims,samples,paths,L,tree,r,options)
     %dims = dimensions of tensor
     %sampless = x, y, z values
     %paths = tree paths
     %L = levels of hierarchical tree
     %tree = hierarchical tree
     %r = restaurant lists
-    %gamma = hyper parameter of CRP
+    %options = 
+    % gam = hyper parameter(s) of CRP
 
+    gam=options.gam;
+    
+    %adjustment if using constant gam across dims
+    if length(gam)==1
+        gam=repelem(gam,2);
+    end
+    
     LL=0; %initialize log-likelihood
     ent=0; %initialize entropy
     
@@ -18,6 +26,18 @@ function [paths,tree,r,LL,ent] = redrawTree(dims,samples,paths,L,tree,r,gam)
        ctsA=sum(cts,3);
        
        col=(j-1)*L(1); %starting column
+       
+       switch options.pType
+           case 0
+               prior=1/dims(1+j);
+           case 1
+               prior=1;
+           otherwise
+               error('Error. \nNo prior type selected');
+       end
+       
+       gcts = gammaln(ctsA+prior);
+       glp = gammaln(prior);
        
        for i=randperm(dims(1))
            curRes=1; %set current restaurant as root
@@ -31,6 +51,7 @@ function [paths,tree,r,LL,ent] = redrawTree(dims,samples,paths,L,tree,r,gam)
                if newRes>size(cts,2)
                    cts=padarray(cts,[0 1 0],'post');
                    ctsA=padarray(ctsA,[0 1],'post');
+                   gcts=padarray(gcts,[0 1],glp,'post');
                end
 
                if ~isempty(tree{j}{curRes})
@@ -44,14 +65,15 @@ function [paths,tree,r,LL,ent] = redrawTree(dims,samples,paths,L,tree,r,gam)
                    %get counts
                    cts1=ctsA(:,rList)-cts(:,rList,i);
                    cts2=ctsA(:,rList);
+                   gcts2=gcts(:,rList);
 
                    %compute contribution to pdf
                    [~,l]=max(order);
                    pdf(l)=gam(j);
                    pdf=log(pdf); %take log to prevent overflow
                    pdf=pdf+gammaln(sum(cts1,1)+1);
-                   pdf=pdf-sum(gammaln(cts1+1/dims(1+j)),1);
-                   pdf=pdf+sum(gammaln(cts2+1/dims(1+j)),1);
+                   pdf=pdf-sum(gammaln(cts1+prior),1);
+                   pdf=pdf+sum(gcts2,1);
                    pdf=pdf-gammaln(sum(cts2,1)+1);
                    pdf=exp(pdf);
                    pdf=pdf/sum(pdf); %normalize

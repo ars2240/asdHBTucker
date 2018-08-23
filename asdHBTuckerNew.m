@@ -1,4 +1,4 @@
-function [phi, psi, tree, samples, paths] = asdHBTucker3(x,options)
+function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, b, options)
     %performs 3-mode condition probablility Bayesian Tucker decomposition 
     %on a counting tensor
     %P(mode 2, mode 3 | mode 1)
@@ -16,6 +16,8 @@ function [phi, psi, tree, samples, paths] = asdHBTucker3(x,options)
     tStart=tic;
     
     rng('shuffle'); %seed RNG
+    
+    x=asdTens(find(b),:,:);
     
     dims=size(x); %dimensions of tensor
     
@@ -55,22 +57,18 @@ function [phi, psi, tree, samples, paths] = asdHBTucker3(x,options)
     treeStart=tic;
     switch options.topicModel
         case 'IndepTrees'
-            [paths,tree,r,LLtree,entTree]=initializeTree(L,dims,gam);
+            [paths,r] = newTreePathsInit(oPaths,oSamples,tree,b,L);
         case 'PAM'
-            [paths,tpl,tree,r,LLtree,entTree]=initializePAM(L,dims,options);
+            error('Error. \nPAM code not written yet');
         case 'None'
             paths=repmat([1:L(1),1:L(2)],dims(1),1);
             r=cell(2,1); %initialize
             r{1}=1:L(1);
             r{2}=1:L(2);
             tree=cell(2,1); %initialize
-            LLtree=0;
-            entTree=0;
         otherwise
             error('Error. \nNo topic model type selected');
     end
-    LL=LL+LLtree;
-    ent=ent+entTree;
     treeTime=toc(treeStart);
     
     %calculate dimensions of core
@@ -80,26 +78,6 @@ function [phi, psi, tree, samples, paths] = asdHBTucker3(x,options)
        %set core dimensions to the number of topics in each mode
        coreDims(i+1)=length(r{i});
     end
-    
-    %draw matrices p(y|z)
-    matStart=tic;
-    psi=cell(2,1); %initialize
-    for i=2:3
-        %draw values from dirichlet distribution with uniform prior
-        switch options.pType
-            case 0
-                prior=repelem(1/dims(i),dims(i));
-            case 1
-                prior=repelem(1,dims(i));
-            otherwise
-                error('Error. \nNo prior type selected');
-        end
-        [psiT,p]=drchrnd(prior,coreDims(i),options);
-        psi{i-1}=psiT';
-        LL=LL+sum(p);
-        ent=ent+entropy(exp(p));
-    end
-    matTime=toc(matStart);
     
     %draw core tensor p(z|x)
     coreStart=tic;
@@ -138,47 +116,6 @@ function [phi, psi, tree, samples, paths] = asdHBTucker3(x,options)
         ent=0; %reset entropy
         
         for btIt=1:options.btReps
-            %recalculate dimensions of core
-            for i=1:2
-               %set core dimensions to the number of topics in each mode
-               coreDims(i+1)=length(r{i});
-            end
-
-            %matrices
-            psi{1}=zeros(dims(2),coreDims(2));
-            psi{2}=zeros(dims(3),coreDims(3));
-
-            %redraw matrices p(y|z)
-            matStart=tic;
-            for i=2:3
-                [u,~,ir]=unique(samples(:,2+i));
-                samps=accumarray(ir,1:size(samples,1),[],@(w){samples(w,:)});
-                dim=dims(i);
-                [~,loc]=ismember(r{i-1},u);
-                psiT=zeros(dim,coreDims(i));
-                for j=1:coreDims(i)
-                    %draw values from dirichlet distribution with uniform prior
-                    %plus counts of occurances of both y & z
-                    switch options.pType
-                        case 0
-                            prior=repelem(1/dim,dim);
-                        case 1
-                            prior=repelem(1,dim);
-                        otherwise
-                            error('Error. \nNo prior type selected');
-                    end
-                    if loc(j)~=0
-                        prior=prior+histc(samps{loc(j)}(:,i)',1:dim);
-                    end
-                    [psiT(:,j),p]=drchrnd(prior,1,options);
-                    if btIt==options.btReps
-                        LL=LL+sum(p);
-                        ent=ent+entropy(exp(p));
-                    end
-                end
-                psi{i-1}=psiT;
-            end
-            matTime=matTime+toc(matStart);
 
             %redraw core tensor p(z|x)
             %subset to get samples with x
@@ -209,27 +146,20 @@ function [phi, psi, tree, samples, paths] = asdHBTucker3(x,options)
         end
         
         %redraw tree
-        if nIter<(options.maxIter-1)
-            treeStart=tic;
-            for treeIt=1:options.treeReps
-                switch options.topicModel
-                    case 'IndepTrees'
-                        [paths,tree,r,LLtree,entTree]=redrawTree(dims,...
-                            samples,paths,L,tree,r,options);
-                    case 'PAM'
-                        [paths,tree,LLtree,entTree]=redrawPAM(dims,samples,...
-                            paths,tpl,tree,L,options);
-                    case 'None'
-                        LLtree=0;
-                        entTree=0;
-                    otherwise
-                        error('Error. \nNo topic model type selected');
-                end
+        treeStart=tic;
+        for treeIt=1:options.treeReps
+            switch options.topicModel
+                case 'IndepTrees'
+                    paths=newTreePaths(asdTens,oSamples,samples,oPaths,...
+                        tree,b,L,r,options);
+                case 'PAM'
+                    error('Error. \nPAM code not written yet');
+                case 'None'
+                otherwise
+                    error('Error. \nNo topic model type selected');
             end
-            treeTime=treeTime+toc(treeStart);
         end
-        LL=LL+LLtree;
-        ent=ent+entTree;
+        treeTime=treeTime+toc(treeStart);
         
         %increment iteration counter
         nIter=nIter+1;
@@ -243,7 +173,7 @@ function [phi, psi, tree, samples, paths] = asdHBTucker3(x,options)
         end
         
         %check if to continue
-        if nIter>=options.maxIter
+        if nIter>=(options.maxIter/10)
             cont=0;
         end
     end
@@ -252,15 +182,9 @@ function [phi, psi, tree, samples, paths] = asdHBTucker3(x,options)
     %print times
     if options.time==1
         fprintf('Sample Init time= %5.2f\n',sampTime);
-        fprintf('Matrix time= %5.2f\n',matTime);
         fprintf('Core time= %5.2f\n',coreTime);
         fprintf('Z time= %5.2f\n',zTime);
         fprintf('Tree time= %5.2f\n',treeTime);
-        hrs = floor(tTime/3600);
-        tTime = tTime - hrs * 3600;
-        min = floor(tTime/60);
-        tTime = tTime - min * 60;
-        fprintf('Total time= %2i hrs, %2i min, %4.2f sec \n', hrs, min, ...
-            tTime);
+        fprintf('Total time= %5.2f\n',tTime);
     end
 end

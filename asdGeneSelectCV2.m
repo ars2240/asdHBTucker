@@ -12,13 +12,15 @@ function [xMat, xtMat] = asdGeneSelectCV2(xSparse, y, t, ind, b, test)
 
     pval=ones(1,nGenes);
 
-    for i=1:nGenes
-        switch test
-            case 'logistic regression'
+    switch test
+        case 'logistic regression'
+            for i=1:nGenes
                 %logistic regression
                 [~,~,stats]=glmfit(xM(:,i),y,'binomial');
                 pval(i)=stats.p(2);
-            case 'exact'
+            end
+        case 'exact'
+            for i=1:nGenes
                 %exact test
                 ct = crosstab(xM(:,i)~=0,y);
                 if size(ct,1)~=2
@@ -26,9 +28,20 @@ function [xMat, xtMat] = asdGeneSelectCV2(xSparse, y, t, ind, b, test)
                 else
                     [~,pval(i),~] = fishertest(ct);
                 end
-            otherwise
-                error('Error. \nNo text selected');
-        end
+            end
+        case 'backward'
+            maxdev = chi2inv(1-t,1);     
+            opt = statset('display','iter',...
+              'TolFun',maxdev,...
+              'TolTypeFun','abs');
+            inmodel = sequentialfs(@critfun,xM,y,...
+               'cv','none',...
+               'nullmodel',true,...
+               'options',opt,...
+               'direction','backward');
+            pval(inmodel)=0;
+        otherwise
+            error('Error. \nNo text selected');
     end
 
     ind = pval<t;
@@ -48,4 +61,9 @@ function [xMat, xtMat] = asdGeneSelectCV2(xSparse, y, t, ind, b, test)
     xtMat=xtMat(:,:); %convert to matrix
     xtMat=xtMat(:,i); %remove columns of all zeros
     
+end
+
+function dev = critfun(X,Y)
+    model = fitglm(X,Y,'Distribution','binomial');
+    dev = model.Deviance;
 end
