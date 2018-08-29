@@ -1,6 +1,6 @@
-function [paths,tree,r,LL,ent] = redrawTree(dims,samples,paths,L,tree,r,options)
+function [paths,tree,r,LL,ent] = redrawTree(dims,cpsi,ctree,paths,L,tree,r,options)
     %dims = dimensions of tensor
-    %sampless = x, y, z values
+    %ctree = output from counts
     %paths = tree paths
     %L = levels of hierarchical tree
     %tree = hierarchical tree
@@ -21,9 +21,9 @@ function [paths,tree,r,LL,ent] = redrawTree(dims,samples,paths,L,tree,r,options)
     for j=1:2
         
        %get counts
-       cts=accumarray(samples(:,[1+j 3+j 1]),1,[dims(1+j),...
-           max(max(r{j}),max(samples(:,3+j))),dims(1)]);
-       ctsA=sum(cts,3);
+       cts=double(ctree{j});
+       cts=permute(cts,[2,3,1]);
+       ctsA=double(cpsi{j});
        
        col=(j-1)*L(1); %starting column
        

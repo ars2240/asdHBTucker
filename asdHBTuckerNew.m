@@ -71,35 +71,68 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, b, options)
     end
     treeTime=toc(treeStart);
     
-    %calculate dimensions of core
-    coreDims=zeros(1,3);
-    coreDims(1)=dims(1);
-    for i=1:2
-       %set core dimensions to the number of topics in each mode
-       coreDims(i+1)=length(r{i});
+    if options.collapsed==1
+        
+        %old counts
+        cStart=tic;
+        switch options.collapsed
+            case 1
+                [ocphi,ocpsi,~] = counts(oSamples, [max(oSamples(:,1)), ...
+                    dims(2:3)], r);
+            otherwise
+                [~,ocpsi,~] = counts(oSamples, [max(oSamples(:,1)), ...
+                    dims(2:3)], r);
+        end
+        cTime=toc(cStart);
+        
+        %initialize zero counts
+        dimsM=zeros(2,1);
+        dimsM(1)=size(r{1});
+        dimsM(2)=size(r{2});
+        cphi=zeros(dims(1),dimsM);
+        cpsi=cell(2,1);
+        cpsi{1}=zeros(dims(2),dimsM(1));
+        cpsi{2}=zeros(dims(3),dimsM(2));
+        
+        %draw latent topic z's
+        
+        
+        %new counts
+        cStart=tic;
+        [cphi,cpsi,~] = counts(samples, dims, r);
+        cTime=cTime+toc(cStart);
+        
+    else
+        %calculate dimensions of core
+        coreDims=zeros(1,3);
+        coreDims(1)=dims(1);
+        for i=1:2
+           %set core dimensions to the number of topics in each mode
+           coreDims(i+1)=length(r{i});
+        end
+
+        %draw core tensor p(z|x)
+        coreStart=tic;
+        [phi,p]=drawCoreUni(paths,coreDims,L,r,options);
+        LL=LL+sum(p);
+        ent=ent+entropy(exp(p));
+        coreTime=toc(coreStart);
+
+        %save('asd.mat','phi','psi','r','samples');
+        %draw latent topic z's
+        zStart=tic;
+        switch options.par
+            case 1
+                [samples,p]=drawZscPar(samples,phi,psi,r);
+                LL=LL+sum(log(p));
+                ent=ent+entropy(p);
+            otherwise
+                [samples,p]=drawZsc(samples,phi,psi,r);
+                LL=LL+sum(log(p));
+                ent=ent+entropy(p);
+        end
+        zTime=toc(zStart);
     end
-    
-    %draw core tensor p(z|x)
-    coreStart=tic;
-    [phi,p]=drawCoreUni(paths,coreDims,L,r,options);
-    LL=LL+sum(p);
-    ent=ent+entropy(exp(p));
-    coreTime=toc(coreStart);
-    
-    %save('asd.mat','phi','psi','r','samples');
-    %draw latent topic z's
-    zStart=tic;
-    switch options.par
-        case 1
-            [samples,p]=drawZscPar(samples,phi,psi,r);
-            LL=LL+sum(log(p));
-            ent=ent+entropy(p);
-        otherwise
-            [samples,p]=drawZsc(samples,phi,psi,r);
-            LL=LL+sum(log(p));
-            ent=ent+entropy(p);
-    end
-    zTime=toc(zStart);
     
     if options.print==1
         output_header=sprintf('%6s %13s %10s','iter','loglikelihood', ...
@@ -116,42 +149,56 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, b, options)
         ent=0; %reset entropy
         
         for btIt=1:options.btReps
+            if options.collapsed==1
+                %draw latent topic z's
+                
+            else
+                %redraw core tensor p(z|x)
+                %subset to get samples with x
+                coreStart=tic;
+                %redraw core tensor p(z|x)
+                [phi,p]=drawCoreCon(samples,paths,coreDims,L,r,options);
+                if btIt==options.btReps
+                    LL=LL+sum(p);
+                    ent=ent+entropy(exp(p));
+                end
+                coreTime=coreTime+toc(coreStart);
 
-            %redraw core tensor p(z|x)
-            %subset to get samples with x
-            coreStart=tic;
-            %redraw core tensor p(z|x)
-            [phi,p]=drawCoreCon(samples,paths,coreDims,L,r,options);
-            if btIt==options.btReps
-                LL=LL+sum(p);
-                ent=ent+entropy(exp(p));
-            end
-            coreTime=coreTime+toc(coreStart);
-
-            %redraw latent topic z's
-            zStart=tic;
-            switch options.par
-                case 1
-                    [samples,p]=drawZscPar(samples,phi,psi,r);
+                %redraw latent topic z's
+                zStart=tic;
+                switch options.par
+                    case 1
+                        [samples,p]=drawZscPar(samples,phi,psi,r);
+                        LL=LL+sum(log(p));
+                        ent=ent+entropy(p);
+                    otherwise
+                        [samples,p]=drawZsc(samples,phi,psi,r);
+                end
+                if btIt==options.btReps
                     LL=LL+sum(log(p));
                     ent=ent+entropy(p);
-                otherwise
-                    [samples,p]=drawZsc(samples,phi,psi,r);
+                end
+                zTime=zTime+toc(zStart);
             end
-            if btIt==options.btReps
-                LL=LL+sum(log(p));
-                ent=ent+entropy(p);
-            end
-            zTime=zTime+toc(zStart);
         end
+        
+        %new counts
+        cStart=tic;
+        switch options.collapsed
+            case 1
+                [cphi,cpsi,ctree] = counts(samples, dims, r);
+            otherwise
+                [~,~,ctree] = counts(samples, dims, r);
+        end
+        cTime=cTime+toc(cStart);
         
         %redraw tree
         treeStart=tic;
         for treeIt=1:options.treeReps
             switch options.topicModel
                 case 'IndepTrees'
-                    paths=newTreePaths(asdTens,oSamples,samples,oPaths,...
-                        tree,b,L,r,options);
+                    paths=newTreePaths(asdTens,ocpsi,ctree,oPaths,...
+                        tree,b,L,options);
                 case 'PAM'
                     error('Error. \nPAM code not written yet');
                 case 'None'
@@ -182,8 +229,13 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, b, options)
     %print times
     if options.time==1
         fprintf('Sample Init time= %5.2f\n',sampTime);
-        fprintf('Core time= %5.2f\n',coreTime);
+        if options.collapsed~=1
+            fprintf('Core time= %5.2f sec\n',coreTime);
+        end
         fprintf('Z time= %5.2f\n',zTime);
+        if options.collapsed==1
+            fprintf('Count time= %5.2f sec\n',cTime);
+        end
         fprintf('Tree time= %5.2f\n',treeTime);
         fprintf('Total time= %5.2f\n',tTime);
     end

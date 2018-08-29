@@ -1,4 +1,4 @@
-function nPaths = newTreePaths(asdTens,oSamples,samples,paths,tree,ind,L,r,options)
+function nPaths = newTreePaths(asdTens,ocpsi,ctree,paths,tree,ind,L,options)
     
     nPaths=ones(sum(ind),sum(L));
     
@@ -9,11 +9,9 @@ function nPaths = newTreePaths(asdTens,oSamples,samples,paths,tree,ind,L,r,optio
        col=(j-1)*L(1); %starting column
         
        %get counts
-       ctsA=accumarray(oSamples(:,[1+j 3+j]),1,[dims(1+j),...
-           max(max(r{j}),max(oSamples(:,3+j)))]);
+       ctsA=ocpsi{j};
        
-       cts=accumarray(samples(:,[1+j 3+j 1]),1,[dims(1+j),...
-           max(max(r{j}),max(samples(:,3+j))),sum(ind)]);
+       cts=permute(ctree{j},[2,3,1]);
        
       switch options.pType
            case 0
@@ -25,7 +23,6 @@ function nPaths = newTreePaths(asdTens,oSamples,samples,paths,tree,ind,L,r,optio
        end
        
        gcts = gammaln(ctsA+prior);
-       glp = gammaln(prior);
        
        for i=1:sum(ind)
            curRes=1; %set current restaurant as root

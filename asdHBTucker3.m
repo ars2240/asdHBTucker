@@ -73,55 +73,87 @@ function [phi, psi, tree, samples, paths] = asdHBTucker3(x,options)
     ent=ent+entTree;
     treeTime=toc(treeStart);
     
-    %calculate dimensions of core
-    coreDims=zeros(1,3);
-    coreDims(1)=dims(1);
-    for i=1:2
-       %set core dimensions to the number of topics in each mode
-       coreDims(i+1)=length(r{i});
-    end
-    
-    %draw matrices p(y|z)
-    matStart=tic;
-    psi=cell(2,1); %initialize
-    for i=2:3
-        %draw values from dirichlet distribution with uniform prior
-        switch options.pType
-            case 0
-                prior=repelem(1/dims(i),dims(i));
+    if options.collapsed==1
+        
+        %initialize zero counts
+        dimsM=zeros(2,1);
+        dimsM(1)=length(r{1});
+        dimsM(2)=length(r{2});
+        cphi=zeros(dims(1),dimsM(1),dimsM(2));
+        cpsi=cell(2,1);
+        cpsi{1}=zeros(dims(2),dimsM(1));
+        cpsi{2}=zeros(dims(3),dimsM(2));
+        
+        %draw latent topic z's
+        zStart=tic;
+        switch options.par
             case 1
-                prior=repelem(1,dims(i));
+                [samples,p]=drawZsCollapsedPar(samples,cphi,cpsi,r,...
+                    options.prior);
+                LL=LL+sum(log(p));
+                ent=ent+entropy(p);
             otherwise
-                error('Error. \nNo prior type selected');
+                [samples,p]=drawZsCollapsed(samples,cphi,cpsi,r,...
+                    options.prior);
+                LL=LL+sum(log(p));
+                ent=ent+entropy(p);
         end
-        [psiT,p]=drchrnd(prior,coreDims(i),options);
-        psi{i-1}=psiT';
+        zTime=toc(zStart);
+        
+        %new counts
+        cStart=tic;
+        [cphi,cpsi,~] = counts(samples, dims, r);
+        cTime=toc(cStart);
+    else
+        %calculate dimensions of core
+        coreDims=zeros(1,3);
+        coreDims(1)=dims(1);
+        for i=1:2
+           %set core dimensions to the number of topics in each mode
+           coreDims(i+1)=length(r{i});
+        end
+
+        %draw matrices p(y|z)
+        matStart=tic;
+        psi=cell(2,1); %initialize
+        for i=2:3
+            %draw values from dirichlet distribution with uniform prior
+            switch options.pType
+                case 0
+                    prior=repelem(1/dims(i),dims(i));
+                case 1
+                    prior=repelem(1,dims(i));
+                otherwise
+                    error('Error. \nNo prior type selected');
+            end
+            [psiT,p]=drchrnd(prior,coreDims(i),options);
+            psi{i-1}=psiT';
+            LL=LL+sum(p);
+            ent=ent+entropy(exp(p));
+        end
+        matTime=toc(matStart);
+
+        %draw core tensor p(z|x)
+        coreStart=tic;
+        [phi,p]=drawCoreUni(paths,coreDims,L,r,options);
         LL=LL+sum(p);
         ent=ent+entropy(exp(p));
+        coreTime=toc(coreStart);
+        
+        %draw latent topic z's
+        zStart=tic;
+        switch options.par
+            case 1
+                [samples,p]=drawZscPar(samples,phi,psi,r);
+                LL=LL+sum(log(p));
+                ent=ent+entropy(p);
+            otherwise
+                [samples,p]=drawZsc(samples,phi,psi,r);
+                LL=LL+sum(log(p));
+                ent=ent+entropy(p);
+        end
+        zTime=toc(zStart);
     end
-    matTime=toc(matStart);
-    
-    %draw core tensor p(z|x)
-    coreStart=tic;
-    [phi,p]=drawCoreUni(paths,coreDims,L,r,options);
-    LL=LL+sum(p);
-    ent=ent+entropy(exp(p));
-    coreTime=toc(coreStart);
-    
-    %save('asd.mat','phi','psi','r','samples');
-    %draw latent topic z's
-    zStart=tic;
-    switch options.par
-        case 1
-            [samples,p]=drawZscPar(samples,phi,psi,r);
-            LL=LL+sum(log(p));
-            ent=ent+entropy(p);
-        otherwise
-            [samples,p]=drawZsc(samples,phi,psi,r);
-            LL=LL+sum(log(p));
-            ent=ent+entropy(p);
-    end
-    zTime=toc(zStart);
     
     if options.print==1
         output_header=sprintf('%6s %13s %10s','iter','loglikelihood', ...
@@ -138,84 +170,113 @@ function [phi, psi, tree, samples, paths] = asdHBTucker3(x,options)
         ent=0; %reset entropy
         
         for btIt=1:options.btReps
-            %recalculate dimensions of core
-            for i=1:2
-               %set core dimensions to the number of topics in each mode
-               coreDims(i+1)=length(r{i});
-            end
-
-            %matrices
-            psi{1}=zeros(dims(2),coreDims(2));
-            psi{2}=zeros(dims(3),coreDims(3));
-
-            %redraw matrices p(y|z)
-            matStart=tic;
-            for i=2:3
-                [u,~,ir]=unique(samples(:,2+i));
-                samps=accumarray(ir,1:size(samples,1),[],@(w){samples(w,:)});
-                dim=dims(i);
-                [~,loc]=ismember(r{i-1},u);
-                psiT=zeros(dim,coreDims(i));
-                for j=1:coreDims(i)
-                    %draw values from dirichlet distribution with uniform prior
-                    %plus counts of occurances of both y & z
-                    switch options.pType
-                        case 0
-                            prior=repelem(1/dim,dim);
-                        case 1
-                            prior=repelem(1,dim);
-                        otherwise
-                            error('Error. \nNo prior type selected');
-                    end
-                    if loc(j)~=0
-                        prior=prior+histc(samps{loc(j)}(:,i)',1:dim);
-                    end
-                    [psiT(:,j),p]=drchrnd(prior,1,options);
-                    if btIt==options.btReps
-                        LL=LL+sum(p);
-                        ent=ent+entropy(exp(p));
-                    end
+            if options.collapsed==1 && nIter<(options.maxIter-1)
+                %draw latent topic z's
+                zStart=tic;
+                switch options.par
+                    case 1
+                        [samples,p]=drawZsCollapsedPar(samples,cphi,cpsi,r,...
+                            options.prior);
+                        LL=LL+sum(log(p));
+                        ent=ent+entropy(p);
+                    otherwise
+                        [samples,p]=drawZsCollapsed(samples,cphi,cpsi,r,...
+                            options.prior);
+                        LL=LL+sum(log(p));
+                        ent=ent+entropy(p);
                 end
-                psi{i-1}=psiT;
-            end
-            matTime=matTime+toc(matStart);
+                zTime=toc(zStart);
+            else
+                %recalculate dimensions of core
+                for i=1:2
+                   %set core dimensions to the number of topics in each mode
+                   coreDims(i+1)=length(r{i});
+                end
 
-            %redraw core tensor p(z|x)
-            %subset to get samples with x
-            coreStart=tic;
-            %redraw core tensor p(z|x)
-            [phi,p]=drawCoreCon(samples,paths,coreDims,L,r,options);
-            if btIt==options.btReps
-                LL=LL+sum(p);
-                ent=ent+entropy(exp(p));
-            end
-            coreTime=coreTime+toc(coreStart);
+                %matrices
+                psi{1}=zeros(dims(2),coreDims(2));
+                psi{2}=zeros(dims(3),coreDims(3));
 
-            %redraw latent topic z's
-            zStart=tic;
-            switch options.par
-                case 1
-                    [samples,p]=drawZscPar(samples,phi,psi,r);
+                %redraw matrices p(y|z)
+                matStart=tic;
+                for i=2:3
+                    [u,~,ir]=unique(samples(:,2+i));
+                    samps=accumarray(ir,1:size(samples,1),[],@(w){samples(w,:)});
+                    dim=dims(i);
+                    [~,loc]=ismember(r{i-1},u);
+                    psiT=zeros(dim,coreDims(i));
+                    for j=1:coreDims(i)
+                        %draw values from dirichlet distribution with uniform prior
+                        %plus counts of occurances of both y & z
+                        switch options.pType
+                            case 0
+                                prior=repelem(1/dim,dim);
+                            case 1
+                                prior=repelem(1,dim);
+                            otherwise
+                                error('Error. \nNo prior type selected');
+                        end
+                        if loc(j)~=0
+                            prior=prior+histc(samps{loc(j)}(:,i)',1:dim);
+                        end
+                        [psiT(:,j),p]=drchrnd(prior,1,options);
+                        if btIt==options.btReps
+                            LL=LL+sum(p);
+                            ent=ent+entropy(exp(p));
+                        end
+                    end
+                    psi{i-1}=psiT;
+                end
+                matTime=matTime+toc(matStart);
+
+                %redraw core tensor p(z|x)
+                %subset to get samples with x
+                coreStart=tic;
+                %redraw core tensor p(z|x)
+                [phi,p]=drawCoreCon(samples,paths,coreDims,L,r,options);
+                if btIt==options.btReps
+                    LL=LL+sum(p);
+                    ent=ent+entropy(exp(p));
+                end
+                coreTime=coreTime+toc(coreStart);
+
+                %redraw latent topic z's
+                zStart=tic;
+                switch options.par
+                    case 1
+                        [samples,p]=drawZscPar(samples,phi,psi,r);
+                        LL=LL+sum(log(p));
+                        ent=ent+entropy(p);
+                    otherwise
+                        [samples,p]=drawZsc(samples,phi,psi,r);
+                end
+                if btIt==options.btReps
                     LL=LL+sum(log(p));
                     ent=ent+entropy(p);
-                otherwise
-                    [samples,p]=drawZsc(samples,phi,psi,r);
+                end
+                zTime=zTime+toc(zStart);
             end
-            if btIt==options.btReps
-                LL=LL+sum(log(p));
-                ent=ent+entropy(p);
-            end
-            zTime=zTime+toc(zStart);
         end
         
         %redraw tree
         if nIter<(options.maxIter-1)
+            
+            %new counts
+            cStart=tic;
+            switch options.collapsed
+                case 1
+                    [cphi,cpsi,ctree] = counts(samples, dims, r);
+                otherwise
+                    [~,cpsi,ctree] = counts(samples, dims, r);
+            end
+            cTime=cTime+toc(cStart);
+            
             treeStart=tic;
             for treeIt=1:options.treeReps
                 switch options.topicModel
                     case 'IndepTrees'
                         [paths,tree,r,LLtree,entTree]=redrawTree(dims,...
-                            samples,paths,L,tree,r,options);
+                            cpsi,ctree,paths,L,tree,r,options);
                     case 'PAM'
                         [paths,tree,LLtree,entTree]=redrawPAM(dims,samples,...
                             paths,tpl,tree,L,options);
@@ -251,11 +312,26 @@ function [phi, psi, tree, samples, paths] = asdHBTucker3(x,options)
     
     %print times
     if options.time==1
-        fprintf('Sample Init time= %5.2f\n',sampTime);
-        fprintf('Matrix time= %5.2f\n',matTime);
-        fprintf('Core time= %5.2f\n',coreTime);
-        fprintf('Z time= %5.2f\n',zTime);
-        fprintf('Tree time= %5.2f\n',treeTime);
+        fprintf('Sample Init time= %5.2f sec\n',sampTime);
+        if options.collapsed~=1
+            fprintf('Matrix time= %5.2f sec\n',matTime);
+            fprintf('Core time= %5.2f sec\n',coreTime);
+        end
+        hrs = floor(zTime/3600);
+        zTime = zTime - hrs * 3600;
+        min = floor(zTime/60);
+        zTime = zTime - min * 60;
+        fprintf('Z time= %2i hrs, %2i min, %4.2f sec \n', hrs, min, ...
+            zTime);
+        if options.collapsed==1
+            fprintf('Count time= %5.2f sec\n',cTime);
+        end
+        hrs = floor(treeTime/3600);
+        treeTime = treeTime - hrs * 3600;
+        min = floor(treeTime/60);
+        treeTime = treeTime - min * 60;
+        fprintf('Tree time= %2i hrs, %2i min, %4.2f sec \n', hrs, min, ...
+            treeTime);
         hrs = floor(tTime/3600);
         tTime = tTime - hrs * 3600;
         min = floor(tTime/60);
