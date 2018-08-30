@@ -21,9 +21,9 @@ function [paths,tree,r,LL,ent] = redrawTree(dims,cpsi,ctree,paths,L,tree,r,optio
     for j=1:2
         
        %get counts
-       cts=double(ctree{j});
+       cts=ctree{j};
        cts=permute(cts,[2,3,1]);
-       ctsA=double(cpsi{j});
+       ctsA=cpsi{j};
        
        col=(j-1)*L(1); %starting column
        

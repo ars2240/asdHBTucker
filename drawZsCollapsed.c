@@ -53,7 +53,7 @@ void drawZs(double *sampIn, double *sampOut, double *p, size_t sampCols,
         alpha2=1/psi1Dims[0];
         alpha3=1/psi2Dims[0];
     }
-    
+     
     double psi1Sum[psi1Dims[1]];
     double psi2Sum[psi2Dims[1]];
     int i, k;
@@ -62,19 +62,16 @@ void drawZs(double *sampIn, double *sampOut, double *p, size_t sampCols,
         for(k=0; k<psi1Dims[0]; k++){
             psi1Sum[i]+=psi1[k+i*psi1Dims[0]];
         }
-        mexPrintf("Psi1 - topic %d of %d, sum = %f.\n",i+1,psi1Dims[1],psi1Sum[i]);
     }
     for(i=0; i<psi2Dims[1]; i++){
         psi2Sum[i]=alpha3*psi2Dims[0];
         for(k=0; k<psi2Dims[0]; k++){
             psi2Sum[i]+=psi2[k+i*psi2Dims[0]];
         }
-        mexPrintf("Psi2 - topic %d of %d, sum = %f.\n",i+1,psi2Dims[1],psi2Sum[i]);
     }
     
     srand48(time(NULL)); // randomize seed
     
-    mexPrintf("Initialized.\n");
     for(j=0; j<sampRows; j++){
         drawZ(j,sampIn,sampOut,p,sampCols,sampRows,phi,psi1,psi2,psi1Sum,
                 psi2Sum,r1,r2,phiDims,psi1Dims,psi2Dims,alpha1,alpha2,
@@ -98,7 +95,7 @@ void drawZ(int j, double *sampIn, double *sampOut, double *p,
     for(i=0; i<sampCols; i++){
         sampOut[i*sampRows+j] = sampIn[i*sampRows+j];
     }
-
+    
     // get pdf from phi and psi
     int size = phiDims[1]*phiDims[2];
     double pdf[size];
@@ -113,7 +110,7 @@ void drawZ(int j, double *sampIn, double *sampOut, double *p,
             sum = sum + pdf[index];
         }
     }
-
+    
     // draw new z
     int z, z1, z2;
     if(sum==0){

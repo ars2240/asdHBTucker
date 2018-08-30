@@ -1,9 +1,10 @@
 asdSparse=csvread('asdSparseGenes.csv',1,1);
+asdSparse(:,4)=ones(size(asdSparse,1),1);
 
 %run only once, keep constant
 %or use seed
-t=.05;
-test='backward'; % 'logistic regression' or 'exact
+t=.01;
+test='logistic regression'; % 'logistic regression' or 'exact
 pTest=.3; %percent of data in test
 rng(12345); %seed RNG
 nPat=max(asdSparse(:,1)); %number of patients
@@ -23,6 +24,9 @@ cvInd=crossvalind('Kfold',nTrain,nFolds); %split data into k folds
 AUC=zeros(nFolds,1); %initialize AUC vector
 AUCtr=zeros(nFolds,1); %initialize AUC vector
 
+cvTrainPhi=cell(nFolds,1);
+cvTestPhi=cell(nFolds,1);
+
 %disable certain warnings
 warning off stats:glmfit:IterationLimit;
 warning off stats:glmfit:IllConditioned;
@@ -34,17 +38,17 @@ for i=1:nFolds
     b=cvInd==i; %logical indices of test fold
     
     %split data based on index into training and testing sets
-    [cvTrainPhi, cvTestPhi]=asdGeneSelectCV2(trainASDsp, trainASD(~b), t, ...
+    [cvTrainPhi{i}, cvTestPhi{i}]=asdGeneSelectCV2(trainASDsp, trainASD(~b), t, ...
         ind, b, test);
     cvTestASD=trainASD(b,:);
     cvTrainASD=trainASD(~b,:);
     
     %logistic regression
-    logReg=glmfit(cvTrainPhi,cvTrainASD,'binomial');
+    logReg=glmfit(cvTrainPhi{i},cvTrainASD,'binomial');
     
     %prediction
-    predtr=glmval(logReg,cvTrainPhi,'logit');
-    pred=glmval(logReg,cvTestPhi,'logit');
+    predtr=glmval(logReg,cvTrainPhi{i},'logit');
+    pred=glmval(logReg,cvTestPhi{i},'logit');
     
     %compute AUC of ROC curve
     [~,~,~,AUCtr(i)]=perfcurve(cvTrainASD,predtr,1);
@@ -66,3 +70,5 @@ warning on MATLAB:nearlySingularMatrix;
 fprintf('Set\t Mean\t StDev\t P-value\n');
 fprintf('Valid\t %1.4f\t %1.4f\t %1.4f\n',mean(AUC),std(AUC),p);
 fprintf('Train\t %1.4f\t %1.4f\t %1.4f\n',mean(AUCtr),std(AUCtr),ptr);
+
+save('asdNoDecomp_1s.mat','cvTrainPhi','cvTestPhi');

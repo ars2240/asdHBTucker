@@ -30,11 +30,16 @@ function [cphi,cpsi,ctree] = counts(samples, dims, r)
     % count of GV, GV topic
     cpsi{1}=collapse(ctree{1},1,@sum);
     cpsi{1}=cpsi{1}(:,:);
-    cpsi{1}=cpsi{1}(:,r{1});
     
     % count of p'way, p'way topic
     cpsi{2}=collapse(ctree{2},1,@sum);
     cpsi{2}=cpsi{2}(:,:);
-    cpsi{2}=cpsi{2}(:,r{2});
+    
+    % convert to normal MatLab tensor
+    cphi=double(cphi);
+    ctree{1}=double(ctree{1});
+    ctree{2}=double(ctree{2});
+    cpsi{1}=double(cpsi{1});
+    cpsi{2}=double(cpsi{2});
 
 end

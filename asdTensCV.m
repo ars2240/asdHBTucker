@@ -1,5 +1,6 @@
 asdSparse=csvread('asdSparse.csv',1,1);
-asd=sptensor(asdSparse(:,1:3),asdSparse(:,4));
+%asd=sptensor(asdSparse(:,1:3),asdSparse(:,4));
+asd=sptensor(asdSparse(:,1:3),ones(size(asdSparse,1),1));
 
 pTest=.3; %percent of data in test
 rng(12345); %seed RNG
@@ -16,13 +17,13 @@ cvInd=crossvalind('Kfold',nTrain,nFolds); %split data into k folds
 options=init_options();
 % mex drawZscPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
 % options.L = 3;
-options.maxIter = 100;
+% options.maxIter = 100;
 options.freq = 10;
-options.treeReps = 1;
-options.btReps = 1;
-options.par = 0;
-options.collapsed = 1;
+% options.treeReps = 1;
+% options.btReps = 1;
 % options.topicModel = 'PAM';
+% options.par = 0;
+% options.collapsed = 1;
 
 phi=cell(nFolds,1);
 testPhi=cell(nFolds,1);

@@ -171,6 +171,19 @@ function [phi, psi, tree, samples, paths] = asdHBTucker3(x,options)
         
         for btIt=1:options.btReps
             if options.collapsed==1 && nIter<(options.maxIter-1)
+                pad=max(r{1})-size(cphi,2);
+                if pad>0
+                   cphi=padarray(cphi,[0 pad 0],'post');
+                   cpsi{1}=padarray(cpsi{1},[0 pad],'post');
+                end
+                pad=max(r{2})-size(cphi,3);
+                if pad>0
+                   cphi=padarray(cphi,[0 0 pad],'post');
+                   cpsi{2}=padarray(cpsi{2},[0 pad],'post');
+                end
+                cphi=cphi(:,r{1},r{2});
+                cpsi{1}=cpsi{1}(:,r{1});
+                cpsi{2}=cpsi{2}(:,r{2});
                 %draw latent topic z's
                 zStart=tic;
                 switch options.par
