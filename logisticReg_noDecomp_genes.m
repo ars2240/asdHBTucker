@@ -1,5 +1,5 @@
 asdSparse=csvread('asdSparseGenes.csv',1,1);
-asdSparse(:,4)=ones(size(asdSparse,1),1);
+% asdSparse(:,4)=ones(size(asdSparse,1),1);
 
 %run only once, keep constant
 %or use seed
@@ -71,4 +71,4 @@ fprintf('Set\t Mean\t StDev\t P-value\n');
 fprintf('Valid\t %1.4f\t %1.4f\t %1.4f\n',mean(AUC),std(AUC),p);
 fprintf('Train\t %1.4f\t %1.4f\t %1.4f\n',mean(AUCtr),std(AUCtr),ptr);
 
-save('asdNoDecomp_1s.mat','cvTrainPhi','cvTestPhi');
+save('asdNoDecomp.mat','cvTrainPhi','cvTestPhi');

@@ -71,19 +71,19 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, b, options)
     end
     treeTime=toc(treeStart);
     
+    %old counts
+    cStart=tic;
+    switch options.collapsed
+        case 1
+            [ocphi,ocpsi,~] = counts(oSamples, [max(oSamples(:,1)), ...
+                dims(2:3)], r);
+        otherwise
+            [~,ocpsi,~] = counts(oSamples, [max(oSamples(:,1)), ...
+                dims(2:3)], r);
+    end
+    cTime=toc(cStart);
+    
     if options.collapsed==1
-        
-        %old counts
-        cStart=tic;
-        switch options.collapsed
-            case 1
-                [ocphi,ocpsi,~] = counts(oSamples, [max(oSamples(:,1)), ...
-                    dims(2:3)], r);
-            otherwise
-                [~,ocpsi,~] = counts(oSamples, [max(oSamples(:,1)), ...
-                    dims(2:3)], r);
-        end
-        cTime=toc(cStart);
         
         %initialize zero counts
         dimsM=zeros(2,1);
@@ -132,6 +132,8 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, b, options)
                 ent=ent+entropy(p);
         end
         zTime=toc(zStart);
+        
+        cTime=0;
     end
     
     if options.print==1

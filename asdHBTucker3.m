@@ -153,6 +153,8 @@ function [phi, psi, tree, samples, paths] = asdHBTucker3(x,options)
                 ent=ent+entropy(p);
         end
         zTime=toc(zStart);
+        
+        cTime=0;
     end
     
     if options.print==1

@@ -122,4 +122,6 @@ function [paths,tree,r,LL,ent] = redrawTree(dims,cpsi,ctree,paths,L,tree,r,optio
           tree{j}{k}=tree{j}{k}(ismember(tree{j}{k},r{j}));
        end
     end
+    
+    [r, tree, paths] = sortTopics(r, tree, paths, L);
 end
