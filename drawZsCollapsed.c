@@ -5,11 +5,11 @@
   samp = sample matrix
   cphi = tucker decomposition tensor core tensor
   cpsi = tucker decomposition matrices
-  r = restaurant lists
+  r = restaurant lists / paths per each x
   prior = 1 or 1/L
  
  The calling syntax is:
-    [samp,p] = drawZsCollapsed(samp,cphi,cpsi,r,prior)
+    [samp,p] = drawZsCollapsed(samp,cphi,cpsi,path,L,prior)
 
   Created by Adam Sandler.
 */
@@ -23,11 +23,11 @@
 // forward declarations
 void drawZs(double *sampIn, double *sampOut, double *p, size_t sampCols,
         size_t sampRows, double *phi, double *psi1, double *psi2,
-        double *r1, double *r2, const mwSize *phiDims,
+        double *pth, double *l, const mwSize *phiDims,
         const mwSize *psi1Dims, const mwSize *psi2Dims, int pri);
 void drawZ(int j, double *sampIn, double *sampOut, double *p,
         size_t sampCols, size_t sampRows, double *phi, double *psi1,
-        double *psi2, double *psi1s, double *psi2s, double *r1, double *r2,
+        double *psi2, double *psi1s, double *psi2s, double *pth, double *l,
         const mwSize *phiDims, const mwSize *psi1Dims, 
         const mwSize *psi2Dims, double a1, double a2, double a3);
 int multi(double *pdf, int size);
@@ -37,7 +37,7 @@ void normalize(double *pdf, double sum, int size);
 
 void drawZs(double *sampIn, double *sampOut, double *p, size_t sampCols,
         size_t sampRows, double *phi, double *psi1, double *psi2,
-        double *r1, double *r2, const mwSize *phiDims,
+        double *pth, double *l, const mwSize *phiDims,
         const mwSize *psi1Dims, const mwSize *psi2Dims, int pri)
 {
     int j;
@@ -74,7 +74,7 @@ void drawZs(double *sampIn, double *sampOut, double *p, size_t sampCols,
     
     for(j=0; j<sampRows; j++){
         drawZ(j,sampIn,sampOut,p,sampCols,sampRows,phi,psi1,psi2,psi1Sum,
-                psi2Sum,r1,r2,phiDims,psi1Dims,psi2Dims,alpha1,alpha2,
+                psi2Sum,pth,l,phiDims,psi1Dims,psi2Dims,alpha1,alpha2,
                 alpha3);  
     }
     
@@ -82,13 +82,15 @@ void drawZs(double *sampIn, double *sampOut, double *p, size_t sampCols,
 
 void drawZ(int j, double *sampIn, double *sampOut, double *p,
         size_t sampCols, size_t sampRows, double *phi, double *psi1,
-        double *psi2, double *psi1s, double *psi2s, double *r1, double *r2,
+        double *psi2, double *psi1s, double *psi2s, double *pth, double *l,
         const mwSize *phiDims, const mwSize *psi1Dims, 
         const mwSize *psi2Dims, double a1, double a2, double a3)
 {
     int x = sampIn[0*sampRows+j]-1; //get evidence variable
     int y1 = sampIn[1*sampRows+j]-1; //get 1st response variable
     int y2 = sampIn[2*sampRows+j]-1; // get 2nd response variable
+    int z1o = sampIn[3*sampRows+j]-1; //get 1st old topic
+    int z2o = sampIn[4*sampRows+j]-1; // get 2nd old topic
 
     // initialize sampOut
     int i, k;
@@ -97,17 +99,23 @@ void drawZ(int j, double *sampIn, double *sampOut, double *p,
     }
     
     // get pdf from phi and psi
-    int size = phiDims[1]*phiDims[2];
+    int size = (int)l[0]*l[1];
     double pdf[size];
     double sum = 0;
-    int index;
-    for(i=0; i<phiDims[1]; i++){
-        for(k=0; k<phiDims[2]; k++){
-            index = i+k*phiDims[1];
-            pdf[index] = phi[x+index*phiDims[0]] + a1;
-            pdf[index] *= (psi1[y1+i*psi1Dims[0]] + a2)/psi1s[i];
-            pdf[index] *= (psi2[y2+k*psi2Dims[0]] + a3)/psi2s[k];
-            sum = sum + pdf[index];
+    int ind;
+    int ip, kp, indp, s1, s2;
+    for(i=0; i<l[1]; i++){
+        for(k=0; k<l[2]; k++){
+            ip = pth[x+i*phiDims[0]];
+            kp = pth[x+(k+(int)l[0])*phiDims[0]];
+            s1 = ((ip==z1o) ? 1 : 0);
+            s2 = ((kp==z2o) ? 1 : 0);
+            ind = i+k*(int)l[1];
+            indp = ip+kp*phiDims[1];
+            pdf[ind] = phi[x+indp*phiDims[0]]+a1-s1*s2;
+            pdf[ind] *= (psi1[y1+ip*psi1Dims[0]]+a2-s1)/psi1s[ip];
+            pdf[ind] *= (psi2[y2+kp*psi2Dims[0]]+a3-s2)/psi2s[kp];
+            sum = sum + pdf[ind];
         }
     }
     
@@ -125,8 +133,8 @@ void drawZ(int j, double *sampIn, double *sampOut, double *p,
         p[j] = pdf[z];
     }
 
-    sampOut[3*sampRows+j] = r1[z1]; //set topic
-    sampOut[4*sampRows+j] = r2[z2]; //set topic
+    sampOut[3*sampRows+j] = pth[x+z1*phiDims[0]]; //set topic
+    sampOut[4*sampRows+j] = pth[x+(z2+(int)l[0])*phiDims[0]]; //set topic
 
 }
 
@@ -178,15 +186,16 @@ void mexFunction(int nlhs, mxArray *plhs[],
     double *sIn, *sOut, *prob; // sample row
     double *core; // tucker decomposition tensor core tensor
     double *aux1, *aux2; // tucker decomposition matrices
-    double *res1, *res2; // restaurant lists
+    double *path; // pathways
+    double *L; // levels
     int prior; // prior
     size_t ncols, nrows, res2Size; // number of columns of sample
     const mwSize *coreDims, *aux1Dims, *aux2Dims;
     
     /* Check number of inputs and outputs */
-    if(nrhs != 5) {
+    if(nrhs != 6) {
         mexErrMsgIdAndTxt("MyToolbox:arrayProduct:nrhs",
-                          "Five inputs required.");
+                          "Six inputs required.");
     }
     if(nlhs != 2) {
         mexErrMsgIdAndTxt("MyToolbox:arrayProduct:nlhs",
@@ -202,9 +211,9 @@ void mexFunction(int nlhs, mxArray *plhs[],
     aux1Dims = mxGetDimensions(mxGetCell(prhs[2],0));
     aux2 = mxGetPr(mxGetCell(prhs[2],1));
     aux2Dims = mxGetDimensions(mxGetCell(prhs[2],1));
-    res1 = mxGetPr(mxGetCell(prhs[3],0));
-    res2 = mxGetPr(mxGetCell(prhs[3],1));
-    prior = (int)*mxGetPr(prhs[4]);
+    path = mxGetPr(prhs[3]);
+    L = mxGetPr(prhs[4]);
+    prior = (int)*mxGetPr(prhs[5]);
     
     /* create the output matrix */
     plhs[0] = mxCreateDoubleMatrix((mwSize)nrows,(mwSize)ncols,mxREAL);
@@ -215,6 +224,6 @@ void mexFunction(int nlhs, mxArray *plhs[],
     prob = mxGetPr(plhs[1]);
     
     /* call the computational routine */
-    drawZs(sIn,sOut,prob,ncols,nrows,core,aux1,aux2,res1,res2,coreDims,
+    drawZs(sIn,sOut,prob,ncols,nrows,core,aux1,aux2,path,L,coreDims,
             aux1Dims,aux2Dims,prior);
 }
