@@ -88,12 +88,12 @@ function [phi, psi, tree, samples, paths] = asdHBTucker3(x,options)
         zStart=tic;
         switch options.par
             case 1
-                [samples,p]=drawZsCollapsedPar(samples,cphi,cpsi,r,...
-                    options.prior);
+                [samples,p]=drawZsCollapsedPar(samples,cphi,cpsi,paths,...
+                    L,options.prior);
                 LL=LL+sum(log(p));
                 ent=ent+entropy(p);
             otherwise
-                [samples,p]=drawZsCollapsed(samples,cphi,cpsi,r,...
+                [samples,p]=drawZsCollapsed(samples,cphi,cpsi,paths,L,...
                     options.prior);
                 LL=LL+sum(log(p));
                 ent=ent+entropy(p);
@@ -190,13 +190,13 @@ function [phi, psi, tree, samples, paths] = asdHBTucker3(x,options)
                 zStart=tic;
                 switch options.par
                     case 1
-                        [samples,p]=drawZsCollapsedPar(samples,cphi,cpsi,r,...
-                            options.prior);
+                        [samples,p]=drawZsCollapsedPar(samples,cphi,...
+                            cpsi,paths,L,options.prior);
                         LL=LL+sum(log(p));
                         ent=ent+entropy(p);
                     otherwise
-                        [samples,p]=drawZsCollapsed(samples,cphi,cpsi,r,...
-                            options.prior);
+                        [samples,p]=drawZsCollapsed(samples,cphi,cpsi,...
+                            paths,L,options.prior);
                         LL=LL+sum(log(p));
                         ent=ent+entropy(p);
                 end
