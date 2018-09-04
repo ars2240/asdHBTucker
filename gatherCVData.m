@@ -1,5 +1,5 @@
 load('asdHBTuckerCV.mat'); %load tensor
-load('asdHBTuckerCVTest.mat'); %load tensor
+%load('asdHBTuckerCVTest.mat'); %load tensor
 
 asdSparse=csvread('asdSparse.csv',1,1);
 asdTens=sptensor(asdSparse(:,1:3),asdSparse(:,4));

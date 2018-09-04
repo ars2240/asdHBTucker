@@ -23,7 +23,7 @@ options.freq = 10;
 % options.btReps = 1;
 % options.topicModel = 'PAM';
 options.par = 0;
-options.collapsed = 0;
+% options.collapsed = 0;
 
 phi=cell(nFolds,1);
 testPhi=cell(nFolds,1);

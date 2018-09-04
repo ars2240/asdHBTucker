@@ -104,6 +104,9 @@ function [phi, psi, tree, samples, paths] = asdHBTucker3(x,options)
         cStart=tic;
         [cphi,cpsi,~] = counts(samples, dims, r);
         cTime=toc(cStart);
+        
+        matTime=0;
+        coreTime=0;
     else
         %calculate dimensions of core
         coreDims=zeros(1,3);
