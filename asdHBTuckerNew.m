@@ -83,33 +83,46 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, b, options)
     end
     cTime=toc(cStart);
     
+    %calculate dimensions of core
+    coreDims=zeros(1,3);
+    coreDims(1)=dims(1);
+    for i=1:2
+       %set core dimensions to the number of topics in each mode
+       coreDims(i+1)=length(r{i});
+    end
+    
     if options.collapsed==1
         
         %initialize zero counts
         dimsM=zeros(2,1);
-        dimsM(1)=size(r{1});
-        dimsM(2)=size(r{2});
-        cphi=zeros(dims(1),dimsM);
-        cpsi=cell(2,1);
-        cpsi{1}=zeros(dims(2),dimsM(1));
-        cpsi{2}=zeros(dims(3),dimsM(2));
+        dimsM(1)=size(r{1},1);
+        dimsM(2)=size(r{2},1);
+        cphi=zeros(dims(1),dimsM(1),dimsM(2));
         
         %draw latent topic z's
-        
+        zStart=tic;
+        switch options.par
+            case 1
+                [samples,p]=drawZsCollapsedPar(samples,cphi,ocpsi,paths,...
+                    L,options.prior);
+                LL=LL+sum(log(p));
+                ent=ent+entropy(p);
+            otherwise
+                [samples,p]=drawZsCollapsed(samples,cphi,ocpsi,paths,...
+                    L,options.prior);
+                LL=LL+sum(log(p));
+                ent=ent+entropy(p);
+        end
+        zTime=toc(zStart);
         
         %new counts
         cStart=tic;
         [cphi,cpsi,~] = counts(samples, dims, r);
         cTime=cTime+toc(cStart);
         
+        coreTime=0;
+        
     else
-        %calculate dimensions of core
-        coreDims=zeros(1,3);
-        coreDims(1)=dims(1);
-        for i=1:2
-           %set core dimensions to the number of topics in each mode
-           coreDims(i+1)=length(r{i});
-        end
 
         %draw core tensor p(z|x)
         coreStart=tic;
@@ -151,9 +164,27 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, b, options)
         ent=0; %reset entropy
         
         for btIt=1:options.btReps
-            if options.collapsed==1
-                %draw latent topic z's
+            if options.collapsed==1 && nIter<(options.maxIter/10-1)
                 
+                tcpsi=cpsi;
+                tcpsi{1}=cpsi{1}+ocpsi{1};
+                tcpsi{2}=cpsi{2}+ocpsi{2};
+
+                %draw latent topic z's
+                zStart=tic;
+                switch options.par
+                    case 1
+                        [samples,p]=drawZsCollapsedPar(samples,cphi,tcpsi,...
+                            paths,L,options.prior);
+                        LL=LL+sum(log(p));
+                        ent=ent+entropy(p);
+                    otherwise
+                        [samples,p]=drawZsCollapsed(samples,cphi,tcpsi,...
+                            paths,L,options.prior);
+                        LL=LL+sum(log(p));
+                        ent=ent+entropy(p);
+                end
+                zTime=toc(zStart);
             else
                 %redraw core tensor p(z|x)
                 %subset to get samples with x

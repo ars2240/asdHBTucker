@@ -1,4 +1,4 @@
-function [phi, psi, tree, samples, paths] = asdHBTucker3(x,options)
+function [phi, psi, tree, samples, paths, LL, ms] = asdHBTucker3(x,options)
     %performs 3-mode condition probablility Bayesian Tucker decomposition 
     %on a counting tensor
     %P(mode 2, mode 3 | mode 1)
@@ -205,6 +205,9 @@ function [phi, psi, tree, samples, paths] = asdHBTucker3(x,options)
                 end
                 zTime=toc(zStart);
             else
+                if options.collapsed==1
+                    coreDims(1)=dims(1);
+                end
                 %recalculate dimensions of core
                 for i=1:2
                    %set core dimensions to the number of topics in each mode
@@ -327,6 +330,23 @@ function [phi, psi, tree, samples, paths] = asdHBTucker3(x,options)
         end
     end
     tTime=toc(tStart);
+    
+    %compute model size: log(n)k
+    ln=log(dims(1)); %log of sample size
+    %number of parameters from decomposition
+    k=dims(1)*(prod(L)-1)+coreDims(2)*(dims(2)-1)+coreDims(3)*(dims(3)-1);
+    switch options.topicModel
+        case 'IndepTrees'
+            k=k+dims(1)*sum(L);
+        case 'PAM'
+            k=k+dims(1)*sum(L);
+            for i=1:(L(1)-2)
+                k=k+tpl{1}(i)*(tpl{2}(i)-1);
+                k=k+tpl{2}(i)*(tpl{1}(i+1)-1);
+            end
+            k=k+tpl{1}(i+1)*(tpl{2}(i+1)-1);
+    end
+    ms=ln*k;
     
     %print times
     if options.time==1

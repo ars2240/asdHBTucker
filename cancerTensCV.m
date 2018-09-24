@@ -1,4 +1,4 @@
-asdSparse=csvread('asdSparse.csv',1,1);
+asdSparse=csvread('cancerSparse.csv',1,1);
 asd=sptensor(asdSparse(:,1:3),asdSparse(:,4));
 %asd=sptensor(asdSparse(:,1:3),ones(size(asdSparse,1),1));
 
@@ -17,13 +17,13 @@ cvInd=crossvalind('Kfold',nTrain,nFolds); %split data into k folds
 options=init_options();
 % mex drawZscPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
 % options.L = 3;
-options.maxIter = 100;
+options.maxIter = 1000;
 options.freq = 10;
 % options.treeReps = 1;
 % options.btReps = 1;
 % options.topicModel = 'PAM';
-options.par = 0;
-% options.collapsed = 0;
+options.par = 1;
+options.collapsed = 0;
 
 phi=cell(nFolds,1);
 testPhi=cell(nFolds,1);
@@ -50,4 +50,4 @@ for f=1:nFolds
     fprintf('%6i %13.2e %10i\n',...
                     f, LL(f), ms(f));
 end
-save('asdHBTuckerCV.mat','phi', 'testPhi', 'psi', 'tree', 'samples', 'paths', 'options');
+save('cancerHBTuckerCV.mat','phi', 'testPhi', 'psi', 'tree', 'samples', 'paths', 'options');
