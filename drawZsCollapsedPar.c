@@ -1,5 +1,5 @@
 /*
-  drawZsCollapsed.c
+  drawZsCollapsedPar.c
 
   draws latent topic z's
   samp = sample matrix
@@ -9,13 +9,14 @@
   prior = 1 or 1/L
  
  The calling syntax is:
-    [samp,p] = drawZsCollapsed(samp,cphi,cpsi,path,L,prior)
+    [samp,p] = drawZsCollapsedPar(samp,cphi,cpsi,path,L,prior)
 
   Created by Adam Sandler.
 */
 
 #include "mex.h"
 #include <math.h>
+#include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -70,14 +71,17 @@ void drawZs(double *sampIn, double *sampOut, double *p, size_t sampCols,
         }
     }
     
-    srand48(time(NULL)); // randomize seed
-    
-    for(j=0; j<sampRows; j++){
-        drawZ(j,sampIn,sampOut,p,sampCols,sampRows,phi,psi1,psi2,psi1Sum,
-                psi2Sum,pth,l,phiDims,psi1Dims,psi2Dims,alpha1,alpha2,
-                alpha3);  
+    #pragma omp parallel private(j)
+    {
+        srand48(time(NULL)+omp_get_thread_num()); // randomize seed
+
+        #pragma omp for
+        for(j=0; j<sampRows; j++){
+            drawZ(j,sampIn,sampOut,p,sampCols,sampRows,phi,psi1,psi2,psi1Sum,
+                    psi2Sum,pth,l,phiDims,psi1Dims,psi2Dims,alpha1,alpha2,
+                    alpha3);  
+        }
     }
-    
 }
 
 void drawZ(int j, double *sampIn, double *sampOut, double *p,
