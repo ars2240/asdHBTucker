@@ -127,6 +127,9 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, b, options)
         %draw core tensor p(z|x)
         coreStart=tic;
         [phi,p]=drawCoreUni(paths,coreDims,L,r,options);
+        if ndims(phi) < 3
+            phi(end, end, 2) = 0; 
+        end
         LL=LL+sum(p);
         ent=ent+entropy(exp(p));
         coreTime=toc(coreStart);
@@ -191,6 +194,9 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, b, options)
                 coreStart=tic;
                 %redraw core tensor p(z|x)
                 [phi,p]=drawCoreCon(samples,paths,coreDims,L,r,options);
+                if ndims(phi) < 3
+                    phi(end, end, 2) = 0; 
+                end
                 if btIt==options.btReps
                     LL=LL+sum(p);
                     ent=ent+entropy(exp(p));

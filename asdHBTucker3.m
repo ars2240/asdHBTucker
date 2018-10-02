@@ -139,6 +139,9 @@ function [phi, psi, tree, samples, paths, LL, ms] = asdHBTucker3(x,options)
         %draw core tensor p(z|x)
         coreStart=tic;
         [phi,p]=drawCoreUni(paths,coreDims,L,r,options);
+        if ndims(phi) < 3
+            phi(end, end, 2) = 0; 
+        end
         LL=LL+sum(p);
         ent=ent+entropy(exp(p));
         coreTime=toc(coreStart);
@@ -255,6 +258,9 @@ function [phi, psi, tree, samples, paths, LL, ms] = asdHBTucker3(x,options)
                 coreStart=tic;
                 %redraw core tensor p(z|x)
                 [phi,p]=drawCoreCon(samples,paths,coreDims,L,r,options);
+                if ndims(phi) < 3
+                    phi(end, end, 2) = 0; 
+                end
                 if btIt==options.btReps
                     LL=LL+sum(p);
                     ent=ent+entropy(exp(p));
@@ -266,8 +272,6 @@ function [phi, psi, tree, samples, paths, LL, ms] = asdHBTucker3(x,options)
                 switch options.par
                     case 1
                         [samples,p]=drawZscPar(samples,phi,psi,r);
-                        LL=LL+sum(log(p));
-                        ent=ent+entropy(p);
                     otherwise
                         [samples,p]=drawZsc(samples,phi,psi,r);
                 end
@@ -337,9 +341,9 @@ function [phi, psi, tree, samples, paths, LL, ms] = asdHBTucker3(x,options)
     k=dims(1)*(prod(L)-1)+coreDims(2)*(dims(2)-1)+coreDims(3)*(dims(3)-1);
     switch options.topicModel
         case 'IndepTrees'
-            k=k+dims(1)*sum(L);
+            k=k+dims(1)*(sum(L)-2);
         case 'PAM'
-            k=k+dims(1)*sum(L);
+            k=k+dims(1)*(sum(L)-1);
             for i=1:(L(1)-2)
                 k=k+tpl{1}(i)*(tpl{2}(i)-1);
                 k=k+tpl{2}(i)*(tpl{1}(i+1)-1);
@@ -357,24 +361,24 @@ function [phi, psi, tree, samples, paths, LL, ms] = asdHBTucker3(x,options)
         end
         hrs = floor(zTime/3600);
         zTime = zTime - hrs * 3600;
-        min = floor(zTime/60);
-        zTime = zTime - min * 60;
-        fprintf('Z time= %2i hrs, %2i min, %4.2f sec \n', hrs, min, ...
+        mins = floor(zTime/60);
+        zTime = zTime - mins * 60;
+        fprintf('Z time= %2i hrs, %2i min, %4.2f sec \n', hrs, mins, ...
             zTime);
         if options.collapsed==1
             fprintf('Count time= %5.2f sec\n',cTime);
         end
         hrs = floor(treeTime/3600);
         treeTime = treeTime - hrs * 3600;
-        min = floor(treeTime/60);
-        treeTime = treeTime - min * 60;
-        fprintf('Tree time= %2i hrs, %2i min, %4.2f sec \n', hrs, min, ...
+        mins = floor(treeTime/60);
+        treeTime = treeTime - mins * 60;
+        fprintf('Tree time= %2i hrs, %2i min, %4.2f sec \n', hrs, mins, ...
             treeTime);
         hrs = floor(tTime/3600);
         tTime = tTime - hrs * 3600;
-        min = floor(tTime/60);
-        tTime = tTime - min * 60;
-        fprintf('Total time= %2i hrs, %2i min, %4.2f sec \n', hrs, min, ...
+        mins = floor(tTime/60);
+        tTime = tTime - mins * 60;
+        fprintf('Total time= %2i hrs, %2i min, %4.2f sec \n', hrs, mins, ...
             tTime);
     end
 end

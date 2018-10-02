@@ -103,24 +103,29 @@ void drawZ(int j, double *sampIn, double *sampOut, double *p,
     }
     
     // get pdf from phi and psi
-    int size = (int)l[0]*l[1];
+    int size = floor(l[0]*l[1]);
     double pdf[size];
     double sum = 0;
     int ind;
     int ip, kp, indp, s1, s2;
-    int l0 = (int)l[0];
-    for(i=0; i<l[0]; i++){
-        for(k=0; k<l[1]; k++){
+    int l0 = floor(l[0]);
+    int l1 = floor(l[1]);
+    for(i=0; i<l0; i++){
+        for(k=0; k<l1; k++){
             ip = pth[x+i*phiDims[0]]-1;
             kp = pth[x+(k+l0)*phiDims[0]]-1;
             s1 = ((ip==z1o) ? 1 : 0);
             s2 = ((kp==z2o) ? 1 : 0);
-            ind = i+k*(int)l[1];
+            ind = i+k*l1;
             indp = ip+kp*phiDims[1];
             pdf[ind] = phi[x+indp*phiDims[0]]+a1-s1*s2;
             pdf[ind] *= (psi1[y1+ip*psi1Dims[0]]+a2-s1)/psi1s[ip];
             pdf[ind] *= (psi2[y2+kp*psi2Dims[0]]+a3-s2)/psi2s[kp];
             sum = sum + pdf[ind];
+            if(sum >= DBL_MAX) {
+                mexErrMsgIdAndTxt("MyProg:sum:overflow",
+                                  "Sum overflow.");
+            }
         }
     }
     
@@ -218,7 +223,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
     aux2Dims = mxGetDimensions(mxGetCell(prhs[2],1));
     path = mxGetPr(prhs[3]);
     L = mxGetPr(prhs[4]);
-    prior = (int)*mxGetPr(prhs[5]);
+    prior = floor(*mxGetPr(prhs[5]));
     
     /* create the output matrix */
     plhs[0] = mxCreateDoubleMatrix((mwSize)nrows,(mwSize)ncols,mxREAL);

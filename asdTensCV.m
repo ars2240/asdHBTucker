@@ -16,13 +16,15 @@ cvInd=crossvalind('Kfold',nTrain,nFolds); %split data into k folds
 
 options=init_options();
 % mex drawZscPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
+% mex drawZsCollapsedPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
+% mex drawZsCollapsed.c;
 % options.L = 3;
-options.maxIter = 100;
+options.maxIter = 1000;
 options.freq = 10;
 % options.treeReps = 1;
 % options.btReps = 1;
 % options.topicModel = 'PAM';
-options.par = 0;
+% options.par = 0;
 % options.collapsed = 0;
 
 phi=cell(nFolds,1);
