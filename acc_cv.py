@@ -14,17 +14,17 @@
 #   Packages: matplotlib, numpy, scipy, sklearn
 #   Data: asdHBTucker
 
-import matplotlib.pyplot as plt
 import numpy as np
-from scipy import interp
 from scipy import stats
+from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_selection import mutual_info_classif
 from sklearn.feature_selection import SelectKBest
+from sklearn.feature_selection import SelectFpr
+from sklearn.feature_selection import f_classif
 from sklearn.decomposition import PCA
-from sklearn.metrics import roc_curve, auc
 
 
-def acc(classifier, mdict, splits=10, fselect='None', nfeat=100):
+def acc(classifier, mdict, splits=10, fselect='None', nfeat=100, featmin= 3, a=.05):
 
     acc = []
     acc_tr = []
@@ -55,15 +55,27 @@ def acc(classifier, mdict, splits=10, fselect='None', nfeat=100):
         y_test = testASD[(i, 0)]
         y_test = np.reshape(y_test, s[0])
 
-        # reformat
-        if fselect == 'MI':
+        # subset features
+        if 'min' in fselect:
+            cols = X.astype(bool).sum(axis=0) > featmin
+            X = X[:, cols]
+            X_test = X_test[:, cols]
+
+        if 'MI' in fselect:
             model = SelectKBest(mutual_info_classif, k=nfeat).fit(X, y)
             X = model.transform(X)
             X_test = model.transform(X_test)
-        elif fselect == 'PCA':
+        elif 'PCA'in fselect:
             model = PCA(n_components=nfeat).fit(X)
             X = model.transform(X)
             X_test = model.transform(X_test)
+        elif 'reg' in fselect:
+            model = SelectFpr(f_classif, alpha=a).fit(X, y)
+            X = model.transform(X)
+            X_test = model.transform(X_test)
+
+        #print(X.shape[1])
+
 
         # fit model
         model = classifier.fit(X, y)
@@ -80,10 +92,10 @@ def acc(classifier, mdict, splits=10, fselect='None', nfeat=100):
 
         i += 1
 
-    results = stats.ttest_1samp(acc, popmean=0.25)
+    results = stats.ttest_1samp(acc, popmean=755/2126)
     p_val = results[1]
 
-    results = stats.ttest_1samp(acc_tr, popmean=0.25)
+    results = stats.ttest_1samp(acc_tr, popmean=755/2126)
     p_val_tr = results[1]
 
     return np.mean(acc), np.std(acc), p_val, np.mean(acc_tr), np.std(acc_tr), p_val_tr
