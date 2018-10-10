@@ -48,7 +48,7 @@ New ASD Classification Method (Python):
     Required packages: matplotlib, numpy, scipy, sklearn
 
     1. Make create a /plot/ folder (if one does not exist)
-    2. Compile data using proper *gatherCVData.m script
+    2. Compile data using proper *gatherCVData*.m script
     3. Ensure logistic_reg2.py or ran_forest2.py loads the right .mat file
     4. Adjust any settings (number of features, regression factors, depth, and/or # of estimators)
     5. Run logistic_reg2.py or ran_forest2.py
@@ -59,7 +59,7 @@ New Cancer Classification Method (Python):
     Required packages: matplotlib, numpy, scipy, sklearn
 
     1. Make create a /plot/ folder (if one does not exist)
-    2. Compile data using proper *gatherCVData.m script
+    2. Compile data using proper *gatherCVData*.m script
     3. Ensure logistic_reg3.py loads the right .mat file
     4. Adjust any settings (number of features, regression factors, depth, and/or # of estimators)
     5. Run logistic_reg3.py
