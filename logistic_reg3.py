@@ -9,7 +9,7 @@
 #
 # Dependencies:
 #   Packages: matplotlib, numpy, scipy, sklearn
-#   Files: roc_cv2
+#   Files: acc_cv
 #   Data: asdHBTucker
 
 # load packages
