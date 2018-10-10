@@ -26,11 +26,6 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, b, options)
     LL=0; %initialize log-likelihood
     ent=0; %initialize entropy
     
-    %adjustment if using constant gam across dims
-    if length(gam)==1
-        gam=repelem(gam,2);
-    end
-    
     %adjustment if using constant L across dims
     if length(L)==1
         L=repelem(L,2);
@@ -59,7 +54,53 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, b, options)
         case 'IndepTrees'
             [paths,r] = newTreePathsInit(oPaths,oSamples,tree,b,L);
         case 'PAM'
-            error('Error. \nPAM code not written yet');
+            paths=zeros(dims(1),sum(L));
+            if L(1)~=L(2)
+                error("Error. \nLevels do not match");
+            end
+
+            %reformat topicsPerLevel as cell of vectors of correct length
+            if iscell(options.topicsPerLevel)
+                tpl=options.topicsPerLevel;
+                if length(tpl)~=2
+                    error("Error. \nNumber of cells !=2");
+                end
+                if length(tpl{1})==1
+                    tpl{1}=[1,repelem(tpl{1}(1),L(1)-1)];
+                elseif length(tpl{1})~=(L(1)-1)
+                    error("Error. \nInvalid length of topics per level");
+                end
+                if length(tpl{2})==1
+                    tpl{2}=repelem(tpl{2}(1),L(2));
+                elseif length(tpl{2})~=(L(2)-1)
+                    error("Error. \nInvalid length of topics per level");
+                end
+            else
+                tplV=options.topicsPerLevel;
+                tpl=cell(2,1);
+                if length(tplV)==1
+                    tpl{1}=[1,repelem(tplV(1),L(1)-1)];
+                    tpl{2}=repelem(tplV(1),L(2));
+                elseif length(tplV)==2
+                    tpl{1}=[1,repelem(tplV(1),L(1)-1)];
+                    tpl{2}=repelem(tplV(2),L(2));
+                elseif length(tplV)==L(1)
+                    tpl{1}=tplV;
+                    tpl{2}=tplV;
+                elseif length(tplV)==2*(L(1))
+                    tpl{1}=tplV(1:L(1));
+                    tpl{2}=tplV((L(1)+1):2*L(1));
+                else
+                    error("Error. \nInvalid length of topics per level");
+                end
+            end
+
+            %initialize restaurant list
+            r=cell(2,1);
+            r{1}=1:(sum(tpl{1}));
+            r{2}=1:(sum(tpl{2}));
+            
+            [paths,prob,~,~]=newPAM(dims,oSamples,paths,tpl,prob,L);
         case 'None'
             paths=repmat([1:L(1),1:L(2)],dims(1),1);
             r=cell(2,1); %initialize
@@ -239,7 +280,7 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, b, options)
                     paths=newTreePaths(asdTens,ocpsi,ctree,oPaths,...
                         tree,b,L,options);
                 case 'PAM'
-                    error('Error. \nPAM code not written yet');
+                    [paths,prob,~,~]=newPAM(dims,oSamples,paths,tpl,prob,L);
                 case 'None'
                 otherwise
                     error('Error. \nNo topic model type selected');

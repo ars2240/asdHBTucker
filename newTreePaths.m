@@ -13,7 +13,7 @@ function nPaths = newTreePaths(asdTens,ocpsi,ctree,paths,tree,ind,L,options)
        
        cts=permute(ctree{j},[2,3,1]);
        
-      switch options.pType
+       switch options.pType
            case 0
                prior=1/dims(1+j);
            case 1
@@ -29,7 +29,7 @@ function nPaths = newTreePaths(asdTens,ocpsi,ctree,paths,tree,ind,L,options)
 
            for k=2:L(j)
 
-               %add new restaurant to list
+               %restaurant list
                rList=tree{j}{curRes};
                rList=sort(rList);
 
@@ -55,6 +55,8 @@ function nPaths = newTreePaths(asdTens,ocpsi,ctree,paths,tree,ind,L,options)
                nextRes=rList(next);
 
                nPaths(i,col+k)=nextRes; %sit at table
+               
+               curRes=nextRes;
            end
        end
     end
