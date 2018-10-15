@@ -1,4 +1,4 @@
-function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, b, options)
+function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, b, vargin)
     %performs 3-mode condition probablility Bayesian Tucker decomposition 
     %on a counting tensor
     %P(mode 2, mode 3 | mode 1)
@@ -12,6 +12,15 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, b, options)
     % maxIter = number of Gibbs sample iterations
     % gam = hyper parameter(s) of CRP
     % L = levels of hierarchical trees
+    
+    if length(vargin)==1
+        options=vargin{1};
+    elseif length(vargin)==2
+        prob=vargin{1};
+        options=vargin{2};
+    else
+        error("Error. \nIncorrect number of inputs.");
+    end
     
     tStart=tic;
     
@@ -100,7 +109,7 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, b, options)
             r{1}=1:(sum(tpl{1}));
             r{2}=1:(sum(tpl{2}));
             
-            [paths,prob,~,~]=newPAM(dims,oSamples,paths,tpl,prob,L);
+            [paths,~,~]=newPAM(dims,oSamples,paths,tpl,prob,L);
         case 'None'
             paths=repmat([1:L(1),1:L(2)],dims(1),1);
             r=cell(2,1); %initialize
@@ -280,7 +289,7 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, b, options)
                     paths=newTreePaths(asdTens,ocpsi,ctree,oPaths,...
                         tree,b,L,options);
                 case 'PAM'
-                    [paths,prob,~,~]=newPAM(dims,oSamples,paths,tpl,prob,L);
+                    [paths,~,~]=newPAM(dims,oSamples,paths,tpl,prob,L);
                 case 'None'
                 otherwise
                     error('Error. \nNo topic model type selected');

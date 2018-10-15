@@ -21,7 +21,7 @@ function [ options ] = init_options( )
 
 options.par = 1;
 options.time = 1;
-options.print = 1;
+options.print = 0;
 options.maxIter = 1000;
 options.freq = 100;
 options.gam = 0.1;

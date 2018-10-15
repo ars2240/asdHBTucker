@@ -1,4 +1,4 @@
-function [paths,prob,LL,ent] = newPAM(dims,oSamples,paths,tpl,prob,L)
+function [paths,LL,ent] = newPAM(dims,oSamples,paths,tpl,prob,L)
     %dims = dimensions of tensor
     %oSampless = x, y, z values
     %paths = tree paths
