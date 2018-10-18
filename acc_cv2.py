@@ -1,10 +1,11 @@
-# acc_cv.py
+# acc_cv2.py
 #
 # Author: Adam Sandler
-# Date: 9/20/18
+# Date: 10/18/18
 #
 # Computes accuracy for each CV, returns plot in /plots/ folder, and
 # mean, stDev, and p-value for both train & validation sets
+#   - uses csv from no-decomposition
 #
 # Uses CV data
 #
@@ -14,6 +15,7 @@
 
 import numpy as np
 from scipy import stats
+import pandas as pd
 from sklearn.feature_selection import mutual_info_classif
 from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import SelectFpr
@@ -21,42 +23,47 @@ from sklearn.feature_selection import f_classif
 from sklearn.decomposition import PCA
 
 
-def acc(classifier, mdict, splits=10, fselect='None', nfeat=100, featmin= 3, a=.05):
+def acc(classifier, fname, labelF, indF, splits=10, fselect='None', nfeat=100, featmin= 3, a=.05):
 
     acc = []
     acc_tr = []
 
     # load data
-    phi = mdict.get('phi')
-    testPhi = mdict.get('testPhi')
-    asd = mdict.get('cvTrainASD')
-    testASD = mdict.get('cvTestASD')
+    cts = pd.read_csv(fname + '.csv', header=0, index_col=0, dtype={0: str})
+    ind = pd.read_csv(indF + '.csv', header=None)
+    label = pd.read_csv(labelF + '.csv', header=0, index_col=0)
+    rows = np.where(ind > 0)[0]
+    phi = cts.iloc[rows]
+    cancer = label.iloc[rows, 0]
+    ind = ind.iloc[rows, 0]
 
     i = 0
     for i in range(0, splits):
 
-        X = phi[(i, 0)]
+        rows = np.where(ind != i + 1)
+        X = phi.iloc[rows]
         s = X.shape
         if len(s) == 3:
             X = np.reshape(X, [s[0], s[1] * s[2]])
         else:
             X = np.reshape(X, [s[0], s[1]])
-        y = asd[(i, 0)]
+        y = cancer.iloc[rows]
+        rows = np.where(ind == i + 1)
         y = np.reshape(y, s[0])
-        X_test = testPhi[(i, 0)]
+        X_test = phi.iloc[rows]
         s = X_test.shape
         if len(s) == 3:
             X_test = np.reshape(X_test, [s[0], s[1] * s[2]])
         else:
             X_test = np.reshape(X_test, [s[0], s[1]])
-        y_test = testASD[(i, 0)]
+        y_test = cancer.iloc[rows]
         y_test = np.reshape(y_test, s[0])
 
         # subset features
         if 'min' in fselect:
-            cols = X.astype(bool).sum(axis=0) > featmin
-            X = X[:, cols]
-            X_test = X_test[:, cols]
+            cols = np.where(X.astype(bool).sum(axis=0) > featmin)[0]
+            X = X.iloc[:, cols]
+            X_test = X_test.iloc[:, cols]
 
         if 'MI' in fselect:
             model = SelectKBest(mutual_info_classif, k=nfeat).fit(X, y)
