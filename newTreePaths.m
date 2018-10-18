@@ -52,11 +52,10 @@ function nPaths = newTreePaths(asdTens,ocpsi,ctree,paths,tree,ind,L,options)
 
                %pick new table
                next=multi(pdf);
-               nextRes=rList(next);
+               curRes=rList(next);
 
-               nPaths(i,col+k)=nextRes; %sit at table
+               nPaths(i,col+k)=curRes; %sit at table
                
-               curRes=nextRes;
            end
        end
     end

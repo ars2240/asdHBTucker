@@ -14,7 +14,7 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, b, vargin)
     % L = levels of hierarchical trees
     
     if length(vargin)==1
-        options=vargin{1};
+        options=vargin;
     elseif length(vargin)==2
         prob=vargin{1};
         options=vargin{2};

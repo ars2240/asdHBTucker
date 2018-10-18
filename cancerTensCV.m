@@ -16,14 +16,12 @@ cvInd=crossvalind('Kfold',nTrain,nFolds); %split data into k folds
 
 options=init_options();
 % mex drawZscPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
-% options.L = 3;
+% options.gam = 0.1;
+options.L = 3;
 options.maxIter = 1000;
-options.freq = 10;
-% options.treeReps = 1;
-% options.btReps = 1;
 % options.topicModel = 'PAM';
 options.par = 1;
-options.collapsed = 0;
+options.collapsed = 1;
 
 phi=cell(nFolds,1);
 testPhi=cell(nFolds,1);
@@ -43,11 +41,11 @@ for f=1:nFolds
         tree{f}, b, options);
 end
 
-output_header=sprintf('%6s %13s %10s','fold','loglikelihood', ...
-        'model size');
-fprintf('%s\n',output_header);
-for f=1:nFolds
-    fprintf('%6i %13.2e %10i\n',...
-                    f, LL(f), ms(f));
-end
+% output_header=sprintf('%6s %13s %10s','fold','loglikelihood', ...
+%         'model size');
+% fprintf('%s\n',output_header);
+% for f=1:nFolds
+%     fprintf('%6i %13.2e %10i\n',...
+%                     f, LL(f), ms(f));
+% end
 save('cancerHBTuckerCV.mat','phi', 'testPhi', 'psi', 'tree', 'samples', 'paths', 'options');

@@ -27,9 +27,9 @@ function [nPaths,r] = newTreePathsInit(paths,samples,tree,ind,L)
 
                %pick new table
                next=multi(pdf);
-               nextRes=rList(next);
+               curRes=rList(next);
 
-               nPaths(i,col+k)=nextRes; %sit at table
+               nPaths(i,col+k)=curRes; %sit at table
            end
        end
     end
