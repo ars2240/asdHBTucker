@@ -1,4 +1,4 @@
-function [phi, psi, tree, samples, paths, LL, ms] = asdHBTucker3(x,options)
+function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
     %performs 3-mode condition probablility Bayesian Tucker decomposition 
     %on a counting tensor
     %P(mode 2, mode 3 | mode 1)
@@ -303,8 +303,8 @@ function [phi, psi, tree, samples, paths, LL, ms] = asdHBTucker3(x,options)
                         [paths,tree,r,LLtree,entTree]=redrawTree(dims,...
                             cpsi,ctree,paths,L,tree,r,options);
                     case 'PAM'
-                        [paths,tree,LLtree,entTree]=redrawPAM(dims,samples,...
-                            paths,tpl,tree,L,options);
+                        [paths,tree,prob,LLtree,entTree]=redrawPAM(dims,...
+                            cpsi,ctree,paths,tpl,tree,L,options);
                     case 'None'
                         LLtree=0;
                         entTree=0;
@@ -344,13 +344,25 @@ function [phi, psi, tree, samples, paths, LL, ms] = asdHBTucker3(x,options)
             k=k+dims(1)*(sum(L)-2);
         case 'PAM'
             k=k+dims(1)*(sum(L)-1);
-            for i=1:(L(1)-2)
+            for i=1:(L(1)-1)
                 k=k+tpl{1}(i)*(tpl{2}(i)-1);
                 k=k+tpl{2}(i)*(tpl{1}(i+1)-1);
             end
             k=k+tpl{1}(i+1)*(tpl{2}(i+1)-1);
     end
     ms=ln*k;
+    
+    if nargout==7
+        varargout{1}=LL;
+        varargout{2}=ms;
+    elseif nargout==8
+        varargout{1}=prob;
+        varargout{2}=LL;
+        varargout{3}=ms;
+    else
+        error("Error. \nIncorrect number of outputs.");
+    end
+        
     
     %print times
     if options.time==1

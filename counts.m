@@ -3,10 +3,10 @@ function [cphi,cpsi,ctree] = counts(samples, dims, r)
     %dims = dimensions of tensor
     %r = restaurant lists
     
-    size=[dims,max(max(r{1}),max(samples(:,4))),...
+    si=[dims,max(max(r{1}),max(samples(:,4))),...
         max(max(r{2}),max(samples(:,5)))];
     % count of entire sample tensor
-    cts=sptensor(samples,1,size);
+    cts=sptensor(samples,1,si);
     
     cpsi=cell(2,1);
     ctree=cell(2,1);

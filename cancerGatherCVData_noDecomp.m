@@ -13,6 +13,7 @@ ind=crossvalind('HoldOut',nPat,pTest); %split data into test & train sets
 asd=csvread('cancerLabel.csv',1,1); %cancer class
 
 %split data based on index into training and testing sets
+asdTens=asdTens(ind,:);
 trainASD=asd(ind);
 testASD=asd(~ind);
 

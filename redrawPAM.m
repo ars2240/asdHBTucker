@@ -1,4 +1,4 @@
-function [paths,prob,LL,ent] = redrawPAM(dims,samples,paths,tpl,prob,L, options)
+function [paths,prob,varargout] = redrawPAM(dims,cpsi,ctree,paths,tpl,prob,L,options)
     %dims = dimensions of tensor
     %sampless = x, y, z values
     %paths = tree paths
@@ -16,13 +16,14 @@ function [paths,prob,LL,ent] = redrawPAM(dims,samples,paths,tpl,prob,L, options)
             parents=tpl{1}(j);
             switch options.pType
                 case 0
-                    prior=1/len*ones(parents,len,parents);
+                    prior=1/len*ones(len,parents);
                 case 1
-                    prior=ones(parents,len,parents);
+                    prior=ones(len,parents);
                 otherwise
                     error('Error. \nNo prior type selected');
             end
-            cts=accumarray(paths(:,[j,L(1)+j]),1);
+            si=[sum(tpl{1}(1:j)),sum(tpl{2}(1:j))];
+            cts=accumarray(paths(:,[j,L(1)+j]),1,si);
             cts=cts((size(cts,1)-parents+1):size(cts,1),...
                 (size(cts,2)-len+1):size(cts,2));
             prob{1,j}=prior+cts;
@@ -34,13 +35,14 @@ function [paths,prob,LL,ent] = redrawPAM(dims,samples,paths,tpl,prob,L, options)
             parents=tpl{2}(j);
             switch options.pType
                 case 0
-                    prior=1/len*ones(parents,len,parents);
+                    prior=1/len*ones(len,parents);
                 case 1
-                    prior=ones(parents,len,parents);
+                    prior=ones(len,parents);
                 otherwise
                     error('Error. \nNo prior type selected');
             end
-            cts=accumarray(paths(:,[L(1)+j,j+1]),1);
+            si=[sum(tpl{2}(1:j)),sum(tpl{1}(1:(j+1)))];
+            cts=accumarray(paths(:,[L(1)+j,j+1]),1,si);
             cts=cts((size(cts,1)-parents+1):size(cts,1),...
                 (size(cts,2)-len+1):size(cts,2));
             prob{2,j}=prior+cts;
@@ -53,13 +55,14 @@ function [paths,prob,LL,ent] = redrawPAM(dims,samples,paths,tpl,prob,L, options)
             parents=tpl{1}(j);
             switch options.pType
                 case 0
-                    prior=1/len*ones(parents,len,parents);
+                    prior=1/len*ones(len,parents);
                 case 1
-                    prior=ones(parents,len,parents);
+                    prior=ones(len,parents);
                 otherwise
                     error('Error. \nNo prior type selected');
             end
-            cts=accumarray(paths(:,[j,L(1)+j]),1);
+            si=[sum(tpl{1}(1:j)),sum(tpl{2}(1:j))];
+            cts=accumarray(paths(:,[j,L(1)+j]),1,si);
             cts=cts((size(cts,1)-parents+1):size(cts,1),...
                 (size(cts,2)-len+1):size(cts,2));
             [prob{1,j},p]=drchrnd(prior+cts,parents,options);
@@ -73,13 +76,14 @@ function [paths,prob,LL,ent] = redrawPAM(dims,samples,paths,tpl,prob,L, options)
             parents=tpl{2}(j);
             switch options.pType
                 case 0
-                    prior=1/len*ones(parents,len,parents);
+                    prior=1/len*ones(len,parents);
                 case 1
-                    prior=ones(parents,len,parents);
+                    prior=ones(len,parents);
                 otherwise
                     error('Error. \nNo prior type selected');
             end
-            cts=accumarray(paths(:,[L(1)+j,j+1]),1);
+            si=[sum(tpl{2}(1:j)),sum(tpl{1}(1:(j+1)))];
+            cts=accumarray(paths(:,[L(1)+j,j+1]),1,si);
             cts=cts((size(cts,1)-parents+1):size(cts,1),...
                 (size(cts,2)-len+1):size(cts,2));
             [prob{2,j},p]=drchrnd(prior+cts,parents,options);
@@ -93,9 +97,9 @@ function [paths,prob,LL,ent] = redrawPAM(dims,samples,paths,tpl,prob,L, options)
     ctsA=cell(2,1);
     for j=1:2
        %get counts
-       cts{j}=accumarray(samples(:,[1+j 3+j 1]),1,[dims(1+j),...
-           1+sum(tpl{j}),dims(1)]);
-       ctsA{j}=sum(cts{j},3);
+       cts{j}=ctree{j};
+       cts{j}=permute(cts{j},[2,3,1]);
+       ctsA{j}=cpsi{j};
     end
     
     for p=1:dims(1)
@@ -106,8 +110,8 @@ function [paths,prob,LL,ent] = redrawPAM(dims,samples,paths,tpl,prob,L, options)
         i=2;
         
         %get restaurant list
-        rStart=sum(tpl{i}(1:j));
-        rList=rStart:(rStart+tpl{i}(j)-1);
+        rStart=sum(tpl{i}(1:(j-1)))+1;
+        rList=rStart:sum(tpl{i}(1:j));
         pdf=prob{mod(i,2)+1,j-(i==1)}(res,:);
 
         %get counts
@@ -133,8 +137,8 @@ function [paths,prob,LL,ent] = redrawPAM(dims,samples,paths,tpl,prob,L, options)
         for j=2:L(1)
             for i=1:2
                 %get restaurant list
-                rStart=sum(tpl{i}(1:j));
-                rList=rStart:(rStart+tpl{i}(j)-1);
+                rStart=sum(tpl{i}(1:(j-1)))+1;
+                rList=rStart:sum(tpl{i}(1:j));
                 pdf=prob{mod(i,2)+1,j-(i==1)}(res,:);
                 
                 %get counts
@@ -158,6 +162,17 @@ function [paths,prob,LL,ent] = redrawPAM(dims,samples,paths,tpl,prob,L, options)
                 ent=ent+entropy(pdf(res));
             end
         end
+    end
+    
+    if nargout==4
+        varargout{1}=LL;
+        varargout{2}=ent;
+    elseif nargout==5
+        varargout{1}=prob;
+        varargout{2}=LL;
+        varargout{3}=ent;
+    else
+        error("Error. \nIncorrect number of outputs.");
     end
 
 end

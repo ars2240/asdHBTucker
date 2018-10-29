@@ -1,4 +1,4 @@
-function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, b, vargin)
+function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
     %performs 3-mode condition probablility Bayesian Tucker decomposition 
     %on a counting tensor
     %P(mode 2, mode 3 | mode 1)
@@ -13,11 +13,13 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, b, vargin)
     % gam = hyper parameter(s) of CRP
     % L = levels of hierarchical trees
     
-    if length(vargin)==1
-        options=vargin;
-    elseif length(vargin)==2
-        prob=vargin{1};
-        options=vargin{2};
+    if nargin==7
+        b=varargin{1};
+        options=varargin{2};
+    elseif nargin==8
+        prob=varargin{1};
+        b=varargin{2};
+        options=varargin{3};
     else
         error("Error. \nIncorrect number of inputs.");
     end
@@ -62,8 +64,13 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, b, vargin)
     switch options.topicModel
         case 'IndepTrees'
             [paths,r] = newTreePathsInit(oPaths,oSamples,tree,b,L);
+            
+            %old counts
+            cStart=tic;
+            [~,ocpsi,~] = counts(oSamples, [max(oSamples(:,1)), dims(2:3)], r);
+            cTime=toc(cStart);
         case 'PAM'
-            paths=zeros(dims(1),sum(L));
+            paths=ones(dims(1),sum(L));
             if L(1)~=L(2)
                 error("Error. \nLevels do not match");
             end
@@ -106,33 +113,39 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, b, vargin)
 
             %initialize restaurant list
             r=cell(2,1);
-            r{1}=1:(sum(tpl{1}));
-            r{2}=1:(sum(tpl{2}));
+            ttpl=zeros(2,1);
+            ttpl(1)=sum(tpl{1});
+            ttpl(2)=sum(tpl{2});
+            r{1}=1:(ttpl(1));
+            r{2}=1:(ttpl(2));
             
-            [paths,~,~]=newPAM(dims,oSamples,paths,tpl,prob,L);
+            %old counts
+            cStart=tic;
+            [~,ocpsi,~] = counts(oSamples, [max(oSamples(:,1)), dims(2:3)], r);
+            cTime=toc(cStart);
+            
+            ctree=cell(2,1);
+            ctree{1}=zeros(dims(1),dims(2),ttpl(1));
+            ctree{2}=zeros(dims(1),dims(3),ttpl(2));
+            
+            [paths,~,~]=newPAM(dims,ocpsi,ctree,paths,tpl,prob,L);
         case 'None'
             paths=repmat([1:L(1),1:L(2)],dims(1),1);
             r=cell(2,1); %initialize
             r{1}=1:L(1);
             r{2}=1:L(2);
             tree=cell(2,1); %initialize
+            
+            %old counts
+            cStart=tic;
+            [~,ocpsi,~] = counts(oSamples, [max(oSamples(:,1)), dims(2:3)], r);
+            cTime=toc(cStart);
+            
         otherwise
             error('Error. \nNo topic model type selected');
     end
     treeTime=toc(treeStart);
-    
-    %old counts
-    cStart=tic;
-    switch options.collapsed
-        case 1
-            [ocphi,ocpsi,~] = counts(oSamples, [max(oSamples(:,1)), ...
-                dims(2:3)], r);
-        otherwise
-            [~,ocpsi,~] = counts(oSamples, [max(oSamples(:,1)), ...
-                dims(2:3)], r);
-    end
-    cTime=toc(cStart);
-    
+
     %calculate dimensions of core
     coreDims=zeros(1,3);
     coreDims(1)=dims(1);
@@ -144,10 +157,7 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, b, vargin)
     if options.collapsed==1
         
         %initialize zero counts
-        dimsM=zeros(2,1);
-        dimsM(1)=size(r{1},1);
-        dimsM(2)=size(r{2},1);
-        cphi=zeros(dims(1),dimsM(1),dimsM(2));
+        cphi=zeros(dims(1),coreDims(1),coreDims(2));
         
         %draw latent topic z's
         zStart=tic;
@@ -289,7 +299,7 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, b, vargin)
                     paths=newTreePaths(asdTens,ocpsi,ctree,oPaths,...
                         tree,b,L,options);
                 case 'PAM'
-                    [paths,~,~]=newPAM(dims,oSamples,paths,tpl,prob,L);
+                    [paths,~,~]=newPAM(dims,ocpsi,ctree,paths,tpl,prob,L);
                 case 'None'
                 otherwise
                     error('Error. \nNo topic model type selected');

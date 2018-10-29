@@ -16,11 +16,11 @@ cvInd=crossvalind('Kfold',nTrain,nFolds); %split data into k folds
 
 options=init_options();
 % mex drawZscPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
-% options.gam = 0.1;
-options.L = 3;
-options.maxIter = 1000;
-% options.topicModel = 'PAM';
-options.par = 1;
+% options.gam = 0.5;
+options.L = 2;
+options.maxIter = 10;
+options.topicModel = 'PAM';
+options.par = 0;
 options.collapsed = 1;
 
 phi=cell(nFolds,1);
@@ -29,16 +29,17 @@ psi=cell(nFolds,1);
 tree=cell(nFolds,1);
 samples=cell(nFolds,1);
 paths=cell(nFolds,1);
+prob=cell(nFolds,1);
 LL=zeros(nFolds,1);
 ms=zeros(nFolds,1);
+
 for f=1:nFolds
     b=cvInd==f; %logical indices of test fold
     ind=find(~b);
     fprintf('Fold # %6i\n',f);
-    [phi{f}, psi{f}, tree{f}, samples{f}, paths{f}, LL(f), ms(f)] = ...
-        asdHBTucker3(asd(ind,:,:),options);
+    [phi{f}, psi{f}, tree{f}, samples{f}, paths{f}, prob{f}, LL(f), ms(f)] = asdHBTucker3(asd(ind,:,:),options);
     testPhi{f} = asdHBTuckerNew(asd, psi{f}, samples{f}, paths{f}, ...
-        tree{f}, b, options);
+        tree{f}, prob{f}, b, options);
 end
 
 % output_header=sprintf('%6s %13s %10s','fold','loglikelihood', ...
@@ -48,4 +49,4 @@ end
 %     fprintf('%6i %13.2e %10i\n',...
 %                     f, LL(f), ms(f));
 % end
-save('cancerHBTuckerCV.mat','phi', 'testPhi', 'psi', 'tree', 'samples', 'paths', 'options');
+save('cancerHBTuckerCV_PAM.mat','phi', 'testPhi', 'psi', 'tree', 'samples', 'paths', 'prob', 'options');
