@@ -9,8 +9,8 @@
 # Uses CV data
 #
 # Dependencies:
-#   Packages: matplotlib, numpy, scipy, sklearn
-#   Files: acc_cv
+#   Packages: matplotlib, numpy, pandas, scipy, sklearn
+#   Files: acc_cv2
 #   Data: asdHBTucker
 
 # load packages

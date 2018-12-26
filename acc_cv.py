@@ -1,7 +1,7 @@
 # acc_cv.py
 #
 # Author: Adam Sandler
-# Date: 9/20/18
+# Date: 11/16/18
 #
 # Computes accuracy for each CV, returns plot in /plots/ folder, and
 # mean, stDev, and p-value for both train & validation sets
@@ -21,10 +21,11 @@ from sklearn.feature_selection import f_classif
 from sklearn.decomposition import PCA
 
 
-def acc(classifier, mdict, splits=10, fselect='None', nfeat=100, featmin= 3, a=.05):
+def acc(classifier, mdict, splits=10, fselect='', nfeat=100, fmin=0, fmax=1000, a=.05, thresh=0):
 
     acc = []
     acc_tr = []
+    coeffs = []
 
     # load data
     phi = mdict.get('phi')
@@ -54,9 +55,16 @@ def acc(classifier, mdict, splits=10, fselect='None', nfeat=100, featmin= 3, a=.
 
         # subset features
         if 'min' in fselect:
-            cols = X.astype(bool).sum(axis=0) > featmin
+            cols = X.astype(bool).sum(axis=0) > fmin
             X = X[:, cols]
             X_test = X_test[:, cols]
+        if 'max' in fselect:
+            cols = X.astype(bool).sum(axis=0) < fmax
+            X = X[:, cols]
+            X_test = X_test[:, cols]
+        if 'thresh' in fselect:
+            X[X < thresh] = 0
+            X_test[X_test < thresh] = 0
 
         if 'MI' in fselect:
             model = SelectKBest(mutual_info_classif, k=nfeat).fit(X, y)
@@ -70,10 +78,19 @@ def acc(classifier, mdict, splits=10, fselect='None', nfeat=100, featmin= 3, a=.
             model = SelectFpr(f_classif, alpha=a).fit(X, y)
             X = model.transform(X)
             X_test = model.transform(X_test)
+        elif 'kbest' in fselect:
+            model = SelectKBest(f_classif, k=nfeat).fit(X, y)
+            X = model.transform(X)
+            X_test = model.transform(X_test)
 
 
         # fit model
         model = classifier.fit(X, y)
+
+        if i==0:
+            coeffs = np.array(model.coef_).transpose()
+        else:
+            coeffs = np.c_[coeffs, np.array(model.coef_).transpose()]
 
         # Compute accuracy for validation set
         probas_ = model.predict_proba(X_test)
@@ -86,6 +103,8 @@ def acc(classifier, mdict, splits=10, fselect='None', nfeat=100, featmin= 3, a=.
         acc_tr.append(sum(y_hat == y) / len(y))
 
         i += 1
+
+    np.savetxt("data/cancer_coeffs.csv", coeffs, delimiter=",")
 
     results = stats.ttest_1samp(acc, popmean=755/2126)
     p_val = results[1]

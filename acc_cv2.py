@@ -10,7 +10,7 @@
 # Uses CV data
 #
 # Dependencies:
-#   Packages: matplotlib, numpy, scipy, sklearn
+#   Packages: matplotlib, numpy, pandas, scipy, sklearn
 #   Data: asdHBTucker
 
 import numpy as np
@@ -48,8 +48,8 @@ def acc(classifier, fname, labelF, indF, splits=10, fselect='None', nfeat=100, f
         else:
             X = np.reshape(X, [s[0], s[1]])
         y = cancer.iloc[rows]
-        rows = np.where(ind == i + 1)
         y = np.reshape(y, s[0])
+        rows = np.where(ind == i + 1)
         X_test = phi.iloc[rows]
         s = X_test.shape
         if len(s) == 3:
