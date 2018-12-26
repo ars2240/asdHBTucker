@@ -21,9 +21,17 @@ function [paths,tree,r,LL,ent] = redrawTree(dims,cpsi,ctree,paths,L,tree,r,optio
     for j=1:2
         
        %get counts
-       cts=ctree{j};
-       cts=permute(cts,[2,3,1]);
        ctsA=cpsi{j};
+       cts=ctree{j};
+       if options.sparse==1
+           subs=cts.subs;
+           vals=cts.vals;
+           [~,start,~]=unique(subs(:,1));
+           start=[start; nnz(cts)+1];
+       else
+           cts=permute(cts,[2,3,1]);
+       end
+       
        
        col=(j-1)*L(1); %starting column
        
@@ -37,7 +45,6 @@ function [paths,tree,r,LL,ent] = redrawTree(dims,cpsi,ctree,paths,L,tree,r,optio
        end
        
        gcts = gammaln(ctsA+prior);
-       glp = gammaln(prior);
        
        for i=randperm(dims(1))
            curRes=1; %set current restaurant as root
@@ -48,10 +55,13 @@ function [paths,tree,r,LL,ent] = redrawTree(dims,cpsi,ctree,paths,L,tree,r,optio
                %get label of new table
                newRes=find(~ismember(1:max(r{j}+1),r{j}),1);
                
-               if newRes>size(cts,2)
-                   cts=padarray(cts,[0 1 0],'post');
-                   ctsA=padarray(ctsA,[0 1],'post');
-                   gcts=padarray(gcts,[0 1],glp,'post');
+               if newRes>size(ctsA,2)
+                   %cts=padarray(cts,[0 1 0],'post');
+                   %ctsA=padarray(ctsA,[0 1],'post');
+                   %gcts=padarray(gcts,[0 1],glp,'post');
+                   cts(:,newRes,:)=0;
+                   ctsA(:,newRes)=0;
+                   gcts(:,newRes)=0;
                end
 
                if ~isempty(tree{j}{curRes})
@@ -63,7 +73,20 @@ function [paths,tree,r,LL,ent] = redrawTree(dims,cpsi,ctree,paths,L,tree,r,optio
                    pdf=histc(paths(:,col+k)',rList);
 
                    %get counts
-                   cts1=ctsA(:,rList)-cts(:,rList,i);
+                   if options.sparse==1
+                       cts1=ctsA(:,rList);
+                       tsubs=subs(start(i):(start(i+1)-1),:);
+                       tvals=vals(start(i):(start(i+1)-1));
+                       [incl,tsubs(:,3)]=ismember(tsubs(:,3),rList);
+                       if sum(incl)>0
+                           tsubs=tsubs(incl,:);
+                           tvals=tvals(incl);
+                           tsubs=sub2ind(size(cts1), tsubs(:,2), tsubs(:,3));
+                           cts1(tsubs)=cts1(tsubs)-tvals;
+                       end
+                   else
+                       cts1=ctsA(:,rList)-cts(:,rList,i);
+                   end
                    cts2=ctsA(:,rList);
                    gcts2=gcts(:,rList);
 

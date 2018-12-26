@@ -2,24 +2,18 @@ asdSparse=csvread('cancerSparseGenes.csv',1,1);
 asdTens=sptensor(asdSparse(:,1:2),asdSparse(:,3));
 asdTens=double(asdTens);
 
-%run only once, keep constant
-%or use seed
-pTest=.3; %percent of data in test
-rng(12345); %seed RNG
-nPat=size(asdTens,1); %number of patients
-ind=crossvalind('HoldOut',nPat,pTest); %split data into test & train sets
+load('cancerCVInd.mat'); %load indices
 
 %phiMat=zscore(phiMat); %normalize
 asd=csvread('cancerLabel.csv',1,1); %cancer class
 
 %split data based on index into training and testing sets
-asdTens=asdTens(ind,:);
-trainASD=asd(ind);
-testASD=asd(~ind);
+asdTens=asdTens(ind~=0,:);
+trainASD=asd(ind~=0);
+
+cvInd=ind(ind~=0);
 
 nFolds=10; %set number of folds
-nTrain=sum(ind); %size of training set
-cvInd=crossvalind('Kfold',nTrain,nFolds); %split data into k folds
 
 phi=cell(nFolds,1);
 testPhi=cell(nFolds,1);

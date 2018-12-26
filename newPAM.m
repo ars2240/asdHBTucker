@@ -12,10 +12,21 @@ function [paths,LL,ent] = newPAM(dims,ocpsi,ctree,paths,tpl,prob,L)
     
     cts=cell(2,1);
     ctsA=cell(2,1);
+    subs=cell(2,1);
+    vals=cell(2,1);
+    start=cell(2,1);
     for j=1:2
        %get counts
+       cts{j}=ctree{j};
+       if options.sparse==1
+           subs{j}=cts{j}.subs;
+           vals{j}=cts{j}.vals;
+           [~,start{j},~]=unique(subs{j}(:,1));
+           start{j}=[start{j}; nnz(cts{j})+1];
+       else
+           cts{j}=permute(cts{j},[2,3,1]);
+       end
        ctsA{j}=ocpsi{j};
-       cts{j}=permute(ctree{j},[2,3,1]);
     end
     
     for p=1:dims(1)
@@ -32,7 +43,20 @@ function [paths,LL,ent] = newPAM(dims,ocpsi,ctree,paths,tpl,prob,L)
 
         %get counts
         cts1=ctsA{i}(:,rList);
-        cts2=ctsA{i}(:,rList)+cts{i}(:,rList,p);
+        if options.sparse==1
+            cts2=ctsA{i}(:,rList);
+            tsubs=subs{i}(start{i}(i):(start{i}(i+1)-1),:);
+            tvals=vals{i}(start{i}(i):(start{i}(i+1)-1));
+            [incl,tsubs(:,3)]=ismember(tsubs(:,3),rList);
+            if sum(incl)>0
+                tsubs=tsubs(incl,:);
+                tvals=tvals(incl);
+                tsubs=sub2ind(size(cts2), tsubs(:,2), tsubs(:,3));
+                cts2(tsubs)=cts2(tsubs)+tvals;
+            end
+        else
+            cts2=ctsA{i}(:,rList)+cts{i}(:,rList,p);
+        end
 
         %compute contribution to pdf
         pdf=log(pdf); %take log to prevent overflow
@@ -59,7 +83,20 @@ function [paths,LL,ent] = newPAM(dims,ocpsi,ctree,paths,tpl,prob,L)
                 
                 %get counts
                 cts1=ctsA{i}(:,rList);
-                cts2=ctsA{i}(:,rList)+cts{i}(:,rList,p);
+                if options.sparse==1
+                    cts2=ctsA{i}(:,rList);
+                    tsubs=subs{i}(start{i}(i):(start{i}(i+1)-1),:);
+                    tvals=vals{i}(start{i}(i):(start{i}(i+1)-1));
+                    [incl,tsubs(:,3)]=ismember(tsubs(:,3),rList);
+                    if sum(incl)>0
+                        tsubs=tsubs(incl,:);
+                        tvals=tvals(incl);
+                        tsubs=sub2ind(size(cts2), tsubs(:,2), tsubs(:,3));
+                        cts2(tsubs)=cts2(tsubs)+tvals;
+                    end
+                else
+                    cts2=ctsA{i}(:,rList)+cts{i}(:,rList,p);
+                end
                 
                 %compute contribution to pdf
                 pdf=log(pdf); %take log to prevent overflow

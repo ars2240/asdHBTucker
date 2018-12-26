@@ -10,8 +10,15 @@ function nPaths = newTreePaths(asdTens,ocpsi,ctree,paths,tree,ind,L,options)
         
        %get counts
        ctsA=ocpsi{j};
-       
-       cts=permute(ctree{j},[2,3,1]);
+       cts=ctree{j};
+       if options.sparse==1
+           subs=cts.subs;
+           vals=cts.vals;
+           [~,start,~]=unique(subs(:,1));
+           start=[start; nnz(cts)+1];
+       else
+           cts=permute(cts,[2,3,1]);
+       end
        
        switch options.pType
            case 0
@@ -38,7 +45,20 @@ function nPaths = newTreePaths(asdTens,ocpsi,ctree,paths,tree,ind,L,options)
 
                %get counts
                cts1=ctsA(:,rList);
-               cts2=ctsA(:,rList)+cts(:,rList,i);
+               if options.sparse==1
+                   cts2=ctsA(:,rList);
+                   tsubs=subs(start(i):(start(i+1)-1),:);
+                   tvals=vals(start(i):(start(i+1)-1));
+                   [incl,tsubs(:,3)]=ismember(tsubs(:,3),rList);
+                   if sum(incl)>0
+                       tsubs=tsubs(incl,:);
+                       tvals=tvals(incl);
+                       tsubs=sub2ind(size(cts1), tsubs(:,2), tsubs(:,3));
+                       cts2(tsubs)=cts2(tsubs)+tvals;
+                   end
+               else
+                   cts2=ctsA(:,rList)+cts(:,rList,i);
+               end
                gcts1=gcts(:,rList);
 
                %compute contribution to pdf

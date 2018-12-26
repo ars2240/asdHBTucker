@@ -50,7 +50,7 @@ void drawZs(double *sampIn, double *sampOut, double *p, size_t sampCols,
         alpha2=1.0;
         alpha3=1.0;
     } else{
-        alpha1=1/phiDims[1]/phiDims[2];
+        alpha1=1/l[0]/l[1];
         alpha2=1/psi1Dims[0];
         alpha3=1/psi2Dims[0];
     }
@@ -116,8 +116,12 @@ void drawZ(int j, double *sampIn, double *sampOut, double *p,
             kp = pth[x+(k+l0)*phiDims[0]]-1;
             s1 = ((ip==z1o) ? 1 : 0);
             s2 = ((kp==z2o) ? 1 : 0);
-            ind = i+k*l1;
-            indp = ip+kp*phiDims[1];
+            ind = i+k*l0;
+            if(phiDims[1]==l0){
+                indp = ind;
+            } else{
+                indp = ip+kp*phiDims[1];
+            }
             pdf[ind] = phi[x+indp*phiDims[0]]+a1-s1*s2;
             pdf[ind] *= (psi1[y1+ip*psi1Dims[0]]+a2-s1)/psi1s[ip];
             pdf[ind] *= (psi2[y2+kp*psi2Dims[0]]+a3-s2)/psi2s[kp];

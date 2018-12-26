@@ -1,4 +1,4 @@
-load('cancerHBTuckerCV.mat'); %load tensor
+%load('cancerHBTuckerCV.mat'); %load tensor
 
 asdSparse=csvread('cancerSparse.csv',1,1);
 asd=sptensor(asdSparse(:,1:3),asdSparse(:,4));

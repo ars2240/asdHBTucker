@@ -15,9 +15,13 @@ function [ options ] = init_options( )
 % minA = all A's above this value will be drawn normally
 % topicModel = type of hierarchical tree
 % topicsPerLevel = number of topics in each level, used in PAM
+% topicType = topic/tree correspondence
+%   Cartesian = full
+%   Level = diagonal
 % treeReps = number of iterations of tree per large iteration
 % btReps = number of iterations of Bayesian Tucker per large iteration
 % collapsed = whether or not collapsed Gibbs sampler is used
+% sparse = whether or not sparse matrices/tensors are used
 
 options.par = 1;
 options.time = 1;
@@ -34,8 +38,10 @@ options.topicModel = 'IndepTrees';
 options.topicsPerLevel = cell(2,1);
 options.topicsPerLevel{1} = 10;
 options.topicsPerLevel{2} = 10;
+options.topicType = 'Cartesian';
 options.treeReps = 1;
 options.btReps = 1;
 options.collapsed = 1;
+options.sparse = 1;
 
 end

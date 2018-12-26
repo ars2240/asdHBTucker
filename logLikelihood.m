@@ -4,7 +4,8 @@ function LL = logLikelihood(x, xTest, npats, prior, epsilon, psi, r, opaths, tre
     sparse=generatePatients(x, npats, prior, psi, r, opaths, tree, vargin);
     
     %convert from sparse to dense
-    tens=sptensor(sparse(:,1:3),sparse(:,4));
+    si = [npats, size(x,2), size(x,3)];
+    tens=sptensor(sparse(:,1:3),sparse(:,4), si);
     
     dims=size(tens);
     
@@ -15,7 +16,7 @@ function LL = logLikelihood(x, xTest, npats, prior, epsilon, psi, r, opaths, tre
     cts=full(cts);
     ctsS=cts(sparse(:,1))+epsilon*prod(dims(2:end));
     sparse(:,4)=sparse(:,4)./ctsS;
-    tens=sptensor(sparse(:,1:3),sparse(:,4));
+    tens=sptensor(sparse(:,1:3),sparse(:,4), si);
     
     LL=0;
     n=size(xTest,1);
@@ -53,6 +54,9 @@ function LL = logLikelihood(x, xTest, npats, prior, epsilon, psi, r, opaths, tre
         ll=log(sum(w.*p))+m;
         if isnan(ll)
             display(sum(p));
+        end
+        if ~isfinite(ll)
+            display(sum(w.*p));
         end
         LL=LL+ll;
     end

@@ -79,7 +79,11 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
         dimsM=zeros(2,1);
         dimsM(1)=length(r{1});
         dimsM(2)=length(r{2});
-        cphi=zeros(dims(1),dimsM(1),dimsM(2));
+        if options.sparse==0
+            cphi=zeros(dims(1),dimsM(1),dimsM(2));
+        else
+            cphi=zeros(dims(1),L(1),L(2));
+        end
         cpsi=cell(2,1);
         cpsi{1}=zeros(dims(2),dimsM(1));
         cpsi{2}=zeros(dims(3),dimsM(2));
@@ -102,7 +106,7 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
         
         %new counts
         cStart=tic;
-        [cphi,cpsi,~] = counts(samples, dims, r);
+        [cphi,cpsi,~] = counts(samples, dims, r, paths, [1,1,0], options);
         cTime=toc(cStart);
         
         matTime=0;
@@ -150,11 +154,11 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
         zStart=tic;
         switch options.par
             case 1
-                [samples,p]=drawZscPar(samples,phi,psi,r);
+                [samples,p]=drawZscPar(samples,double(phi),psi,r);
                 LL=LL+sum(log(p));
                 ent=ent+entropy(p);
             otherwise
-                [samples,p]=drawZsc(samples,phi,psi,r);
+                [samples,p]=drawZsc(samples,double(phi),psi,r);
                 LL=LL+sum(log(p));
                 ent=ent+entropy(p);
         end
@@ -181,15 +185,21 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
             if options.collapsed==1 && nIter<(options.maxIter-1)
                 pad=max(r{1})-size(cphi,2);
                 if pad>0
-                   cphi=padarray(cphi,[0 pad 0],'post');
+                   if options.sparse==0
+                       cphi=padarray(cphi,[0 pad 0],'post');
+                   end
                    cpsi{1}=padarray(cpsi{1},[0 pad],'post');
                 end
                 pad=max(r{2})-size(cphi,3);
                 if pad>0
-                   cphi=padarray(cphi,[0 0 pad],'post');
+                   if options.sparse==0
+                       cphi=padarray(cphi,[0 0 pad],'post');
+                   end
                    cpsi{2}=padarray(cpsi{2},[0 pad],'post');
                 end
-                cphi=cphi(:,r{1},r{2});
+                if options.sparse==0
+                   cphi=cphi(:,r{1},r{2});
+                end
                 cpsi{1}=cpsi{1}(:,r{1});
                 cpsi{2}=cpsi{2}(:,r{2});
                 %draw latent topic z's
@@ -271,9 +281,9 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
                 zStart=tic;
                 switch options.par
                     case 1
-                        [samples,p]=drawZscPar(samples,phi,psi,r);
+                        [samples,p]=drawZscPar(samples,double(phi),psi,r);
                     otherwise
-                        [samples,p]=drawZsc(samples,phi,psi,r);
+                        [samples,p]=drawZsc(samples,double(phi),psi,r);
                 end
                 if btIt==options.btReps
                     LL=LL+sum(log(p));
@@ -290,9 +300,9 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
             cStart=tic;
             switch options.collapsed
                 case 1
-                    [cphi,cpsi,ctree] = counts(samples, dims, r);
+                    [cphi,cpsi,ctree] = counts(samples, dims, r, paths, options);
                 otherwise
-                    [~,cpsi,ctree] = counts(samples, dims, r);
+                    [~,cpsi,ctree] = counts(samples, dims, r, paths, [0,1,1], options);
             end
             cTime=cTime+toc(cStart);
             
@@ -378,7 +388,12 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
         fprintf('Z time= %2i hrs, %2i min, %4.2f sec \n', hrs, mins, ...
             zTime);
         if options.collapsed==1
-            fprintf('Count time= %5.2f sec\n',cTime);
+            hrs = floor(cTime/3600);
+            cTime = cTime - hrs * 3600;
+            mins = floor(cTime/60);
+            cTime = cTime - mins * 60;
+            fprintf('Count time= %2i hrs, %2i min, %4.2f sec \n', hrs, ...
+                mins, cTime);
         end
         hrs = floor(treeTime/3600);
         treeTime = treeTime - hrs * 3600;

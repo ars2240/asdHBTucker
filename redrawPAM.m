@@ -95,10 +95,20 @@ function [paths,prob,varargout] = redrawPAM(dims,cpsi,ctree,paths,tpl,prob,L,opt
     
     cts=cell(2,1);
     ctsA=cell(2,1);
+    subs=cell(2,1);
+    vals=cell(2,1);
+    start=cell(2,1);
     for j=1:2
        %get counts
        cts{j}=ctree{j};
-       cts{j}=permute(cts{j},[2,3,1]);
+       if options.sparse==1
+           subs{j}=cts{j}.subs;
+           vals{j}=cts{j}.vals;
+           [~,start{j},~]=unique(subs{j}(:,1));
+           start{j}=[start{j}; nnz(cts{j})+1];
+       else
+           cts{j}=permute(cts{j},[2,3,1]);
+       end
        ctsA{j}=cpsi{j};
     end
     
@@ -113,9 +123,22 @@ function [paths,prob,varargout] = redrawPAM(dims,cpsi,ctree,paths,tpl,prob,L,opt
         rStart=sum(tpl{i}(1:(j-1)))+1;
         rList=rStart:sum(tpl{i}(1:j));
         pdf=prob{mod(i,2)+1,j-(i==1)}(res,:);
-
+        
         %get counts
-        cts1=ctsA{i}(:,rList)-cts{i}(:,rList,p);
+        if options.sparse==1
+            cts1=ctsA{i}(:,rList);
+            tsubs=subs{i}(start{i}(i):(start{i}(i+1)-1),:);
+            tvals=vals{i}(start{i}(i):(start{i}(i+1)-1));
+            [incl,tsubs(:,3)]=ismember(tsubs(:,3),rList);
+            if sum(incl)>0
+                tsubs=tsubs(incl,:);
+                tvals=tvals(incl);
+                tsubs=sub2ind(size(cts1), tsubs(:,2), tsubs(:,3));
+                cts1(tsubs)=cts1(tsubs)-tvals;
+            end
+        else
+            cts1=ctsA{i}(:,rList)-cts{i}(:,rList,p);
+        end
         cts2=ctsA{i}(:,rList);
 
         %compute contribution to pdf
@@ -142,7 +165,20 @@ function [paths,prob,varargout] = redrawPAM(dims,cpsi,ctree,paths,tpl,prob,L,opt
                 pdf=prob{mod(i,2)+1,j-(i==1)}(res,:);
                 
                 %get counts
-                cts1=ctsA{i}(:,rList)-cts{i}(:,rList,p);
+                if options.sparse==1
+                    cts1=ctsA{i}(:,rList);
+                    tsubs=subs{i}(start{i}(i):(start{i}(i+1)-1),:);
+                    tvals=vals{i}(start{i}(i):(start{i}(i+1)-1));
+                    [incl,tsubs(:,3)]=ismember(tsubs(:,3),rList);
+                    if sum(incl)>0
+                        tsubs=tsubs(incl,:);
+                        tvals=tvals(incl);
+                        tsubs=sub2ind(size(cts1), tsubs(:,2), tsubs(:,3));
+                        cts1(tsubs)=cts1(tsubs)-tvals;
+                    end
+                else
+                    cts1=ctsA{i}(:,rList)-cts{i}(:,rList,p);
+                end
                 cts2=ctsA{i}(:,rList);
                 
                 %compute contribution to pdf

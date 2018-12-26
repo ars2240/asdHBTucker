@@ -67,7 +67,8 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
             
             %old counts
             cStart=tic;
-            [~,ocpsi,~] = counts(oSamples, [max(oSamples(:,1)), dims(2:3)], r);
+            [~,ocpsi,~] = counts(oSamples, ...
+                [max(oSamples(:,1)), dims(2:3)], r, paths, [0,1,0], options);
             cTime=toc(cStart);
         case 'PAM'
             paths=ones(dims(1),sum(L));
@@ -121,7 +122,8 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
             
             %old counts
             cStart=tic;
-            [~,ocpsi,~] = counts(oSamples, [max(oSamples(:,1)), dims(2:3)], r);
+            [~,ocpsi,~] = counts(oSamples, ...
+                [max(oSamples(:,1)), dims(2:3)], r, paths, [0,1,0], options);
             cTime=toc(cStart);
             
             ctree=cell(2,1);
@@ -138,7 +140,8 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
             
             %old counts
             cStart=tic;
-            [~,ocpsi,~] = counts(oSamples, [max(oSamples(:,1)), dims(2:3)], r);
+            [~,ocpsi,~] = counts(oSamples, ...
+                [max(oSamples(:,1)), dims(2:3)], r, paths, [0,1,0], options);
             cTime=toc(cStart);
             
         otherwise
@@ -177,7 +180,7 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
         
         %new counts
         cStart=tic;
-        [cphi,cpsi,~] = counts(samples, dims, r);
+        [cphi,cpsi,~] = counts(samples, dims, r, paths, [1,1,0], options);
         cTime=cTime+toc(cStart);
         
         coreTime=0;
@@ -199,11 +202,11 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
         zStart=tic;
         switch options.par
             case 1
-                [samples,p]=drawZscPar(samples,phi,psi,r);
+                [samples,p]=drawZscPar(samples,double(phi),psi,r);
                 LL=LL+sum(log(p));
                 ent=ent+entropy(p);
             otherwise
-                [samples,p]=drawZsc(samples,phi,psi,r);
+                [samples,p]=drawZsc(samples,double(phi),psi,r);
                 LL=LL+sum(log(p));
                 ent=ent+entropy(p);
         end
@@ -267,11 +270,11 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
                 zStart=tic;
                 switch options.par
                     case 1
-                        [samples,p]=drawZscPar(samples,phi,psi,r);
+                        [samples,p]=drawZscPar(samples,double(phi),psi,r);
                         LL=LL+sum(log(p));
                         ent=ent+entropy(p);
                     otherwise
-                        [samples,p]=drawZsc(samples,phi,psi,r);
+                        [samples,p]=drawZsc(samples,double(phi),psi,r);
                 end
                 if btIt==options.btReps
                     LL=LL+sum(log(p));
@@ -285,9 +288,9 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
         cStart=tic;
         switch options.collapsed
             case 1
-                [cphi,cpsi,ctree] = counts(samples, dims, r);
+                [cphi,cpsi,ctree] = counts(samples, dims, r, paths, options);
             otherwise
-                [~,~,ctree] = counts(samples, dims, r);
+                [~,~,ctree] = counts(samples, dims, r, paths, [0,0,1], options);
         end
         cTime=cTime+toc(cStart);
         
@@ -327,6 +330,7 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
     
     %print times
     if options.time==1
+        fprintf('Test\n');
         fprintf('Sample Init time= %5.2f\n',sampTime);
         if options.collapsed~=1
             fprintf('Core time= %5.2f sec\n',coreTime);

@@ -9,7 +9,11 @@ function [phi,p] = drawCoreCon(samples,paths,coreDims,L,r,options)
     
     %initialize tucker decomposition
     %core tensor
-    phi=zeros(coreDims(1),coreDims(2),coreDims(3));
+    if options.sparse==0
+        phi=zeros(coreDims(1),coreDims(2),coreDims(3));
+    else
+        phi=sptensor([],[],coreDims);
+    end
 
     %get counts
     cts=accumarray(samples(:,[4 5 1]),1);
@@ -21,16 +25,35 @@ function [phi,p] = drawCoreCon(samples,paths,coreDims,L,r,options)
     end
     cts=cts(r{1},r{2},:);
     
-    len = L(1)*L(2); %size of z-space
+    % size of topic space
+    switch options.topicType
+        case 'Cartesian'
+            len = L(1)*L(2);
+        case 'Level'
+            len = L(1);
+        otherwise
+            error('Error. \nNo topic type selected');
+    end
     
     p = zeros(1,coreDims(1)); %initialize probability matrix
     
     for i=1:coreDims(1)
         %get restaurants for patient
         res{1}=paths(i,1:L(1));
-        res{1}=ismember(r{1},res{1});
+        %res{1}=ismember(r{1},res{1});
         res{2}=paths(i,(1+L(1)):(L(1)+L(2)));
-        res{2}=ismember(r{2},res{2});
+        %res{2}=ismember(r{2},res{2});
+        
+%         if sum(ismember(r{1},res{1}))~=L(1)
+%             display(res{1});
+%             display(r{1});
+%             error('Bad restaurant list.');
+%         end
+%         if sum(ismember(r{2},res{2}))~=L(2)
+%             display(res{2});
+%             display(r{2});
+%             error('Bad restaurant list.');
+%         end
 
         %add prior to uniform prior
         switch options.pType
@@ -45,9 +68,16 @@ function [phi,p] = drawCoreCon(samples,paths,coreDims,L,r,options)
 
         %draw values from dirichlet distribution with prior
         [vals,p(i)]=drchrnd(prior,1,options);
-
+        
         %set values
-        phi(i,res{1},res{2})=reshape(vals,[L(1),L(2)]);
+        switch options.topicType
+            case 'Cartesian'
+                phi(i,res{1},res{2})=reshape(vals,[L(1),L(2)]);
+            case 'Level'
+                phi(i,res{1},res{2})=diag(vals);
+            otherwise
+                error('Error. \nNo topic type selected');
+        end
     end
     
 end
