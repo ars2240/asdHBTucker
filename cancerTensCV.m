@@ -17,7 +17,7 @@ try
 
     options=init_options();
     % mex drawZscPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
-    options.gam = .5;
+    options.gam = 1;
     options.L = 4;
     % options.maxIter = 100;
     % options.topicModel = 'PAM';

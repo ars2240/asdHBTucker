@@ -15,12 +15,18 @@ function [phi,p] = drawCoreUni(paths,coreDims,L,varargin)
         error("Error. \nIncorrect number of inputs.");
     end
     
+    L=options.L;
+    %adjustment if using constant L across dims
+    if length(L)==1
+        L=repelem(L,2);
+    end
+    
     %initialize tucker decomposition
     %core tensor
     if options.sparse==0
         phi=zeros(coreDims(1),coreDims(2),coreDims(3));
     else
-        phi=sptensor([],[],coreDims);
+        phi=zeros(coreDims(1),L(1),L(2));
     end
     
     % size of topic space
@@ -53,13 +59,24 @@ function [phi,p] = drawCoreUni(paths,coreDims,L,varargin)
         %res{2}=ismember(r{2},res{2});
         
         %set values
-        switch options.topicType
-            case 'Cartesian'
-                phi(i,res{1},res{2})=reshape(vals(i,:),[L(1),L(2)]);
-            case 'Level'
-                phi(i,res{1},res{2})=diag(vals(i,:));
-            otherwise
-                error('Error. \nNo topic type selected');
+                if options.sparse==0
+            switch options.topicType
+                case 'Cartesian'
+                    phi(i,res{1},res{2})=reshape(vals,[L(1),L(2)]);
+                case 'Level'
+                    phi(i,res{1},res{2})=diag(vals);
+                otherwise
+                    error('Error. \nNo topic type selected');
+            end
+        else
+            switch options.topicType
+                case 'Cartesian'
+                    phi(i,:,:)=reshape(vals,[L(1),L(2)]);
+                case 'Level'
+                    phi(i,:,:)=diag(vals);
+                otherwise
+                    error('Error. \nNo topic type selected');
+            end
         end
     end
     

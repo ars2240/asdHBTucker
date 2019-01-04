@@ -70,13 +70,31 @@ function [phi,p] = drawCoreCon(samples,paths,coreDims,L,r,options)
         [vals,p(i)]=drchrnd(prior,1,options);
         
         %set values
-        switch options.topicType
-            case 'Cartesian'
-                phi(i,res{1},res{2})=reshape(vals,[L(1),L(2)]);
-            case 'Level'
-                phi(i,res{1},res{2})=diag(vals);
-            otherwise
-                error('Error. \nNo topic type selected');
+        if options.sparse==0
+            switch options.topicType
+                case 'Cartesian'
+                    phi(i,res{1},res{2})=reshape(vals,[L(1),L(2)]);
+                case 'Level'
+                    phi(i,res{1},res{2})=diag(vals);
+                otherwise
+                    error('Error. \nNo topic type selected');
+            end
+        else
+            switch options.topicType
+                case 'Cartesian'
+                    subs=zeros(prod(L),3);
+                    subs(:,1)=i;
+                    subs(:,2)=repmat(res{1},[1,L(2)]);
+                    subs(:,3)=repelem(res{2},L(1));
+                case 'Level'
+                    subs=zeros(L(1),3);
+                    subs(:,1)=i;
+                    subs(:,2)=res{1};
+                    subs(:,3)=res{2};
+                otherwise
+                    error('Error. \nNo topic type selected');
+            end
+            phi=phi+sptensor(subs,vals',coreDims);
         end
     end
     

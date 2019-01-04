@@ -14,7 +14,7 @@ trainASD=asd(ind~=0);
 cvInd=ind(ind~=0);
 
 nFolds=10; %set number of folds
-nTop=20; %number of topics
+nTop=5; %number of topics
 
 phi=cell(nFolds,1);
 testPhi=cell(nFolds,1);

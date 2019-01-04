@@ -200,15 +200,23 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
         %save('asd.mat','phi','psi','r','samples');
         %draw latent topic z's
         zStart=tic;
-        switch options.par
-            case 1
-                [samples,p]=drawZscPar(samples,double(phi),psi,r);
-                LL=LL+sum(log(p));
-                ent=ent+entropy(p);
+        switch options.sparse
+            case 0
+                switch options.par
+                    case 1
+                        [samples,~]=drawZscPar(samples,phi,psi,r);
+                    otherwise
+                        [samples,~]=drawZsc(samples,phi,psi,r);
+                end
             otherwise
-                [samples,p]=drawZsc(samples,double(phi),psi,r);
-                LL=LL+sum(log(p));
-                ent=ent+entropy(p);
+                switch options.par
+                    case 1
+                        [samples,~] = drawZscSparse(samples,phi,psi,...
+                            path,L);
+                    otherwise
+                        [samples,~] = drawZscSparsePar(samples,phi,psi,...
+                            path,L);
+                end
         end
         zTime=toc(zStart);
         
@@ -268,13 +276,25 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
 
                 %redraw latent topic z's
                 zStart=tic;
-                switch options.par
-                    case 1
-                        [samples,p]=drawZscPar(samples,double(phi),psi,r);
-                        LL=LL+sum(log(p));
-                        ent=ent+entropy(p);
+                switch options.sparse
+                    case 0
+                        switch options.par
+                            case 1
+                                [samples,p]=drawZscPar(samples,...
+                                    phi,psi,r);
+                            otherwise
+                                [samples,p]=drawZsc(samples,...
+                                    phi,psi,r);
+                        end
                     otherwise
-                        [samples,p]=drawZsc(samples,double(phi),psi,r);
+                        switch options.par
+                            case 1
+                                [samples,p] = drawZscSparse(samples,...
+                                    phi,psi,path,L);
+                            otherwise
+                                [samples,p] = drawZscSparsePar(samples,...
+                                    phi,psi,path,L);
+                        end
                 end
                 if btIt==options.btReps
                     LL=LL+sum(log(p));
@@ -327,6 +347,34 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
         end
     end
     tTime=toc(tStart);
+    
+    %reformat phi
+    if options.sparse~=0
+        phiT=sptensor([],[],coreDims);
+        for i=1:coreDims(1)
+            res{1}=paths(i,1:L(1));
+            res{2}=paths(i,(1+L(1)):(L(1)+L(2)));
+            switch options.topicType
+                case 'Cartesian'
+                    len = L(1)*L(2);
+                    subs=zeros(prod(L),3);
+                    subs(:,1)=i;
+                    subs(:,2)=repmat(res{1},[1,L(2)]);
+                    subs(:,3)=repelem(res{2},L(1));
+                case 'Level'
+                    len = L(1);
+                    subs=zeros(L(1),3);
+                    subs(:,1)=i;
+                    subs(:,2)=res{1};
+                    subs(:,3)=res{2};
+                otherwise
+                    error('Error. \nNo topic type selected');
+            end   
+            vals=reshape(phi(i,:,:),[1,len]);
+            phiT=phiT+sptensor(subs,vals',coreDims);
+        end
+        phi=phiT;
+    end
     
     %print times
     if options.time==1
