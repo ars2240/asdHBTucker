@@ -17,12 +17,12 @@ try
 
     options=init_options();
     % mex drawZscPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
-    options.gam = 1;
-    options.L = 4;
+    options.gam = 2;
+    options.L = 5;
     % options.maxIter = 100;
     % options.topicModel = 'PAM';
     % options.par = 0;
-    options.collapsed = 1;
+    % options.collapsed = 0;
     npats=1000; %number of articificial patients
     
     disp(options); %print options

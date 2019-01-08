@@ -163,11 +163,11 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
             otherwise
                 switch options.par
                     case 1
-                        [samples,~] = drawZscSparse(samples,phi,psi,...
-                            path,L);
-                    otherwise
                         [samples,~] = drawZscSparsePar(samples,phi,psi,...
-                            path,L);
+                            paths,L);
+                    otherwise
+                        [samples,~] = drawZscSparse(samples,phi,psi,...
+                            paths,L);
                 end
         end
         zTime=toc(zStart);
@@ -300,11 +300,11 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
                     otherwise
                         switch options.par
                             case 1
-                                [samples,p] = drawZscSparse(samples,...
-                                    phi,psi,path,L);
-                            otherwise
                                 [samples,p] = drawZscSparsePar(samples,...
-                                    phi,psi,path,L);
+                                    phi,psi,paths,L);
+                            otherwise
+                                [samples,p] = drawZscSparse(samples,...
+                                    phi,psi,paths,L);
                         end
                 end
                 if btIt==options.btReps

@@ -8,7 +8,7 @@ function [phi,p] = drawCoreUni(paths,coreDims,L,varargin)
     
     if length(varargin)==1
         options=varargin;
-    elseif nargin==2
+    elseif length(varargin)==2
         r=varargin{1};
         options=varargin{2};
     else
@@ -59,21 +59,21 @@ function [phi,p] = drawCoreUni(paths,coreDims,L,varargin)
         %res{2}=ismember(r{2},res{2});
         
         %set values
-                if options.sparse==0
+        if options.sparse==0
             switch options.topicType
                 case 'Cartesian'
-                    phi(i,res{1},res{2})=reshape(vals,[L(1),L(2)]);
+                    phi(i,res{1},res{2})=reshape(vals(i,:),[L(1),L(2)]);
                 case 'Level'
-                    phi(i,res{1},res{2})=diag(vals);
+                    phi(i,res{1},res{2})=diag(vals(i,:));
                 otherwise
                     error('Error. \nNo topic type selected');
             end
         else
             switch options.topicType
                 case 'Cartesian'
-                    phi(i,:,:)=reshape(vals,[L(1),L(2)]);
+                    phi(i,:,:)=reshape(vals(i,:),[L(1),L(2)]);
                 case 'Level'
-                    phi(i,:,:)=diag(vals);
+                    phi(i,:,:)=diag(vals(i,:));
                 otherwise
                     error('Error. \nNo topic type selected');
             end

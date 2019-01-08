@@ -12,7 +12,7 @@ function [phi,p] = drawCoreCon(samples,paths,coreDims,L,r,options)
     if options.sparse==0
         phi=zeros(coreDims(1),coreDims(2),coreDims(3));
     else
-        phi=sptensor([],[],coreDims);
+        phi=zeros(coreDims(1),L(1),L(2));
     end
 
     %get counts
@@ -82,19 +82,12 @@ function [phi,p] = drawCoreCon(samples,paths,coreDims,L,r,options)
         else
             switch options.topicType
                 case 'Cartesian'
-                    subs=zeros(prod(L),3);
-                    subs(:,1)=i;
-                    subs(:,2)=repmat(res{1},[1,L(2)]);
-                    subs(:,3)=repelem(res{2},L(1));
+                    phi(i,:,:)=reshape(vals,[L(1),L(2)]);
                 case 'Level'
-                    subs=zeros(L(1),3);
-                    subs(:,1)=i;
-                    subs(:,2)=res{1};
-                    subs(:,3)=res{2};
+                    phi(i,:,:)=diag(vals);
                 otherwise
                     error('Error. \nNo topic type selected');
             end
-            phi=phi+sptensor(subs,vals',coreDims);
         end
     end
     
