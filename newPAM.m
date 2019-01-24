@@ -1,4 +1,4 @@
-function [paths,LL,ent] = newPAM(dims,ocpsi,ctree,paths,tpl,prob,L)
+function [paths,LL,ent] = newPAM(dims,ocpsi,ctree,paths,tpl,prob,options)
     %dims = dimensions of tensor
     %oSampless = x, y, z values
     %paths = tree paths
@@ -6,9 +6,15 @@ function [paths,LL,ent] = newPAM(dims,ocpsi,ctree,paths,tpl,prob,L)
     %tpl = number of topics per level of PAM
     %prob = probability tree
     %L = levels of hierarchical tree
-
+    
+    L=options.L;
     LL=0; %initialize log-likelihood
     ent=0; %initialize entropy
+    
+    %adjustment if using constant L across dims
+    if length(L)==1
+        L=repelem(L,2);
+    end
     
     cts=cell(2,1);
     ctsA=cell(2,1);
@@ -18,13 +24,16 @@ function [paths,LL,ent] = newPAM(dims,ocpsi,ctree,paths,tpl,prob,L)
     for j=1:2
        %get counts
        cts{j}=ctree{j};
-       if options.sparse==1
+       if options.sparse==0 || ~issparse(cts{j})
+           cts{j}=permute(cts{j},[2,3,1]);
+       else
+           if ~issparse(cts{j})
+               cts{j}=sparse(cts{j});
+           end
            subs{j}=cts{j}.subs;
            vals{j}=cts{j}.vals;
            [~,start{j},~]=unique(subs{j}(:,1));
            start{j}=[start{j}; nnz(cts{j})+1];
-       else
-           cts{j}=permute(cts{j},[2,3,1]);
        end
        ctsA{j}=ocpsi{j};
     end
@@ -43,19 +52,21 @@ function [paths,LL,ent] = newPAM(dims,ocpsi,ctree,paths,tpl,prob,L)
 
         %get counts
         cts1=ctsA{i}(:,rList);
-        if options.sparse==1
-            cts2=ctsA{i}(:,rList);
-            tsubs=subs{i}(start{i}(i):(start{i}(i+1)-1),:);
-            tvals=vals{i}(start{i}(i):(start{i}(i+1)-1));
-            [incl,tsubs(:,3)]=ismember(tsubs(:,3),rList);
-            if sum(incl)>0
-                tsubs=tsubs(incl,:);
-                tvals=tvals(incl);
-                tsubs=sub2ind(size(cts2), tsubs(:,2), tsubs(:,3));
-                cts2(tsubs)=cts2(tsubs)+tvals;
-            end
-        else
+        if options.sparse==0
             cts2=ctsA{i}(:,rList)+cts{i}(:,rList,p);
+        else
+            cts2=ctsA{i}(:,rList);
+            if ~isempty(start{i})
+                tsubs=subs{i}(start{i}(i):(start{i}(i+1)-1),:);
+                tvals=vals{i}(start{i}(i):(start{i}(i+1)-1));
+                [incl,tsubs(:,3)]=ismember(tsubs(:,3),rList);
+                if sum(incl)>0
+                    tsubs=tsubs(incl,:);
+                    tvals=tvals(incl);
+                    tsubs=sub2ind(size(cts2), tsubs(:,2), tsubs(:,3));
+                    cts2(tsubs)=cts2(tsubs)+tvals;
+                end
+            end
         end
 
         %compute contribution to pdf
@@ -83,19 +94,21 @@ function [paths,LL,ent] = newPAM(dims,ocpsi,ctree,paths,tpl,prob,L)
                 
                 %get counts
                 cts1=ctsA{i}(:,rList);
-                if options.sparse==1
-                    cts2=ctsA{i}(:,rList);
-                    tsubs=subs{i}(start{i}(i):(start{i}(i+1)-1),:);
-                    tvals=vals{i}(start{i}(i):(start{i}(i+1)-1));
-                    [incl,tsubs(:,3)]=ismember(tsubs(:,3),rList);
-                    if sum(incl)>0
-                        tsubs=tsubs(incl,:);
-                        tvals=tvals(incl);
-                        tsubs=sub2ind(size(cts2), tsubs(:,2), tsubs(:,3));
-                        cts2(tsubs)=cts2(tsubs)+tvals;
-                    end
-                else
+                if options.sparse==0
                     cts2=ctsA{i}(:,rList)+cts{i}(:,rList,p);
+                else
+                    cts2=ctsA{i}(:,rList);
+                    if ~isempty(start{i})
+                        tsubs=subs{i}(start{i}(i):(start{i}(i+1)-1),:);
+                        tvals=vals{i}(start{i}(i):(start{i}(i+1)-1));
+                        [incl,tsubs(:,3)]=ismember(tsubs(:,3),rList);
+                        if sum(incl)>0
+                            tsubs=tsubs(incl,:);
+                            tvals=tvals(incl);
+                            tsubs=sub2ind(size(cts2), tsubs(:,2), tsubs(:,3));
+                            cts2(tsubs)=cts2(tsubs)+tvals;
+                        end
+                    end
                 end
                 
                 %compute contribution to pdf

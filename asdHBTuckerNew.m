@@ -130,7 +130,7 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
             ctree{1}=zeros(dims(1),dims(2),ttpl(1));
             ctree{2}=zeros(dims(1),dims(3),ttpl(2));
             
-            [paths,~,~]=newPAM(dims,ocpsi,ctree,paths,tpl,prob,L);
+            [paths,~,~]=newPAM(dims,ocpsi,ctree,paths,tpl,prob,options);
         case 'None'
             paths=repmat([1:L(1),1:L(2)],dims(1),1);
             r=cell(2,1); %initialize
@@ -160,7 +160,7 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
     if options.collapsed==1
         
         %initialize zero counts
-        cphi=zeros(dims(1),coreDims(1),coreDims(2));
+        cphi=zeros(coreDims(1),coreDims(2),coreDims(3));
         
         %draw latent topic z's
         zStart=tic;
@@ -322,7 +322,8 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
                     paths=newTreePaths(asdTens,ocpsi,ctree,oPaths,...
                         tree,b,L,options);
                 case 'PAM'
-                    [paths,~,~]=newPAM(dims,ocpsi,ctree,paths,tpl,prob,L);
+                    [paths,~,~]=newPAM(dims,ocpsi,ctree,paths,tpl,prob,...
+                        options);
                 case 'None'
                 otherwise
                     error('Error. \nNo topic model type selected');

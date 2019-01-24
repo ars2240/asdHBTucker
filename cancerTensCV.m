@@ -17,11 +17,14 @@ try
 
     options=init_options();
     % mex drawZscPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
-    options.gam = 2;
-    options.L = 5;
-    % options.maxIter = 100;
-    % options.topicModel = 'PAM';
+    tpl=10; % topics per level
+    options.gam = 1;
+    options.L = 4;
+    % options.maxIter = 10;
+    options.topicModel = 'PAM';
     % options.par = 0;
+    options.topicsPerLevel{1}=tpl;
+    options.topicsPerLevel{2}=tpl;
     % options.collapsed = 0;
     npats=1000; %number of articificial patients
     
@@ -40,13 +43,13 @@ try
         b=cvInd==f; %logical indices of test fold
         ind=find(~b);
         fprintf('Fold # %6i\n',f);
-        [phi, psi, tree, samples, paths,~,~] = asdHBTucker3(asd(ind,:,:),options);
-        testPhi = asdHBTuckerNew(asd, psi, samples, paths, ...
-            tree, b, options);
+        [phi, psi, tree, samples, paths,prob, ~,~] = asdHBTucker3(asd(ind,:,:),options);
+        testPhi = asdHBTuckerNew(asd, psi, samples, paths, tree, prob, ...
+            b, options);
         
         %save data
-        save(['data/cancerHBTuckerCV_L', int2str(options.L), '_gam', ...
-            num2str(options.gam), '_', int2str(f), '_PAM.mat'],'phi', ...
+        save(['data/cancerHBTuckerCV_L', int2str(options.L), '_tpl', ...
+            num2str(tpl), '_', int2str(f), '_PAM.mat'],'phi', ...
             'testPhi', 'psi', 'tree', 'samples', 'paths', 'options');
     
         r=cell(2,1);
