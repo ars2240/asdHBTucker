@@ -87,10 +87,10 @@ def acc(classifier, mdict, splits=10, fselect='', nfeat=100, fmin=0, fmax=1000, 
         # fit model
         model = classifier.fit(X, y)
 
-        if i==0:
-            coeffs = np.array(model.coef_).transpose()
-        else:
-            coeffs = np.c_[coeffs, np.array(model.coef_).transpose()]
+        #if i == 0:
+        #    coeffs = np.array(model.coef_).transpose()
+        #else:
+        #    coeffs = np.c_[coeffs, np.array(model.coef_).transpose()]
 
         # Compute accuracy for validation set
         probas_ = model.predict_proba(X_test)
@@ -104,7 +104,7 @@ def acc(classifier, mdict, splits=10, fselect='', nfeat=100, fmin=0, fmax=1000, 
 
         i += 1
 
-    np.savetxt("data/cancer_coeffs.csv", coeffs, delimiter=",")
+    #np.savetxt("data/cancer_coeffs.csv", coeffs, delimiter=",")
 
     results = stats.ttest_1samp(acc, popmean=755/2126)
     p_val = results[1]

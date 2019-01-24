@@ -11,11 +11,11 @@
 #   Files: ldaGV
 #   Data: cancerSparseGenes, cancerCVInd
 
-from ldaGV import lda
+from ldaCust import lda
 
-nTopics = 50  # number of topics for LDA
+nTopics = 20  # number of topics for LDA
 fname = 'cancerNumber'  # count file name
 indF = 'cancerCVInd'  # index file name
 
-lda(fname, indF, nTopics, passes=100)
+lda(fname, indF, nTopics, iterations=100)
 
