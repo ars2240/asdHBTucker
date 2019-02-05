@@ -19,10 +19,10 @@ try
     % mex drawZscPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
     tpl=10; % topics per level
     options.gam = 1;
-    options.L = 4;
-    % options.maxIter = 10;
+    options.L = 2;
     options.topicModel = 'PAM';
     % options.par = 0;
+    % options.maxIter = 10;
     options.topicsPerLevel{1}=tpl;
     options.topicsPerLevel{2}=tpl;
     % options.collapsed = 0;
@@ -43,22 +43,25 @@ try
         b=cvInd==f; %logical indices of test fold
         ind=find(~b);
         fprintf('Fold # %6i\n',f);
-        [phi, psi, tree, samples, paths,prob, ~,~] = asdHBTucker3(asd(ind,:,:),options);
+        [phi, psi, tree, samples, paths,prob, ~,~] = ...
+            asdHBTucker3(asd(ind,:,:),options);
         testPhi = asdHBTuckerNew(asd, psi, samples, paths, tree, prob, ...
             b, options);
         
         %save data
         save(['data/cancerHBTuckerCV_L', int2str(options.L), '_tpl', ...
-            num2str(tpl), '_', int2str(f), '_PAM.mat'],'phi', ...
-            'testPhi', 'psi', 'tree', 'samples', 'paths', 'options');
+            num2str(tpl), '_', int2str(f), '_', ...
+            options.topicType, '_PAM.mat'],'phi', 'testPhi', ...
+            'psi', 'tree', 'samples', 'paths', 'prob', 'options');
     
         r=cell(2,1);
         r{1}=unique(paths(:,1:L(1)));
         r{2}=unique(paths(:,(L(1)+1):(sum(L))));
 
         %compute LL
-        LL(f)=logLikelihood(asd(find(~b),:,:), asd(find(b),:,:), npats, 1, ...
-            1/(size(asd,2)*size(asd,3)), psi, r, paths, tree, options);
+        LL(f)=logLikelihood(asd(find(~b),:,:), asd(find(b),:,:), npats, ...
+            1, 1/(size(asd,2)*size(asd,3)), psi, r, paths, tree, prob, ...
+            samples, options);
     end
 
     % print LL info

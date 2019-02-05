@@ -1,12 +1,14 @@
-function sparse = generatePatients(x, npats, prior, psi, r, opaths, tree, vargin)
+function sparse = generatePatients(x, npats, prior, psi, r, opaths, tree, varargin)
     %generates new patients given trained parameters and information about
     %   the hierarchical structure of the model
     
-    if length(vargin)==1
-        options=vargin;
-    elseif length(vargin)==2
-        prob=vargin{1};
-        options=vargin{2};
+    varargin=varargin{1};
+    if length(varargin)==1
+        options=varargin{1};
+    elseif length(varargin)==3
+        prob=varargin{1};
+        samples=varargin{2};
+        options=varargin{3};
     else
         error("Error. \nIncorrect number of inputs.");
     end
@@ -19,6 +21,8 @@ function sparse = generatePatients(x, npats, prior, psi, r, opaths, tree, vargin
     if length(L)==1
         L=repelem(L,2);
     end
+    
+    dims=size(x); %dimensions of tensor
     
     %compute variant counts
     x=sptenmat(x, 1);
@@ -59,7 +63,7 @@ function sparse = generatePatients(x, npats, prior, psi, r, opaths, tree, vargin
                 end
             end
         case 'PAM'
-            paths=zeros(dims(1),sum(L));
+            paths=ones(dims(1),sum(L));
             if L(1)~=L(2)
                 error("Error. \nLevels do not match");
             end
@@ -100,12 +104,21 @@ function sparse = generatePatients(x, npats, prior, psi, r, opaths, tree, vargin
                 end
             end
 
+            ttpl=[sum(tpl{1}),sum(tpl{2})];
             %initialize restaurant list
             r=cell(2,1);
-            r{1}=1:(sum(tpl{1}));
-            r{2}=1:(sum(tpl{2}));
+            r{1}=1:(ttpl(1));
+            r{2}=1:(ttpl(2));
             
-            [paths,~,~,~] = newPAM(dims,oSamples,paths,tpl,prob,L);
+            %old counts
+            [~,ocpsi,~] = counts(samples, ...
+                [max(samples(:,1)), dims(2:3)], r, paths, [0,1,0], options);
+            
+            ctree=cell(2,1);
+            ctree{1}=zeros(dims(1),dims(2),ttpl(1));
+            ctree{2}=zeros(dims(1),dims(3),ttpl(2));
+            
+            [paths,~,~] = newPAM(dims,ocpsi,ctree,paths,tpl,prob,options);
         case 'None'
             paths=repmat([1:L(1),1:L(2)],npats,1);
             r=cell(2,1); %initialize
@@ -117,13 +130,21 @@ function sparse = generatePatients(x, npats, prior, psi, r, opaths, tree, vargin
     
     sparse=[];
     
+    if length(prior)==1
+        prior=repmat(prior,1,L(1));
+    end
+    if length(prior)==L(1) && strcmp(options.topicType,'Cartesian')
+        prior=repmat(prior,1,L(2));
+    end
+        
+    
     for i=1:npats
         
         %draw core tensor
         res{1}=paths(i,1:L(1));
-        res{1}=ismember(r{1},res{1});
+        % res{1}=ismember(r{1},res{1});
         res{2}=paths(i,(1+L(1)):(L(1)+L(2)));
-        res{2}=ismember(r{2},res{2});
+        % res{2}=ismember(r{2},res{2});
         [vals,~]=drchrnd(prior,1,options);
         
         gvs=zeros(size(psi{1},1),size(psi{2},1));
@@ -132,10 +153,19 @@ function sparse = generatePatients(x, npats, prior, psi, r, opaths, tree, vargin
         for j=1:n(i)
             % draw z
             z=multi(vals);
-            zt=mod(z-1,L(1))+1;
-            z1=res{1}(zt);
-            zt=floor((z-1)/L(1))+1;
-            z2=res{2}(zt);
+            
+            switch options.topicType
+                case 'Cartesian'
+                    zt=mod(z-1,L(1))+1;
+                    z1=res{1}(zt);
+                    zt=floor((z-1)/L(1))+1;
+                    z2=res{2}(zt);
+                case 'Level'
+                    z1=res{1}(zt);
+                    z2=res{2}(zt);
+                otherwise
+                    error('Error. \nNo topic type selected');
+            end
             
             %draw y
             y1=multi(psi{1}(:,z1));

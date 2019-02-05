@@ -1,7 +1,7 @@
-function LL = logLikelihood(x, xTest, npats, prior, epsilon, psi, r, opaths, tree, vargin)
+function LL = logLikelihood(x, xTest, npats, prior, epsilon, psi, r, opaths, tree, varargin)
 
     % generate artificial patients
-    sparse=generatePatients(x, npats, prior, psi, r, opaths, tree, vargin);
+    sparse=generatePatients(x, npats, prior, psi, r, opaths, tree, varargin);
     
     %convert from sparse to dense
     si = [npats, size(x,2), size(x,3)];

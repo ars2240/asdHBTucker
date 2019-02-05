@@ -32,7 +32,6 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
     
     dims=size(x); %dimensions of tensor
     
-    gam=options.gam;
     L=options.L;
     LL=0; %initialize log-likelihood
     ent=0; %initialize entropy
