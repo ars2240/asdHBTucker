@@ -55,7 +55,7 @@ def lda(fname, indF, nTopics=20, passes=1, iterations=50, fmax=math.inf):
     for i in range(1, splits+1):
 
         # initialize log
-        ofname = 'cancer_py_max_gvLDA_' + str(nTopics) + '_' + str(i)
+        ofname = 'cancer_py_gen_gvLDA_' + str(nTopics) + '_' + str(i)
         ch = logging.FileHandler('logs/' + ofname + '.log', mode='w')
         ch.setLevel(logging.INFO)
         formatter = logging.Formatter('%(levelname)s : %(message)s')

@@ -4,7 +4,11 @@ function sparse = generatePatients(x, npats, prior, psi, r, opaths, tree, vararg
     
     varargin=varargin{1};
     if length(varargin)==1
-        options=varargin{1};
+        if iscell(varargin)
+            options=varargin{1};
+        else
+            options=varargin;
+        end
     elseif length(varargin)==3
         prob=varargin{1};
         samples=varargin{2};
@@ -161,8 +165,8 @@ function sparse = generatePatients(x, npats, prior, psi, r, opaths, tree, vararg
                     zt=floor((z-1)/L(1))+1;
                     z2=res{2}(zt);
                 case 'Level'
-                    z1=res{1}(zt);
-                    z2=res{2}(zt);
+                    z1=res{1}(z);
+                    z2=res{2}(z);
                 otherwise
                     error('Error. \nNo topic type selected');
             end

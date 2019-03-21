@@ -27,7 +27,7 @@ def get_doc_topic(corpus, model):
 """""
 
 
-def lda(fname, indF, nTopics=20, iterations=50, fmax=math.inf):
+def lda(fname, indF, nTopics=20, iterations=50, fmax=math.inf, ofhead='cancer_py_cust_gvLDA_'):
     cts = pd.read_csv(fname + '.csv', header=0, index_col=0, dtype={0: str})
     ind = pd.read_csv(indF + '.csv', header=None)
     patID = cts.index
@@ -40,7 +40,7 @@ def lda(fname, indF, nTopics=20, iterations=50, fmax=math.inf):
 
     for i in range(1, splits+1):
 
-        ofname = 'cancer_py_cust_gvLDA_' + str(nTopics) + '_' + str(i)
+        ofname = ofhead + str(nTopics) + '_' + str(i)
 
         # training set
         rowsT = np.where(ind != i)

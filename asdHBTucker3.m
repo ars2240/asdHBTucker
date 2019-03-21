@@ -397,17 +397,18 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
                     subs(:,1)=i;
                     subs(:,2)=repmat(res{1},[1,L(2)]);
                     subs(:,3)=repelem(res{2},L(1));
+                    vals=reshape(phi(i,:,:),[len,1]);
                 case 'Level'
                     len = L(1);
                     subs=zeros(L(1),3);
                     subs(:,1)=i;
                     subs(:,2)=res{1};
                     subs(:,3)=res{2};
+                    vals=diag(squeeze(phi(i,:,:)));
                 otherwise
                     error('Error. \nNo topic type selected');
             end   
-            vals=reshape(phi(i,:,:),[1,len]);
-            phiT=phiT+sptensor(subs,vals',coreDims);
+            phiT=phiT+sptensor(subs,vals,coreDims);
         end
         phi=phiT;
     end

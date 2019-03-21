@@ -64,7 +64,15 @@ function [phi,p] = drawCoreCon(samples,paths,coreDims,L,r,options)
             otherwise
                 error('Error. \nNo prior type selected');
         end
-        prior=prior+reshape(cts(res{1},res{2},i),[1,len]);
+        
+        switch options.topicType
+            case 'Cartesian'
+                prior=prior+reshape(cts(res{1},res{2},i),[1,len]);
+            case 'Level'
+                prior=prior+reshape(diag(cts(res{1},res{2},i)),[1,len]);
+            otherwise
+                error('Error. \nNo topic type selected');
+        end
 
         %draw values from dirichlet distribution with prior
         [vals,p(i)]=drchrnd(prior,1,options);
