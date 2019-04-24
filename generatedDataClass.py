@@ -1,7 +1,7 @@
 # generatedDataClass.py
 #
 # Author: Adam Sandler
-# Date: 4/5/19
+# Date: 4/24/19
 #
 # Creates classes and Computes LDA decomposition on generated data
 #
