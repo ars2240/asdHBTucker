@@ -43,8 +43,7 @@ rlabs = range(0, 4)
 model = SVC(C=C, kernel='linear', probability=True)  # SVM classifier
 model.fit(rcts, rlabs)
 
-probas = model.predict_proba(cts)
-y_hat = np.argmax(probas, axis=1)
+y_hat = model.predict(cts)
 
 # randomly flip 10% of the samples
 rows = random.sample(range(0, len(y_hat)), math.ceil(len(y_hat)/10))

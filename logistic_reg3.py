@@ -17,7 +17,7 @@ from acc_cv import acc
 import scipy.io
 from sklearn.linear_model import LogisticRegression
 
-fname = 'cancerHBTuckerCVData_gvLDA_rmDomTop'
+fname = 'cancerHBTuckerCVDataGen'
 mdict = scipy.io.loadmat(fname)  # import dataset from matlab
 
 
