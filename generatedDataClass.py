@@ -15,11 +15,9 @@ import math
 import numpy as np
 import pandas as pd
 from sklearn.svm import SVC
+from sklearn.preprocessing import StandardScaler
 import random
 
-nTopics = 20  # number of topics for LDA
-rfname = 'cancerGenNumber2'  # random count file name
-rlabF = 'cancerGenLabel'  # random labels file name
 fname = 'cancerGenNumber'  # count file name
 indF = 'cancerGenCVInd'  # index file name
 C = 1  # penalty parameter
@@ -39,9 +37,18 @@ ind = ind.iloc[rows, 0]
 rows = random.sample(range(0, len(cts.index)), 4)
 rcts = cts.iloc[rows]
 rlabs = range(0, 4)
+rcts.to_csv('cancerHBTuckerGenDataRoots.csv')
 
-model = SVC(C=C, kernel='linear', probability=True)  # SVM classifier
+scaler = StandardScaler()
+scaler.fit(cts)
+rcts = scaler.transform(rcts)
+cts = scaler.transform(cts)
+
+model = SVC(C=C, kernel='linear')  # SVM classifier
+#model = LogisticRegression(C=C)  # Logistic Regression classifier
 model.fit(rcts, rlabs)
+
+pd.DataFrame(model.support_vectors_).to_csv('cancerHBTuckerGenDataSVs.csv')
 
 y_hat = model.predict(cts)
 
@@ -49,4 +56,4 @@ y_hat = model.predict(cts)
 rows = random.sample(range(0, len(y_hat)), math.ceil(len(y_hat)/10))
 y_hat[rows] = np.random.randint(0, 4, len(rows))
 
-pd.DataFrame(y_hat).to_csv('cancerHBTuckerGenDataLabel.csv')
+pd.DataFrame(y_hat).to_csv('cancerHBTuckerGenDataLabel_2.csv')

@@ -1,7 +1,7 @@
-# acc_cv.py
+# acc_cv_w_gen.py
 #
 # Author: Adam Sandler
-# Date: 11/16/18
+# Date: 8/1/19
 #
 # Computes accuracy for each CV, returns plot in /plots/ folder, and
 # mean, stDev, and p-value for both train & validation sets
@@ -13,6 +13,7 @@
 #   Data: asdHBTucker
 
 import numpy as np
+import random
 from scipy import stats
 from sklearn.feature_selection import mutual_info_classif
 from sklearn.feature_selection import SelectKBest
@@ -25,15 +26,11 @@ def acc(classifier, mdict, splits=10, fselect='', nfeat=100, fmin=0, fmax=1000, 
 
     acc = []
     acc_tr = []
-    coeffs = []
 
     # load data
     phi = mdict.get('phi')
     testPhi = mdict.get('testPhi')
-    asd = mdict.get('cvTrainASD')
-    testASD = mdict.get('cvTestASD')
 
-    i = 0
     for i in range(0, splits):
 
         X = phi[(i, 0)]
@@ -42,7 +39,12 @@ def acc(classifier, mdict, splits=10, fselect='', nfeat=100, fmin=0, fmax=1000, 
             X = np.reshape(X, [s[0], s[1] * s[2]])
         else:
             X = np.reshape(X, [s[0], s[1]])
-        y = asd[(i, 0)]
+        # random data
+        rows = random.sample(range(0, s[0]), 4)
+        rcts = X[rows, ]
+        rlabs = range(0, 4)
+        classifier.fit(rcts, rlabs)
+        y = classifier.predict(X)
         y = np.reshape(y, s[0])
         X_test = testPhi[(i, 0)]
         s = X_test.shape
@@ -50,7 +52,7 @@ def acc(classifier, mdict, splits=10, fselect='', nfeat=100, fmin=0, fmax=1000, 
             X_test = np.reshape(X_test, [s[0], s[1] * s[2]])
         else:
             X_test = np.reshape(X_test, [s[0], s[1]])
-        y_test = testASD[(i, 0)]
+        y_test = classifier.predict(X_test)
         y_test = np.reshape(y_test, s[0])
 
         # subset features
@@ -83,14 +85,8 @@ def acc(classifier, mdict, splits=10, fselect='', nfeat=100, fmin=0, fmax=1000, 
             X = model.transform(X)
             X_test = model.transform(X_test)
 
-
         # fit model
         model = classifier.fit(X, y)
-
-        #if i == 0:
-        #    coeffs = np.array(model.coef_).transpose()
-        #else:
-        #    coeffs = np.c_[coeffs, np.array(model.coef_).transpose()]
 
         # Compute accuracy for validation set
         y_hat = model.predict(X_test)
@@ -101,8 +97,6 @@ def acc(classifier, mdict, splits=10, fselect='', nfeat=100, fmin=0, fmax=1000, 
         acc_tr.append(sum(y_hat == y) / len(y))
 
         i += 1
-
-    #np.savetxt("data/cancer_coeffs.csv", coeffs, delimiter=",")
 
     results = stats.ttest_1samp(acc, popmean=755/2126)
     p_val = results[1]
