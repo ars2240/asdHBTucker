@@ -1,9 +1,9 @@
-# logistic_reg3.py
+# svm.py
 #
 # Author: Adam Sandler
-# Date: 9/20/18
+# Date: 8/5/19
 #
-# Computes logistic regression tests with regularization parameter
+# Computes SVM tests with regularization parameter
 #
 # Uses CV data
 #
@@ -15,9 +15,9 @@
 # load packages
 from acc_cv import acc
 import scipy.io
-from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
 
-fname = 'cancerHBTuckerGenData_noDecomp'
+fname = 'cancerHBTuckerCVData_gvLDAGen'
 mdict = scipy.io.loadmat(fname)  # import dataset from matlab
 
 
@@ -26,13 +26,13 @@ mdict = scipy.io.loadmat(fname)  # import dataset from matlab
 
 print('%6s\t %6s\t %6s\t %6s\t %6s' % ('dset', 'lam', 'mean', 'stdev', 'pval'))
 
-lam_v = [1e-6, 1e-3, 1, 1e3, 1e6]
+C_v = [1e-6, 1e-3, 1, 1e3, 1e6]
 
-for lam in lam_v:
+for C in C_v:
     # Run classifier with cross-validation and plot ROC curves
-    classifier = LogisticRegression(C=1 / lam)
+    classifier = SVC(C=C)
 
     mean_acc, std_acc, p_val, mean_acc_tr, std_acc_tr, p_val_tr = acc(classifier, mdict)
 
-    print('%6s\t %6.3e\t %0.4f\t %0.4f\t %0.4f' % ('valid', lam, mean_acc, std_acc, p_val))
-    print('%6s\t %6.3e\t %0.4f\t %0.4f\t %0.4f' % ('train', lam, mean_acc_tr, std_acc_tr, p_val_tr))
+    print('%6s\t %6.3e\t %0.4f\t %0.4f\t %0.4f' % ('valid', C, mean_acc, std_acc, p_val))
+    print('%6s\t %6.3e\t %0.4f\t %0.4f\t %0.4f' % ('train', C, mean_acc_tr, std_acc_tr, p_val_tr))

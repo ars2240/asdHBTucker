@@ -33,27 +33,43 @@ patID = patID[rows]
 phi = cts.iloc[rows]
 ind = ind.iloc[rows, 0]
 
-# random data
-rows = random.sample(range(0, len(cts.index)), 4)
-rcts = cts.iloc[rows]
-rlabs = range(0, 4)
-rcts.to_csv('cancerHBTuckerGenDataRoots.csv')
-
-scaler = StandardScaler()
-scaler.fit(cts)
-rcts = scaler.transform(rcts)
-cts = scaler.transform(cts)
-
 model = SVC(C=C, kernel='linear')  # SVM classifier
-#model = LogisticRegression(C=C)  # Logistic Regression classifier
-model.fit(rcts, rlabs)
 
-pd.DataFrame(model.support_vectors_).to_csv('cancerHBTuckerGenDataSVs.csv')
+m = 0
+iters = 0
+while m < .15:
+    # random data
+    rows = random.sample(range(0, len(cts.index)), 4)
+    rcts = cts.iloc[rows]
+    rlabs = range(0, 4)
+    rcts.to_csv('cancerHBTuckerGenDataRoots.csv')
 
-y_hat = model.predict(cts)
+    # normalize
+    scaler = StandardScaler()
+    scaler.fit(cts)
+    tcts = scaler.transform(cts)
+    trcts = scaler.transform(rcts)
 
-# randomly flip 10% of the samples
-rows = random.sample(range(0, len(y_hat)), math.ceil(len(y_hat)/10))
-y_hat[rows] = np.random.randint(0, 4, len(rows))
+    # model = LogisticRegression(C=C)  # Logistic Regression classifier
+    model.fit(trcts, rlabs)
 
-pd.DataFrame(y_hat).to_csv('cancerHBTuckerGenDataLabel_2.csv')
+    pd.DataFrame(model.support_vectors_).to_csv('cancerHBTuckerGenDataSVs.csv')
+
+    y_hat = model.predict(tcts)
+
+    # randomly flip 10% of the samples
+    rows = random.sample(range(0, len(y_hat)), math.ceil(len(y_hat) / 10))
+    y_hat[rows] = np.random.randint(0, 4, len(rows))
+
+    # get class distribution
+    cls = []
+    for i in set(y_hat):
+        cls.append(list(y_hat).count(i))
+    dis = cls / np.sum(cls)
+    print(dis)
+    m = np.min(dis)
+
+    iters += 1
+    pd.DataFrame(y_hat).to_csv('cancerHBTuckerGenDataLabel_2.csv')
+
+print(iters)
