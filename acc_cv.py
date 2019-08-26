@@ -13,6 +13,7 @@
 #   Data: asdHBTucker
 
 import numpy as np
+import pandas as pd
 from scipy import stats
 from sklearn.feature_selection import mutual_info_classif
 from sklearn.feature_selection import SelectKBest
@@ -25,7 +26,7 @@ def acc(classifier, mdict, splits=10, fselect='', nfeat=100, fmin=0, fmax=1000, 
 
     acc = []
     acc_tr = []
-    coeffs = []
+    #coeffs = []
 
     # load data
     phi = mdict.get('phi')
@@ -83,14 +84,15 @@ def acc(classifier, mdict, splits=10, fselect='', nfeat=100, fmin=0, fmax=1000, 
             X = model.transform(X)
             X_test = model.transform(X_test)
 
-
         # fit model
         model = classifier.fit(X, y)
 
-        #if i == 0:
-        #    coeffs = np.array(model.coef_).transpose()
-        #else:
-        #    coeffs = np.c_[coeffs, np.array(model.coef_).transpose()]
+        """
+        if i == 0:
+            coeffs = np.array(model.coef_).transpose()
+        else:
+            coeffs = np.c_[coeffs, np.array(model.coef_).transpose()]
+        """
 
         # Compute accuracy for validation set
         y_hat = model.predict(X_test)
@@ -99,6 +101,8 @@ def acc(classifier, mdict, splits=10, fselect='', nfeat=100, fmin=0, fmax=1000, 
         # Compute accuracy for training set
         y_hat = model.predict(X)
         acc_tr.append(sum(y_hat == y) / len(y))
+
+        # pd.DataFrame(model.coef_).to_csv('data/cancer_coef_' + str(i) + '.csv')
 
         i += 1
 

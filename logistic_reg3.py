@@ -30,7 +30,7 @@ lam_v = [1e-6, 1e-3, 1, 1e3, 1e6]
 
 for lam in lam_v:
     # Run classifier with cross-validation and plot ROC curves
-    classifier = LogisticRegression(C=1 / lam)
+    classifier = LogisticRegression(C=1 / lam, solver='liblinear', multi_class='ovr')
 
     mean_acc, std_acc, p_val, mean_acc_tr, std_acc_tr, p_val_tr = acc(classifier, mdict)
 

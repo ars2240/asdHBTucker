@@ -17,7 +17,7 @@ from acc_cv import acc
 import scipy.io
 from sklearn.svm import SVC
 
-fname = 'cancerHBTuckerCVData_gvLDAGen'
+fname = 'cancerHBTuckerGenData_noDecomp'
 mdict = scipy.io.loadmat(fname)  # import dataset from matlab
 
 
@@ -30,7 +30,7 @@ C_v = [1e-6, 1e-3, 1, 1e3, 1e6]
 
 for C in C_v:
     # Run classifier with cross-validation and plot ROC curves
-    classifier = SVC(C=C)
+    classifier = SVC(C=C, kernel='linear', gamma='auto')
 
     mean_acc, std_acc, p_val, mean_acc_tr, std_acc_tr, p_val_tr = acc(classifier, mdict)
 

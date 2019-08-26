@@ -42,7 +42,7 @@ while m < .15:
     rows = random.sample(range(0, len(cts.index)), 4)
     rcts = cts.iloc[rows]
     rlabs = range(0, 4)
-    rcts.to_csv('cancerHBTuckerGenDataRoots.csv')
+    rcts.to_csv('cancerHBTuckerGenDataRoots_3.csv')
 
     # normalize
     scaler = StandardScaler()
@@ -53,13 +53,13 @@ while m < .15:
     # model = LogisticRegression(C=C)  # Logistic Regression classifier
     model.fit(trcts, rlabs)
 
-    pd.DataFrame(model.support_vectors_).to_csv('cancerHBTuckerGenDataSVs.csv')
+    pd.DataFrame(model.support_vectors_).to_csv('cancerHBTuckerGenDataSVs_3.csv')
 
     y_hat = model.predict(tcts)
 
     # randomly flip 10% of the samples
-    rows = random.sample(range(0, len(y_hat)), math.ceil(len(y_hat) / 10))
-    y_hat[rows] = np.random.randint(0, 4, len(rows))
+    #rows = random.sample(range(0, len(y_hat)), math.ceil(len(y_hat) / 10))
+    #y_hat[rows] = np.random.randint(0, 4, len(rows))
 
     # get class distribution
     cls = []
@@ -70,6 +70,6 @@ while m < .15:
     m = np.min(dis)
 
     iters += 1
-    pd.DataFrame(y_hat).to_csv('cancerHBTuckerGenDataLabel_2.csv')
+    pd.DataFrame(y_hat).to_csv('cancerHBTuckerGenDataLabel_3.csv')
 
 print(iters)
