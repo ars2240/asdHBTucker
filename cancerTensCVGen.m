@@ -1,7 +1,6 @@
 try
-    asdSparse=csvread('cancerSparse.csv',1,1);
-    asd=sptensor([asdSparse(:,1),asdSparse(:,3),asdSparse(:,2)], asdSparse(:,4));
-    %asd=sptensor(asdSparse(:,1:3),asdSparse(:,4));
+    load('cancerHBTuckerGenData.mat');
+    asd=sptensor(sparse(:,1:3),sparse(:,4));
     %asd=sptensor(asdSparse(:,1:3),ones(size(asdSparse,1),1));
 
     pTest=.3; %percent of data in test
@@ -18,20 +17,19 @@ try
 
     options=init_options();
     % mex drawZscPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
-    %tpl=25; % topics per level
+    tpl=10; % topics per level
     options.gam = 1;
     options.L = 3;
-    %options.topicModel = 'PAM';
-    % options.topicType = 'Level';
+    % options.topicModel = 'PAM';
     % options.par = 0;
-    % options.maxIter = 100;
+    % options.maxIter = 10;
     options.topicsPerLevel{1}=tpl;
     options.topicsPerLevel{2}=tpl;
     % options.collapsed = 0;
     npats=1000; %number of articificial patients
-
+    
     disp(options); %print options
-
+    
     LL=zeros(nFolds,1); %initialize log-likelihood
 
     L=options.L;
@@ -44,20 +42,24 @@ try
     for f=1:nFolds
         b=cvInd==f; %logical indices of test fold
         ind=find(~b);
-
-        %load data
-        load(['data/cancerHBTuckerCVGen_L', int2str(options.L), '_gam', ...
-                num2str(options.gam), '_', int2str(f), '_', ...
-                options.topicType, '_trees.mat']);
-
+        fprintf('Fold # %6i\n',f);
+        [phi, psi, tree, samples, paths, ~,~] = ...
+            asdHBTucker3(asd(ind,:,:),options);
+        testPhi = asdHBTuckerNew(asd, psi, samples, paths, tree, b, ...
+            options);
+        
+        %save data
+        save(['data/cancerHBTuckerCVGen_L', int2str(options.L), '_gam', ...
+            num2str(options.gam), '_', int2str(f), '_trees.mat'],'phi', 'testPhi', ...
+            'psi', 'tree', 'samples', 'paths', 'options');
+    
         r=cell(2,1);
         r{1}=unique(paths(:,1:L(1)));
         r{2}=unique(paths(:,(L(1)+1):(sum(L))));
 
         %compute LL
-        LL(f)=logLikelihood(asd(find(~b),:,:), asd(find(b),:,:), npats, 1, ...
-            1/(size(asd,2)*size(asd,3)), psi, r, paths, tree, prob, ...
-            samples, options);
+        LL(f)=logLikelihood(asd(find(~b),:,:), asd(find(b),:,:), npats, ...
+            1, 1/(size(asd,2)*size(asd,3)), psi, r, paths, tree, options);
     end
 
     % print LL info
