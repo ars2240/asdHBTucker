@@ -18,8 +18,8 @@ from sklearn.svm import SVC
 from sklearn.preprocessing import StandardScaler
 import random
 
-fname = 'cancerGenNumber'  # count file name
-indF = 'cancerGenCVInd'  # index file name
+fname = 'cancerGenNumber10k'  # count file name
+indF = 'cancerGenCVInd10k'  # index file name
 C = 1  # penalty parameter
 
 # import and format data
@@ -42,7 +42,7 @@ while m < .15:
     rows = random.sample(range(0, len(cts.index)), 4)
     rcts = cts.iloc[rows]
     rlabs = range(0, 4)
-    rcts.to_csv('cancerHBTuckerGenDataRoots_3.csv')
+    rcts.to_csv('cancerHBTuckerGenDataRoots10k.csv')
 
     # normalize
     scaler = StandardScaler()
@@ -53,7 +53,7 @@ while m < .15:
     # model = LogisticRegression(C=C)  # Logistic Regression classifier
     model.fit(trcts, rlabs)
 
-    pd.DataFrame(model.support_vectors_).to_csv('cancerHBTuckerGenDataSVs_3.csv')
+    pd.DataFrame(model.support_vectors_).to_csv('cancerHBTuckerGenDataSVs10k.csv')
 
     y_hat = model.predict(tcts)
 
@@ -70,6 +70,6 @@ while m < .15:
     m = np.min(dis)
 
     iters += 1
-    pd.DataFrame(y_hat).to_csv('cancerHBTuckerGenDataLabel_3.csv')
+    pd.DataFrame(y_hat).to_csv('cancerHBTuckerGenDataLabel10k.csv')
 
 print(iters)

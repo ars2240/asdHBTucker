@@ -16,12 +16,12 @@ from ldaGV import lda
 import pandas as pd
 
 nTopics = 20  # number of topics for LDA
-fname = 'cancerGenNumber'  # count file name
-indF = 'cancerGenCVInd'  # index file name
+fname = 'cancerGenNumber10k'  # count file name
+indF = 'cancerGenCVInd10k'  # index file name
 
 # import and format data
 cts = pd.read_csv(fname + '.csv', header=0, index_col=0, dtype={0: str})
 ind = pd.read_csv(indF + '.csv', header=None)
 
 # ldaDecompositions
-lda(fname, indF, nTopics, iterations=100)
+lda(fname, indF, nTopics, iterations=100, head='cancer_py_gen10k_gvLDA_')
