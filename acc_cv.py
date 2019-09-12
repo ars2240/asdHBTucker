@@ -15,6 +15,7 @@
 import numpy as np
 import pandas as pd
 from scipy import stats
+import scipy.io
 from sklearn.feature_selection import mutual_info_classif
 from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import SelectFpr
@@ -22,13 +23,14 @@ from sklearn.feature_selection import f_classif
 from sklearn.decomposition import PCA
 
 
-def acc(classifier, mdict, splits=10, fselect='', nfeat=100, fmin=0, fmax=1000, a=.05, thresh=0):
+def acc(classifier, fname, splits=10, fselect='', nfeat=100, fmin=0, fmax=1000, a=.05, thresh=0):
 
     acc = []
     acc_tr = []
     #coeffs = []
 
     # load data
+    mdict = scipy.io.loadmat(fname)  # import dataset from matlab
     phi = mdict.get('phi')
     testPhi = mdict.get('testPhi')
     asd = mdict.get('cvTrainASD')

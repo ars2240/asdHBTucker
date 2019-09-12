@@ -43,6 +43,7 @@ def get_doc_topic(corpus, model):
 
 def lda(fname, indF, nTopics=20, passes=1, iterations=50, fmax=math.inf, head='cancer_py_gen_gvLDA_'):
     cts = pd.read_csv(fname + '.csv', header=0, index_col=0, dtype={0: str})
+    # cts = pd.read_csv(fname + '.csv', header=None, index_col=None)
     ind = pd.read_csv(indF + '.csv', header=None)
     patID = cts.index
     gvID = cts.columns
