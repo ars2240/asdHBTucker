@@ -41,7 +41,7 @@ def get_doc_topic(corpus, model):
 """""
 
 
-def lda(fname, indF, nTopics=20, passes=1, iterations=50, fmax=math.inf, head='cancer_py_gen_gvLDA_'):
+def lda(fname, indF, nTopics=20, passes=1, iterations=50, fmax=math.inf, fmin=0, head='cancer_py_gen_gvLDA_'):
     cts = pd.read_csv(fname + '.csv', header=0, index_col=0, dtype={0: str})
     # cts = pd.read_csv(fname + '.csv', header=None, index_col=None)
     ind = pd.read_csv(indF + '.csv', header=None)
@@ -66,7 +66,7 @@ def lda(fname, indF, nTopics=20, passes=1, iterations=50, fmax=math.inf, head='c
         # training set
         rowsT = np.where(ind != i)
         X = np.asarray(phi.iloc[rowsT])
-        cols = X.sum(axis=0) < fmax
+        cols = np.logical_and(fmin < X.sum(axis=0), X.sum(axis=0) < fmax)
         X = X[:, cols]
         X_corp = Dense2Corpus(np.array(X), documents_columns=False)
 

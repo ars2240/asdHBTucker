@@ -7,9 +7,10 @@ nTopics = 20
 p = re.compile("(-*\d+\.\d+) per-word .* (\d+\.\d+) perplexity")
 
 ll = np.zeros(10)
+perp = np.zeros(10)
 
 for i in range(1, 11):
-    ofname = 'cancer_py_gen_gvLDA_' + str(nTopics) + '_' + str(i)
+    ofname = 'cancer_py_LDAgen_gvLDA_' + str(nTopics) + '_' + str(i)
     matches = [p.findall(l) for l in open('logs/' + ofname + '.log')]
     matches = [m for m in matches if len(m) > 0]
     tuples = [t[0] for t in matches]
@@ -24,5 +25,7 @@ for i in range(1, 11):
     plt.savefig('plots/' + ofname + '_convergence_likelihood.png')
     plt.close()
     ll[i-1] = likelihood[-1]
+    perp[i-1] = perplexity[-1]
 
-print(np.mean(ll))
+print("Mean LL: " + str(np.mean(ll)))
+print("Mean Perp: " + str(np.mean(perp)))

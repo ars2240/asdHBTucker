@@ -15,8 +15,8 @@
 from ldaGV import lda
 
 nTopics = 20  # number of topics for LDA
-fname = 'cancerGenNumberPwy'  # count file name
+fname = 'cancerLDAGenNumber'  # count file name
 indF = 'cancerGenCVInd'  # index file name
 
 # ldaDecompositions
-lda(fname, indF, nTopics, iterations=100, head='cancer_py_gen_gvLDAPwy_')
+lda(fname, indF, nTopics, iterations=100, head='cancer_py_LDAgen_gvLDA_')

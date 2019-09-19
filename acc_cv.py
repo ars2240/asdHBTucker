@@ -15,19 +15,21 @@
 import numpy as np
 import pandas as pd
 from scipy import stats
+from scipy import sparse
 import scipy.io
+from sklearn.decomposition import PCA
 from sklearn.feature_selection import mutual_info_classif
 from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import SelectFpr
 from sklearn.feature_selection import f_classif
-from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 
 
 def acc(classifier, fname, splits=10, fselect='', nfeat=100, fmin=0, fmax=1000, a=.05, thresh=0):
 
     acc = []
     acc_tr = []
-    #coeffs = []
+    # coeffs = []
 
     # load data
     mdict = scipy.io.loadmat(fname)  # import dataset from matlab
@@ -55,6 +57,15 @@ def acc(classifier, fname, splits=10, fselect='', nfeat=100, fmin=0, fmax=1000, 
             X_test = np.reshape(X_test, [s[0], s[1]])
         y_test = testASD[(i, 0)]
         y_test = np.reshape(y_test, s[0])
+
+        # rescale
+        if sparse.issparse(X):
+            scaler = StandardScaler(with_mean=False)
+        else:
+            scaler = StandardScaler()
+        scaler.fit(X)
+        X = scaler.transform(X)
+        X_test = scaler.transform(X_test)
 
         # subset features
         if 'min' in fselect:

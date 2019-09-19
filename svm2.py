@@ -16,7 +16,7 @@
 from acc_cv import acc
 from sklearn.svm import SVC
 
-fname = 'cancerHBTuckerCVData_gvLDAGenPwy'
+fname = 'cancerLDAGenData_noDecomp'
 
 # #############################################################################
 # Classification and ROC analysis

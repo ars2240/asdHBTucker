@@ -16,7 +16,7 @@
 from acc_cv import acc
 from sklearn.linear_model import LogisticRegression
 
-fname = 'cancerHBTuckerCVData_gvLDAGenGVPwy'
+fname = 'cancerLDAGenData_noDecomp'
 
 # #############################################################################
 # Classification and ROC analysis

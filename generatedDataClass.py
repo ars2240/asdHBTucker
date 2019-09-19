@@ -25,7 +25,7 @@ C = 1  # penalty parameter
 # import and format data
 # mdict = scipy.io.loadmat(fname)
 # cts = mdict.get('asd')
-cts = pd.read_csv(fname + '.csv', header=None)
+cts = pd.read_csv(fname + '.csv', header=0, index_col=0)
 ind = pd.read_csv(indF + '.csv', header=None)
 rows = np.where(ind > 0)[0]
 splits = np.max(np.array(ind))
