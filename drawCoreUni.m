@@ -1,5 +1,5 @@
 %draws core p(z|x) with uniform prior
-function [phi,p] = drawCoreUni(paths,coreDims,L,varargin)
+function [phi,p] = drawCoreUni(paths,coreDims,varargin)
     %path = row with tree path values
     %coreDims = dimensions of core tensor
     %L = levels of hierarchical tree
@@ -7,7 +7,7 @@ function [phi,p] = drawCoreUni(paths,coreDims,L,varargin)
     %options = passed to drchrnd
     
     if length(varargin)==1
-        options=varargin;
+        options=varargin{1};
     elseif length(varargin)==2
         r=varargin{1};
         options=varargin{2};
@@ -15,24 +15,25 @@ function [phi,p] = drawCoreUni(paths,coreDims,L,varargin)
         error("Error. \nIncorrect number of inputs.");
     end
     
+    modes=length(coreDims)-1; %number of dependent modes
     L=options.L;
     %adjustment if using constant L across dims
     if length(L)==1
-        L=repelem(L,2);
+        L=repelem(L,modes);
     end
     
     %initialize tucker decomposition
     %core tensor
     if options.sparse==0
-        phi=zeros(coreDims(1),coreDims(2),coreDims(3));
+        phi=zeros(coreDims);
     else
-        phi=zeros(coreDims(1),L(1),L(2));
+        phi=zeros([coreDims(1),L]);
     end
     
     % size of topic space
     switch options.topicType
         case 'Cartesian'
-            len = L(1)*L(2);
+            len = prod(L);
         case 'Level'
             len = L(1);
         otherwise
@@ -50,33 +51,38 @@ function [phi,p] = drawCoreUni(paths,coreDims,L,varargin)
     end
     [vals,p]=drchrnd(prior,coreDims(1),options);
     
+    res=cell(modes,1);
     for i=1:coreDims(1)
-
-        %get restaurants for patient
-        res{1}=paths(i,1:L(1));
-        %res{1}=ismember(r{1},res{1});
-        res{2}=paths(i,(1+L(1)):(L(1)+L(2)));
-        %res{2}=ismember(r{2},res{2});
         
         %set values
         if options.sparse==0
-            switch options.topicType
-                case 'Cartesian'
-                    phi(i,res{1},res{2})=reshape(vals(i,:),[L(1),L(2)]);
-                case 'Level'
-                    phi(i,res{1},res{2})=diag(vals(i,:));
-                otherwise
-                    error('Error. \nNo topic type selected');
+            %get restaurants for patient
+            for j=1:modes
+                res{j}=paths(i,(1+sum(L(1:(j-1)))):sum(L(1:j)));
+                %res{2}=ismember(r{2},res{2});
             end
         else
-            switch options.topicType
-                case 'Cartesian'
-                    phi(i,:,:)=reshape(vals(i,:),[L(1),L(2)]);
-                case 'Level'
-                    phi(i,:,:)=diag(vals(i,:));
-                otherwise
-                    error('Error. \nNo topic type selected');
+            %get restaurants for patient
+            for j=1:modes
+                res{j}=1:L(j);
             end
+        end
+        switch options.topicType
+            case 'Cartesian'
+                ind=tensIndex(res);
+                len=size(ind,1);
+                ind2=tensIndex2([repmat(i,[len,1]),ind],size(phi));
+                phi(ind2)=reshape(vals(i,:),L);
+            case 'Level'
+                ind = zeros(L(1),modes);
+                for j=1:modes
+                    ind(:,j)=res{j};
+                end
+                len=L(1);
+                ind2=tensIndex2([repmat(i,[len,1]),ind],size(phi));
+                phi(ind2)=vals(i,:);
+            otherwise
+                error('Error. \nNo topic type selected');
         end
     end
     

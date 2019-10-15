@@ -1,4 +1,4 @@
-try
+% try
     asdSparse=csvread('cancerSparse.csv',1,1);
     asd=sptensor(asdSparse(:,1:3),asdSparse(:,4));
     %asd=sptensor(asdSparse(:,1:3),ones(size(asdSparse,1),1));
@@ -21,8 +21,8 @@ try
     options.gam = 1;
     options.L = 2;
     options.topicModel = 'PAM';
-    % options.par = 0;
-    % options.maxIter = 10;
+    options.par = 0;
+    options.maxIter = 10;
     options.topicsPerLevel{1}=tpl;
     options.topicsPerLevel{2}=tpl;
     % options.collapsed = 0;
@@ -68,10 +68,10 @@ try
     output_header=sprintf('%13s %13s','mean','stDev');
     fprintf('%s\n',output_header);
     fprintf('%13.6e %13.6e\n', mean(LL), std(LL));
-catch e
-    display(e.identifier);
-    display(e.message);
-    for i=1:size(e.stack,1)
-        display(e.stack(i,1));
-    end
-end
+% catch e
+%     display(e.identifier);
+%     display(e.message);
+%     for i=1:size(e.stack,1)
+%         display(e.stack(i,1));
+%     end
+% end

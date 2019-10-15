@@ -9,16 +9,17 @@ function [paths,tree,r,LL,ent] = redrawTree(dims,cpsi,ctree,paths,L,tree,r,optio
     % gam = hyper parameter(s) of CRP
 
     gam=options.gam;
+    modes=length(L); %number of dependent modes
     
     %adjustment if using constant gam across dims
     if length(gam)==1
-        gam=repelem(gam,2);
+        gam=repelem(gam,modes);
     end
     
     LL=0; %initialize log-likelihood
     ent=0; %initialize entropy
     
-    for j=1:2
+    for j=1:modes
         
        %get counts
        ctsA=cpsi{j};
@@ -29,7 +30,7 @@ function [paths,tree,r,LL,ent] = redrawTree(dims,cpsi,ctree,paths,L,tree,r,optio
            [~,start,~]=unique(subs(:,1));
            start=[start; nnz(cts)+1];
        else
-           cts=permute(cts,[2,3,1]);
+           cts=permute(cts,[2:(modes+1),1]);
        end
        
        

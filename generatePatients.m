@@ -21,12 +21,13 @@ function sparse = generatePatients(x, npats, prior, psi, r, opaths, tree, vararg
     
     L=options.L;
     
+    dims=size(x); %dimensions of tensor
+    modes=length(dims)-1;   %number of dependent modes
+    
     %adjustment if using constant L across dims
     if length(L)==1
-        L=repelem(L,2);
+        L=repelem(L,modes);
     end
-    
-    dims=size(x); %dimensions of tensor
     
     %compute variant counts
     x=sptenmat(x, 1);
@@ -45,7 +46,7 @@ function sparse = generatePatients(x, npats, prior, psi, r, opaths, tree, vararg
         case 'IndepTrees'
             paths=ones(npats,sum(L));
             for i=1:npats
-                for j=1:2
+                for j=1:modes
                     col=(j-1)*L(1); %starting column
                     curRes=1; %set current restaurant as root
                     for k=2:L(j)
@@ -68,66 +69,26 @@ function sparse = generatePatients(x, npats, prior, psi, r, opaths, tree, vararg
             end
         case 'PAM'
             paths=ones(dims(1),sum(L));
-            if L(1)~=L(2)
-                error("Error. \nLevels do not match");
-            end
+            [tpl, r]=initPAM(dims,options);
 
-            %reformat topicsPerLevel as cell of vectors of correct length
-            if iscell(options.topicsPerLevel)
-                tpl=options.topicsPerLevel;
-                if length(tpl)~=2
-                    error("Error. \nNumber of cells !=2");
-                end
-                if length(tpl{1})==1
-                    tpl{1}=[1,repelem(tpl{1}(1),L(1)-1)];
-                elseif length(tpl{1})~=(L(1)-1)
-                    error("Error. \nInvalid length of topics per level");
-                end
-                if length(tpl{2})==1
-                    tpl{2}=repelem(tpl{2}(1),L(2));
-                elseif length(tpl{2})~=(L(2)-1)
-                    error("Error. \nInvalid length of topics per level");
-                end
-            else
-                tplV=options.topicsPerLevel;
-                tpl=cell(2,1);
-                if length(tplV)==1
-                    tpl{1}=[1,repelem(tplV(1),L(1)-1)];
-                    tpl{2}=repelem(tplV(1),L(2));
-                elseif length(tplV)==2
-                    tpl{1}=[1,repelem(tplV(1),L(1)-1)];
-                    tpl{2}=repelem(tplV(2),L(2));
-                elseif length(tplV)==L(1)
-                    tpl{1}=tplV;
-                    tpl{2}=tplV;
-                elseif length(tplV)==2*(L(1))
-                    tpl{1}=tplV(1:L(1));
-                    tpl{2}=tplV((L(1)+1):2*L(1));
-                else
-                    error("Error. \nInvalid length of topics per level");
-                end
-            end
-
-            ttpl=[sum(tpl{1}),sum(tpl{2})];
-            %initialize restaurant list
-            r=cell(2,1);
-            r{1}=1:(ttpl(1));
-            r{2}=1:(ttpl(2));
-            
             %old counts
             [~,ocpsi,~] = counts(samples, ...
-                [max(samples(:,1)), dims(2:3)], r, paths, [0,1,0], options);
+                [max(samples(:,1)), dims(2:end)], r, paths, [0,1,0], options);
             
-            ctree=cell(2,1);
-            ctree{1}=zeros(dims(1),dims(2),ttpl(1));
-            ctree{2}=zeros(dims(1),dims(3),ttpl(2));
+            ctree=cell(modes,1);
+            for i=1:modes
+                ctree{i}=zeros(dims(1),dims(i+1),length(r{i}));
+            end
             
             [paths,~,~] = newPAM(dims,ocpsi,ctree,paths,tpl,prob,options);
         case 'None'
-            paths=repmat([1:L(1),1:L(2)],npats,1);
-            r=cell(2,1); %initialize
-            r{1}=1:L(1);
-            r{2}=1:L(2);
+            r=cell(modes,1); %initialize
+            path=zeros(1,sum(L));
+            for i=1:modes
+                r{i}=1:L(i);
+                path(1+sum(L(1:(i-1))):sum(L(1:i)))=1:L(i);
+            end         
+            paths=repmat(path,npats,1);
         otherwise
             error('Error. \nNo topic model type selected');
     end
@@ -138,20 +99,23 @@ function sparse = generatePatients(x, npats, prior, psi, r, opaths, tree, vararg
         prior=repmat(prior,1,L(1));
     end
     if length(prior)==L(1) && strcmp(options.topicType,'Cartesian')
-        prior=repmat(prior,1,L(2));
+        prior=repmat(prior,1,L(2:modes));
     end
         
+    res=cell(modes,1);
+    zr=cell(modes,1);
+    y=zeros(1,modes);
     
     for i=1:npats
         
         %draw core tensor
-        res{1}=paths(i,1:L(1));
-        % res{1}=ismember(r{1},res{1});
-        res{2}=paths(i,(1+L(1)):(L(1)+L(2)));
-        % res{2}=ismember(r{2},res{2});
+        for j=1:modes
+            res{j}=paths(i,1+sum(L(1:(j-1))):sum(L(1:j)));
+            % res{1}=ismember(r{1},res{1});
+        end
         [vals,~]=drchrnd(prior,1,options);
         
-        gvs=zeros(size(psi{1},1),size(psi{2},1));
+        gvs=zeros(dims(2:end));
         
         %for each word
         for j=1:n(i)
@@ -160,28 +124,40 @@ function sparse = generatePatients(x, npats, prior, psi, r, opaths, tree, vararg
             
             switch options.topicType
                 case 'Cartesian'
-                    zt=mod(z-1,L(1))+1;
-                    z1=res{1}(zt);
-                    zt=floor((z-1)/L(1))+1;
-                    z2=res{2}(zt);
+                    for k=1:modes
+                        zt=floor((z-1)/prod(L(1:(k-1))));
+                        zt=mod(zt,prod(L(1:k)))+1;
+                        zr{k}=res{k}(zt);
+                    end
                 case 'Level'
-                    z1=res{1}(z);
-                    z2=res{2}(z);
+                    for k=1:modes
+                        zr{k}=res{k}(z);
+                    end
                 otherwise
                     error('Error. \nNo topic type selected');
             end
             
             %draw y
-            y1=multi(psi{1}(:,z1));
-            y2=multi(psi{2}(:,z2));
+            for k=1:modes
+                y(k)=multi(psi{k}(:,zr{k}));
+            end
             
             %add count
-            gvs(y1,y2)=gvs(y1,y2)+1;
+            gvs(tensIndex2(y, dims(2:end)))=gvs(tensIndex2(y, dims(2:end)))+1;
         end
         
-        [y1,y2,v]=find(gvs);
+        yf=find(gvs);
+        v=gvs(yf);
+        y2=zeros(length(yf),modes);
+        for j=1:length(yf)
+            for k=1:modes
+                yt=floor((yf(j)-1)/prod(dims(2:k)));
+                yt=mod(yt,prod(dims(2:(k+1))))+1;
+                y2(j,k)=yt;
+            end
+        end
         
-        t=[i*ones(size(y1,1),1),y1,y2,v];
+        t=[i*ones(size(y2,1),1),y2,v];
         
         sparse=[sparse; t];
         

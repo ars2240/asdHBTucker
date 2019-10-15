@@ -31,6 +31,7 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
     x=asdTens(find(b),:,:);
     
     dims=size(x); %dimensions of tensor
+    modes=length(dims)-1;  %number of dependent modes
     
     L=options.L;
     LL=0; %initialize log-likelihood
@@ -38,7 +39,7 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
     
     %adjustment if using constant L across dims
     if length(L)==1
-        L=repelem(L,2);
+        L=repelem(L,modes);
     end
     
     %calculate L1 norm of tensor
@@ -49,11 +50,10 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
     
     %initialize sample matrix
     sStart=tic;
-    samples=zeros(l1NormX,5);
+    samples=zeros(l1NormX,1+2*modes);
     s=find(x>0); %find nonzero elements
-    v=x(s(:,1),s(:,2),s(:,3)); %get nonzero values
-    v=v.vals; %extract values
-    samples(:,1:3)=repelem(s,v,1); %set samples
+    v=x(tensIndex2(s, dims)); %get nonzero values
+    samples(:,1:(1+modes))=repelem(s,v,1); %set samples
     %[~,xStarts]=unique(samples(:,1));
     %xEnds=[xStarts(2:length(xStarts))-1;size(samples,1)];
     sampTime=toc(sStart);
@@ -67,57 +67,11 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
             %old counts
             cStart=tic;
             [~,ocpsi,~] = counts(oSamples, ...
-                [max(oSamples(:,1)), dims(2:3)], r, paths, [0,1,0], options);
+                [max(oSamples(:,1)), dims(2:end)], r, paths, [0,1,0], options);
             cTime=toc(cStart);
         case 'PAM'
+            [tpl, r]=initPAM(dims,options);
             paths=ones(dims(1),sum(L));
-            if L(1)~=L(2)
-                error("Error. \nLevels do not match");
-            end
-
-            %reformat topicsPerLevel as cell of vectors of correct length
-            if iscell(options.topicsPerLevel)
-                tpl=options.topicsPerLevel;
-                if length(tpl)~=2
-                    error("Error. \nNumber of cells !=2");
-                end
-                if length(tpl{1})==1
-                    tpl{1}=[1,repelem(tpl{1}(1),L(1)-1)];
-                elseif length(tpl{1})~=(L(1)-1)
-                    error("Error. \nInvalid length of topics per level");
-                end
-                if length(tpl{2})==1
-                    tpl{2}=repelem(tpl{2}(1),L(2));
-                elseif length(tpl{2})~=(L(2)-1)
-                    error("Error. \nInvalid length of topics per level");
-                end
-            else
-                tplV=options.topicsPerLevel;
-                tpl=cell(2,1);
-                if length(tplV)==1
-                    tpl{1}=[1,repelem(tplV(1),L(1)-1)];
-                    tpl{2}=repelem(tplV(1),L(2));
-                elseif length(tplV)==2
-                    tpl{1}=[1,repelem(tplV(1),L(1)-1)];
-                    tpl{2}=repelem(tplV(2),L(2));
-                elseif length(tplV)==L(1)
-                    tpl{1}=tplV;
-                    tpl{2}=tplV;
-                elseif length(tplV)==2*(L(1))
-                    tpl{1}=tplV(1:L(1));
-                    tpl{2}=tplV((L(1)+1):2*L(1));
-                else
-                    error("Error. \nInvalid length of topics per level");
-                end
-            end
-
-            %initialize restaurant list
-            r=cell(2,1);
-            ttpl=zeros(2,1);
-            ttpl(1)=sum(tpl{1});
-            ttpl(2)=sum(tpl{2});
-            r{1}=1:(ttpl(1));
-            r{2}=1:(ttpl(2));
             
             %old counts
             cStart=tic;
@@ -125,17 +79,21 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
                 [max(oSamples(:,1)), dims(2:3)], r, paths, [0,1,0], options);
             cTime=toc(cStart);
             
-            ctree=cell(2,1);
-            ctree{1}=zeros(dims(1),dims(2),ttpl(1));
-            ctree{2}=zeros(dims(1),dims(3),ttpl(2));
+            ctree=cell(modes,1);
+            for i=1:modes
+                ctree{i}=zeros(dims(1),dims(i+1),length(r{i}));
+            end
             
             [paths,~,~]=newPAM(dims,ocpsi,ctree,paths,tpl,prob,options);
         case 'None'
-            paths=repmat([1:L(1),1:L(2)],dims(1),1);
-            r=cell(2,1); %initialize
-            r{1}=1:L(1);
-            r{2}=1:L(2);
-            tree=cell(2,1); %initialize
+            r=cell(modes,1); %initialize
+            path=zeros(1,sum(L));
+            for i=1:modes
+                r{i}=1:L(i);
+                path(1+sum(L(1:(i-1))):sum(L(1:i)))=1:L(i);
+            end         
+            paths=repmat(path,npats,1);
+            tree=cell(modes,1); %initialize
             
             %old counts
             cStart=tic;
@@ -149,9 +107,9 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
     treeTime=toc(treeStart);
 
     %calculate dimensions of core
-    coreDims=zeros(1,3);
+    coreDims=zeros(1,1+modes);
     coreDims(1)=dims(1);
-    for i=1:2
+    for i=1:modes
        %set core dimensions to the number of topics in each mode
        coreDims(i+1)=length(r{i});
     end
@@ -159,7 +117,7 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
     if options.collapsed==1
         
         %initialize zero counts
-        cphi=zeros(coreDims(1),coreDims(2),coreDims(3));
+        cphi=zeros(coreDims);
         
         %draw latent topic z's
         zStart=tic;
@@ -188,7 +146,7 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
 
         %draw core tensor p(z|x)
         coreStart=tic;
-        [phi,p]=drawCoreUni(paths,coreDims,L,r,options);
+        [phi,p]=drawCoreUni(paths,coreDims,r,options);
         if ndims(phi) < 3
             phi(end, end, 2) = 0; 
         end
@@ -240,8 +198,9 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
             if options.collapsed==1 && nIter<(options.maxIter/10-1)
                 
                 tcpsi=cpsi;
-                tcpsi{1}=cpsi{1}+ocpsi{1};
-                tcpsi{2}=cpsi{2}+ocpsi{2};
+                for i=1:modes
+                    tcpsi{i}=cpsi{i}+ocpsi{i};
+                end
 
                 %draw latent topic z's
                 zStart=tic;
@@ -263,7 +222,7 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
                 %subset to get samples with x
                 coreStart=tic;
                 %redraw core tensor p(z|x)
-                [phi,p]=drawCoreCon(samples,paths,coreDims,L,r,options);
+                [phi,p]=drawCoreCon(samples,paths,coreDims,r,options);
                 if ndims(phi) < 3
                     phi(end, end, 2) = 0; 
                 end
@@ -319,7 +278,7 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
             switch options.topicModel
                 case 'IndepTrees'
                     paths=newTreePaths(asdTens,ocpsi,ctree,oPaths,...
-                        tree,b,L,options);
+                        tree,b,options);
                 case 'PAM'
                     [paths,~,~]=newPAM(dims,ocpsi,ctree,paths,tpl,prob,...
                         options);
@@ -348,27 +307,26 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
     end
     tTime=toc(tStart);
     
+    res=cell(modes,1);
     %reformat phi
     if options.sparse~=0
         phiT=sptensor([],[],coreDims);
         for i=1:coreDims(1)
-            res{1}=paths(i,1:L(1));
-            res{2}=paths(i,(1+L(1)):(L(1)+L(2)));
+            for j=1:modes
+                res{j}=paths(i,(1+sum(L(1:(j-1))):sum(L(1:j))));
+            end
             switch options.topicType
                 case 'Cartesian'
-                    len = L(1)*L(2);
-                    subs=zeros(prod(L),3);
-                    subs(:,1)=i;
-                    subs(:,2)=repmat(res{1},[1,L(2)]);
-                    subs(:,3)=repelem(res{2},L(1));
-                    vals=reshape(phi(i,:,:),[len,1]);
+                    len = prod(L);
+                    subs=[repmat(i,[len,1]),tensIndex(res)];
+                    vals=reshape(phi(i,:),[len,1]);
                 case 'Level'
-                    len = L(1);
-                    subs=zeros(L(1),3);
+                    subs=zeros(L(1),1+modes);
                     subs(:,1)=i;
-                    subs(:,2)=res{1};
-                    subs(:,3)=res{2};
-                    vals=diag(squeeze(phi(i,:,:)));
+                    for j=1:modes
+                        subs(:,j+1)=res{j};
+                    end
+                    vals=diag(squeeze(phi(i,:)));
                 otherwise
                     error('Error. \nNo topic type selected');
             end   

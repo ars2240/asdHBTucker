@@ -9,7 +9,8 @@ try
     % options.par = 0;
     % options.maxIter = 10;
     % options.collapsed = 0;
-    npats=size(asd,1); %number of articificial patients
+%     npats=size(asd,1); %number of articificial patients
+    npats=50000; %number of articificial patients
     
     disp(options); %print options
 
@@ -23,7 +24,7 @@ try
     [phi, psi, tree, samples, paths, ~,~] = asdHBTucker3(asd,options);
     
     %save data
-    save('data/cancerHBTuckerGenData.mat','phi', 'psi', 'tree', ...
+    save('data/cancerHBTuckerGenData50k.mat','phi', 'psi', 'tree', ...
         'samples', 'paths', 'options');
         
     r=cell(2,1);
@@ -32,7 +33,7 @@ try
         
     sparse=generatePatients(asd, npats, 1, psi, r, paths, tree, options);
 
-    save('cancerHBTuckerGenData.mat','sparse');
+    save('cancerHBTuckerGenData50k.mat','sparse');
 catch e
     display(e.identifier);
     display(e.message);

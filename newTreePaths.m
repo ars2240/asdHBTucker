@@ -1,10 +1,17 @@
-function nPaths = newTreePaths(asdTens,ocpsi,ctree,paths,tree,ind,L,options)
+function nPaths = newTreePaths(asdTens,ocpsi,ctree,paths,tree,ind,options)
     
+    L=options.L;
+    dims=size(asdTens);
+    modes=length(dims)-1;  %number of dependent modes
+    
+    %adjustment if using constant L across dims
+    if length(L)==1
+        L=repelem(L,modes);
+    end
+
     nPaths=ones(sum(ind),sum(L));
     
-    dims=size(asdTens);
-    
-    for j=1:2
+    for j=1:modes
         
        col=(j-1)*L(1); %starting column
         
@@ -17,7 +24,7 @@ function nPaths = newTreePaths(asdTens,ocpsi,ctree,paths,tree,ind,L,options)
            [~,start,~]=unique(subs(:,1));
            start=[start; nnz(cts)+1];
        else
-           cts=permute(cts,[2,3,1]);
+           cts=permute(cts,[2:(modes+1),1]);
        end
        
        switch options.pType

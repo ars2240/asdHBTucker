@@ -23,18 +23,27 @@ function [cphi,cpsi,ctree] = counts(samples, dims, r, varargin)
             error("Error. \nIncorrect number of inputs.");
     end
     
-    si=[dims,max(max(r{1}),max(samples(:,4))),...
-        max(max(r{2}),max(samples(:,5)))];
+    modes=length(r); %number of dependent modes
+    si=[dims,ones(1,modes)];
+    for i=1:modes
+        si(1+modes+i)=max(max(r{i}),max(samples(:,1+modes+i)));
+    end
     % count of entire sample tensor
     cts=sptensor(samples,1,si);
     
-    cpsi=cell(2,1);
-    ctree=cell(2,1);
+    cpsi=cell(modes,1);
+    ctree=cell(modes,1);
     
     % count of topics, patient
     if argsout(1)~=0
-        cphi=collapse(cts,[2,3],@sum);
-        cphi=cphi(:,r{1},r{2});
+        cphi=collapse(cts,2:(modes+1),@sum);
+        ind=cell(modes+1,1);
+        ind{1}=1:size(cphi,1);
+        cs=size(cphi);
+        for i=1:modes
+            ind{i+1}=r{i};
+        end
+        cphi=cphi(tensIndex2(ind,cs));
         
         % convert to normal MatLab tensor
         if options.sparse==0
@@ -43,14 +52,20 @@ function [cphi,cpsi,ctree] = counts(samples, dims, r, varargin)
             L=options.L;
             %adjustment if using constant L across dims
             if length(L)==1
-                L=repelem(L,2);
+                L=repelem(L,modes);
             end
 
-            cphiS=zeros(dims(1),L(1),L(2));
+            cphiS=zeros([dims(1),L]);
             for i=1:dims(1)
-                r1=paths(i,1:L(1));
-                r2=paths(i,(L(1)+1):(sum(L)));
-                cphiS(i,:,:)=cphi(i,r1,r2);
+                ind=cell(modes+1,1);
+                ind{1}=i;
+                ind2=ind;
+                %get restaurants for patient
+                for j=1:modes
+                    ind{j+1}=paths(i,(1+sum(L(1:(j-1)))):sum(L(1:j)));
+                    ind2{j+1}=1:L(j);
+                end
+                cphiS(tensIndex2(ind2,[dims(1),L]))=cphi(tensIndex2(ind,cs));
             end
             cphi=cphiS;
         end
@@ -59,29 +74,26 @@ function [cphi,cpsi,ctree] = counts(samples, dims, r, varargin)
     end
     
     if argsout(3)~=0 || argsout(2)~=0
-        % count of patient, GV, GV topic
-        ctree{1}=collapse(cts,[3,5],@sum);
+        mlist=1:modes; %vector of all modes
         
-        % count of patient, p'way, p'way topic
-        ctree{2}=collapse(cts,[2,4],@sum);
-        
-        % convert to normal MatLab tensor
-        if options.sparse==0
-            ctree{1}=double(ctree{1});
-            ctree{2}=double(ctree{2});
+        for i=1:modes
+            % convert to normal MatLab tensor
+            ml2=mlist(mlist~=i);
+            ctree{i}=collapse(cts,[ml2+1,ml2+modes+1],@sum);
+            if options.sparse==0
+                ctree{i}=double(ctree{i});
+            end
         end
     end
     
     if argsout(2)~=0
-        % count of GV, GV topic
-        cpsi{1}=collapse(ctree{1},1,@sum);
-
-        % count of p'way, p'way topic
-        cpsi{2}=collapse(ctree{2},1,@sum);
         
-        % convert to normal MatLab tensor
-        cpsi{1}=double(cpsi{1});
-        cpsi{2}=double(cpsi{2});
+        for i=1:modes
+            % count of mode, topic
+            cpsi{i}=collapse(ctree{i},1,@sum);
+            % convert to normal MatLab tensor
+            cpsi{i}=double(cpsi{i});
+        end
     end
 
 end

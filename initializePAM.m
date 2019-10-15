@@ -1,4 +1,4 @@
-function [paths,tpl,prob,r,LL,ent]=initializePAM(L,dims,options)
+function [paths,tpl,prob,r,LL,ent]=initializePAM(dims,options)
     %Initializes PAM
     %Inputs
     % L = levels of hierarchical tree
@@ -14,90 +14,58 @@ function [paths,tpl,prob,r,LL,ent]=initializePAM(L,dims,options)
     % LL = log-likelihood
     % ent = entropy
     
-    if L(1)~=L(2)
-        error("Error. \nLevels do not match");
-    end
-    
-    %reformat topicsPerLevel as cell of vectors of correct length
-    if iscell(options.topicsPerLevel)
-        tpl=options.topicsPerLevel;
-        if length(tpl)~=2
-            error("Error. \nNumber of cells !=2");
-        end
-        if length(tpl{1})==1
-            tpl{1}=[1,repelem(tpl{1}(1),L(1)-1)];
-        elseif length(tpl{1})~=(L(1)-1)
-            error("Error. \nInvalid length of topics per level");
-        end
-        if length(tpl{2})==1
-            tpl{2}=repelem(tpl{2}(1),L(2));
-        elseif length(tpl{2})~=(L(2)-1)
-            error("Error. \nInvalid length of topics per level");
-        end
-    else
-        tplV=options.topicsPerLevel;
-        tpl=cell(2,1);
-        if length(tplV)==1
-            tpl{1}=[1,repelem(tplV(1),L(1)-1)];
-            tpl{2}=repelem(tplV(1),L(2));
-        elseif length(tplV)==2
-            tpl{1}=[1,repelem(tplV(1),L(1)-1)];
-            tpl{2}=repelem(tplV(2),L(2));
-        elseif length(tplV)==L(1)
-            tpl{1}=tplV;
-            tpl{2}=tplV;
-        elseif length(tplV)==2*(L(1))
-            tpl{1}=tplV(1:L(1));
-            tpl{2}=tplV((L(1)+1):2*L(1));
-        else
-            error("Error. \nInvalid length of topics per level");
-        end
-    end
-    
-    %initialize restaurant list
-    r=cell(2,1);
-    r{1}=1:(sum(tpl{1}));
-    r{2}=1:(sum(tpl{2}));
+    [tpl, r]=initPAM(dims,options);
+    modes=length(dims)-1;  %number of dependent modes
     
     LL=0; %initialize log-likelihood
     ent=0; %initialize entropy
     
+    L=options.L;
+    %adjustment if using constant L across dims
+    if length(L)==1
+        L=repelem(L,modes);
+    end
+    
     %initialize probability tree
-    prob=cell(2,L(1));
+    prob=cell(modes,L(1));
     
     if options.collapsed==1
-        %i=1;
-        for j=1:L(1)
-            len=tpl{2}(j);
-            parents=tpl{1}(j);
-            prob{1,j}=repelem(1/len,len,parents);
+        %i=1:(modes-1);
+        for i=1:(modes-1)
+            for j=1:L(1)
+                len=tpl{i+1}(j);
+                parents=tpl{i}(j);
+                prob{i,j}=repelem(1/len,len,parents);
+            end
         end
 
-        %i=2;
+        %i=modes;
         for j=1:(L(1)-1)
             len=tpl{1}(j+1);
-            parents=tpl{2}(j);
-            prob{2,j}=repelem(1/len,len,parents);
+            parents=tpl{modes}(j);
+            prob{modes,j}=repelem(1/len,len,parents);
         end
     else
-        %i=1;
-        for j=1:L(1)
-            len=tpl{2}(j);
-            switch options.pType
-                case 0
-                    prior=repelem(1/len,len);
-                case 1
-                    prior=repelem(1,len);
-                otherwise
-                    error('Error. \nNo prior type selected');
+        %i=1:(modes-1);
+        for i=1:(modes-1)
+            for j=1:L(1)
+                len=tpl{i+1}(j);
+                switch options.pType
+                    case 0
+                        prior=repelem(1/len,len);
+                    case 1
+                        prior=repelem(1,len);
+                    otherwise
+                        error('Error. \nNo prior type selected');
+                end
+                parents=tpl{i}(j);
+                [prob{i,j},p]=drchrnd(prior,parents,options);
+                LL=LL+sum(log(p));
+                ent=ent+entropy(p);
             end
-            parents=tpl{1}(j);
-            [prob{1,j},p]=drchrnd(prior,parents,options);
-            LL=LL+sum(log(p));
-            ent=ent+entropy(p);
         end
 
-        %i=2;
+        %i=modes;
         for j=1:(L(1)-1)
             len=tpl{1}(j+1);
             switch options.pType
@@ -108,8 +76,8 @@ function [paths,tpl,prob,r,LL,ent]=initializePAM(L,dims,options)
                 otherwise
                     error('Error. \nNo prior type selected');
             end
-            parents=tpl{2}(j);
-            [prob{2,j},p]=drchrnd(prior,parents,options);
+            parents=tpl{modes}(j);
+            [prob{modes,j},p]=drchrnd(prior,parents,options);
             LL=LL+sum(log(p));
             ent=ent+entropy(p);
         end
@@ -122,23 +90,24 @@ function [paths,tpl,prob,r,LL,ent]=initializePAM(L,dims,options)
     for p=1:dims(1)
         res=1;
         
-        %mode 2, level 1
+        %modes 2:modes, level 1
         j=1;
-        i=2;
-        pdf=prob{mod(i,2)+1,j-(i==1)}(res,:);
-        res=multi(pdf);
-        top=res+sum(tpl{i}(1:(j-1)));
-        paths(p,j+(i==2)*L(1))=top;
-        LL=LL+log(pdf(res));
-        ent=ent+entropy(pdf(res));
+        for i=2:modes
+            pdf=prob{mod(i,modes)+1,j-(i==1)}(res,:);
+            res=multi(pdf);
+            top=res+sum(tpl{i}(1:(j-1)));
+            paths(p,j+(i-1)*L(1))=top;
+            LL=LL+log(pdf(res));
+            ent=ent+entropy(pdf(res));
+        end
         
         %other modes
         for j=2:L(1)
-            for i=1:2
-                pdf=prob{mod(i,2)+1,j-(i==1)}(res,:);
+            for i=1:modes
+                pdf=prob{mod(i,modes)+1,j-(i==1)}(res,:);
                 res=multi(pdf);
                 top=res+sum(tpl{i}(1:(j-1)));
-                paths(p,j+(i==2)*L(1))=top;
+                paths(p,j+(i-1)*L(1))=top;
                 LL=LL+log(pdf(res));
                 ent=ent+entropy(pdf(res));
             end

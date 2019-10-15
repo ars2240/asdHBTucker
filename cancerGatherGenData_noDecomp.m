@@ -1,9 +1,9 @@
-asdTens=csvread('cancerGenNumber.csv');
+asdTens=csvread('cancerHBTGenNumberGV.csv');
 
-load('cancerCVInd.mat'); %load indices
+ind = csvread('cancerGenCVInd.csv');
 
 %phiMat=zscore(phiMat); %normalize
-asd=csvread('cancerHBTuckerGenDataLabel_3.csv',1,1); %cancer class
+asd=csvread('cancerHBTGenGVLabel.csv',1,1); %cancer class
 
 %split data based on index into training and testing sets
 asdTens=asdTens(ind~=0,:);
@@ -21,12 +21,12 @@ cvTrainASD=cell(nFolds,1);
 for i=1:nFolds
     b=cvInd==i; %logical indices of test fold
     
-    phi{i}=asdTens(~b,:);
-    testPhi{i}=asdTens(b,:);
+    phi{i}=sparse(asdTens(~b,:));
+    testPhi{i}=sparse(asdTens(b,:));
     
     %split data based on index into training and testing sets
     cvTestASD{i}=trainASD(b,:);
     cvTrainASD{i}=trainASD(~b,:);
     
 end
-save('cancerHBTuckerGenData_noDecomp.mat','phi', 'testPhi', 'cvTestASD','cvTrainASD');
+save('cancerHBTGenGV_noDecomp.mat','phi', 'testPhi', 'cvTestASD','cvTrainASD');

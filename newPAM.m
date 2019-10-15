@@ -10,22 +10,23 @@ function [paths,LL,ent] = newPAM(dims,ocpsi,ctree,paths,tpl,prob,options)
     L=options.L;
     LL=0; %initialize log-likelihood
     ent=0; %initialize entropy
+    modes=length(dims)-1;  %number of dependent modes
     
     %adjustment if using constant L across dims
     if length(L)==1
-        L=repelem(L,2);
+        L=repelem(L,modes);
     end
     
-    cts=cell(2,1);
-    ctsA=cell(2,1);
-    subs=cell(2,1);
-    vals=cell(2,1);
-    start=cell(2,1);
+    cts=cell(modes,1);
+    ctsA=cell(modes,1);
+    subs=cell(modes,1);
+    vals=cell(modes,1);
+    start=cell(modes,1);
     for j=1:2
        %get counts
        cts{j}=ctree{j};
        if options.sparse==0 || ~issparse(cts{j})
-           cts{j}=permute(cts{j},[2,3,1]);
+           cts{j}=permute(cts{j},[2:(modes+1),1]);
        else
            if ~issparse(cts{j})
                cts{j}=sparse(cts{j});
@@ -41,56 +42,56 @@ function [paths,LL,ent] = newPAM(dims,ocpsi,ctree,paths,tpl,prob,options)
     for p=1:dims(1)
         res=1;
         
-        %mode 2, level 1
+        %mode 2:modes, level 1
         j=1;
-        i=2;
-        
-        %get restaurant list
-        rStart=sum(tpl{i}(1:(j-1)))+1;
-        rList=rStart:sum(tpl{i}(1:j));
-        pdf=prob{mod(i,2)+1,j-(i==1)}(res,:);
+        for i=2:modes
+            %get restaurant list
+            rStart=sum(tpl{i}(1:(j-1)))+1;
+            rList=rStart:sum(tpl{i}(1:j));
+            pdf=prob{mod(i,modes)+1,j-(i==1)}(res,:);
 
-        %get counts
-        cts1=ctsA{i}(:,rList);
-        if options.sparse==0
-            cts2=ctsA{i}(:,rList)+cts{i}(:,rList,p);
-        else
-            cts2=ctsA{i}(:,rList);
-            if ~isempty(start{i})
-                tsubs=subs{i}(start{i}(i):(start{i}(i+1)-1),:);
-                tvals=vals{i}(start{i}(i):(start{i}(i+1)-1));
-                [incl,tsubs(:,3)]=ismember(tsubs(:,3),rList);
-                if sum(incl)>0
-                    tsubs=tsubs(incl,:);
-                    tvals=tvals(incl);
-                    tsubs=sub2ind(size(cts2), tsubs(:,2), tsubs(:,3));
-                    cts2(tsubs)=cts2(tsubs)+tvals;
+            %get counts
+            cts1=ctsA{i}(:,rList);
+            if options.sparse==0
+                cts2=ctsA{i}(:,rList)+cts{i}(:,rList,p);
+            else
+                cts2=ctsA{i}(:,rList);
+                if ~isempty(start{i})
+                    tsubs=subs{i}(start{i}(i):(start{i}(i+1)-1),:);
+                    tvals=vals{i}(start{i}(i):(start{i}(i+1)-1));
+                    [incl,tsubs(:,3)]=ismember(tsubs(:,3),rList);
+                    if sum(incl)>0
+                        tsubs=tsubs(incl,:);
+                        tvals=tvals(incl);
+                        tsubs=sub2ind(size(cts2), tsubs(:,2), tsubs(:,3));
+                        cts2(tsubs)=cts2(tsubs)+tvals;
+                    end
                 end
             end
+
+            %compute contribution to pdf
+            pdf=log(pdf); %take log to prevent overflow
+            pdf=pdf+gammaln(sum(cts1,1)+1);
+            pdf=pdf-sum(gammaln(cts1+1/dims(1+i)),1);
+            pdf=pdf+sum(gammaln(cts2+1/dims(1+i)),1);
+            pdf=pdf-gammaln(sum(cts2,1)+1);
+            pdf=exp(pdf);
+            pdf=pdf/sum(pdf); %normalize
+
+            %pick new table
+            res=multi(pdf);
+            top=res+rStart-1;
+            paths(p,j+(i-1)*L(1))=top;
+            LL=LL+log(pdf(res));
+            ent=ent+entropy(pdf(res));
         end
-
-        %compute contribution to pdf
-        pdf=log(pdf); %take log to prevent overflow
-        pdf=pdf+gammaln(sum(cts1,1)+1);
-        pdf=pdf-sum(gammaln(cts1+1/dims(1+i)),1);
-        pdf=pdf+sum(gammaln(cts2+1/dims(1+i)),1);
-        pdf=pdf-gammaln(sum(cts2,1)+1);
-        pdf=exp(pdf);
-        pdf=pdf/sum(pdf); %normalize
-
-        %pick new table
-        res=multi(pdf);
-        top=res+rStart-1;
-        paths(p,j+(i==2)*L(1))=top;
-        LL=LL+log(pdf(res));
-        ent=ent+entropy(pdf(res));
         
         for j=2:L(1)
             for i=1:2
                 %get restaurant list
                 rStart=sum(tpl{i}(1:(j-1)))+1;
                 rList=rStart:sum(tpl{i}(1:j));
-                pdf=prob{mod(i,2)+1,j-(i==1)}(res,:);
+                pdf=prob{mod(i,modes)+1,j-(i==1)}(res,:);
                 
                 %get counts
                 cts1=ctsA{i}(:,rList);
@@ -123,7 +124,7 @@ function [paths,LL,ent] = newPAM(dims,ocpsi,ctree,paths,tpl,prob,options)
                 %pick new table
                 res=multi(pdf);
                 top=res+rStart-1;
-                paths(p,j+(i==2)*L(1))=top;
+                paths(p,j+(i-1)*L(1))=top;
                 LL=LL+log(pdf(res));
                 ent=ent+entropy(pdf(res));
             end

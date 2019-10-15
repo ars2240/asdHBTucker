@@ -1,11 +1,13 @@
 function LL = logLikelihood(x, xTest, npats, prior, epsilon, psi, r, opaths, tree, varargin)
 
     % generate artificial patients
-    sparse=generatePatients(x, npats, prior, psi, r, opaths, tree, varargin);
+    sparPat=generatePatients(x, npats, prior, psi, r, opaths, tree, varargin);
     
     %convert from sparse to dense
-    si = [npats, size(x,2), size(x,3)];
-    tens=sptensor(sparse(:,1:3),sparse(:,4), si);
+    si = size(x);
+    si(1) = npats;
+    modes = length(si)-1;  %number of dependent modes
+    tens=sptensor(sparPat(:,1:(modes+1)),sparPat(:,modes+2), si);
     
     dims=size(tens);
     
@@ -14,22 +16,21 @@ function LL = logLikelihood(x, xTest, npats, prior, epsilon, psi, r, opaths, tre
     cts=double(cts);
     cts=sum(cts, 2);
     cts=full(cts);
-    ctsS=cts(sparse(:,1))+epsilon*prod(dims(2:end));
-    sparse(:,4)=sparse(:,4)./ctsS;
-    tens=sptensor(sparse(:,1:3),sparse(:,4), si);
+    ctsS=cts(sparPat(:,1))+epsilon*prod(dims(2:end));
+    sparPat(:,modes+2)=sparPat(:,modes+2)./ctsS;
+    tens=sptensor(sparPat(:,1:(modes+1)),sparPat(:,modes+2), si);
     
     LL=0;
     n=size(xTest,1);
+    if ndims(xTest)>=3
+        xTest=sptenmat(xTest, 1);
+        xSubs=xTest.subs;
+        xVals=xTest.vals;
+        xTest=sparse(xSubs(:,1),xSubs(:,2),xVals);
+    end
     for i=1:n
-        switch ndims(xTest)
-            case 3
-                xTemp=xTest(i,:,:);
-                xTemp=double(sptenmat(xTemp, []));
-            case 2
-                xTemp=xTest(i,:);
-                xTemp=double(xTemp);
-                xTemp=xTemp';
-        end
+        xTemp=xTest(i,:);
+        xTemp=double(xTemp);
         y=find(xTemp);
         xTemp=xTemp(y);
         tTens=double(sptenmat(tens, 1));

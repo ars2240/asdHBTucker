@@ -13,13 +13,15 @@ function [paths,tree,r,LL,ent]= initializeTree(L,dims,gam)
     
     LL=0; %initialize log-likelihood
     ent=0; %initialize entropy
+    modes=length(L); %number of dependent modes
     
     paths=zeros(dims(1),sum(L));
-    paths(:,1)=1; %sit at root table
-    paths(:,1+L(1))=1; %sit at root table
-    tree=cell(2,1); %initialize
-    r=cell(2,1); %initialize
-    for i=1:2
+    for i=1:modes
+        paths(:,1+sum(L(1:(i-1))))=1; %sit at root table
+    end
+    tree=cell(modes,1); %initialize
+    r=cell(modes,1); %initialize
+    for i=1:modes
        tree{i}{1}=[];
        r{i}=1;
        col=(i-1)*L(1);
