@@ -22,22 +22,20 @@
 
 // forward declarations
 void drawZs(double *sampIn, double *sampOut, double *p, size_t sampCols,
-        size_t sampRows, double *phi, double *psi1, double *psi2,
-        double *pth, double *l, const mwSize *phiDims,
-        const mwSize *psi1Dims, const mwSize *psi2Dims);
+        size_t sampRows, double *phi, const mxArray *psi, double *pth,
+        double *l, const mwSize *phiDims);
 void drawZ(int j, double *sampIn, double *sampOut, double *p,
-        size_t sampCols, size_t sampRows, double *phi, double *psi1,
-        double *psi2, double *pth, double *l, const mwSize *phiDims,
-        const mwSize *psi1Dims, const mwSize *psi2Dims);
-int multi(double *pdf, int size);
-void mexFunction(int nlhs, mxArray *plhs[],
-        int nrhs, const mxArray *prhs[]);
+        size_t sampCols, size_t sampRows, double *phi, const mxArray *psi,
+        double *pth, double *l, const mwSize *phiDims);
+int indices(long long int x, long long int m, const mwSize *dims);
 void normalize(double *pdf, double sum, int size);
+long long int multi(double *pdf, int size);
+void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
+        const mxArray *prhs[]);
 
 void drawZs(double *sampIn, double *sampOut, double *p, size_t sampCols,
-        size_t sampRows, double *phi, double *psi1, double *psi2,
-        double *pth, double *l, const mwSize *phiDims,
-        const mwSize *psi1Dims, const mwSize *psi2Dims)
+        size_t sampRows, double *phi, const mxArray *psi, double *pth,
+        double *l, const mwSize *phiDims)
 {
     int j;
     
@@ -47,81 +45,96 @@ void drawZs(double *sampIn, double *sampOut, double *p, size_t sampCols,
 
         #pragma omp for
         for(j=0; j<sampRows; j++){
-            drawZ(j,sampIn,sampOut,p,sampCols,sampRows,phi,psi1,psi2,pth,l,
-                    phiDims,psi1Dims,psi2Dims);  
+            drawZ(j,sampIn,sampOut,p,sampCols,sampRows,phi,psi,pth,l,
+                    phiDims); 
         }
     }
 }
 
 void drawZ(int j, double *sampIn, double *sampOut, double *p,
-        size_t sampCols, size_t sampRows, double *phi, double *psi1,
-        double *psi2, double *pth, double *l, const mwSize *phiDims,
-        const mwSize *psi1Dims, const mwSize *psi2Dims)
+        size_t sampCols, size_t sampRows, double *phi, const mxArray *psi,
+        double *pth, double *l, const mwSize *phiDims)
 {
     int x = sampIn[0*sampRows+j]-1; //get evidence variable
-    int y1 = sampIn[1*sampRows+j]-1; //get 1st response variable
-    int y2 = sampIn[2*sampRows+j]-1; // get 2nd response variable
-    int z1o = sampIn[3*sampRows+j]-1; //get 1st old topic
-    int z2o = sampIn[4*sampRows+j]-1; // get 2nd old topic
+    int y; //response variable
     
     // initialize sampOut
-    int i, k;
+    long long int i; int k;
     for(i=0; i<sampCols; i++){
         sampOut[i*sampRows+j] = sampIn[i*sampRows+j];
     }
+    int modes = (sampCols-1)/2;
+    
+    // check dims
+    for(k=0; k<modes; k++){
+        if(phiDims[k+1]!=l[k]){
+            mexErrMsgIdAndTxt("MyProg:dims:mismatch",
+                "Dims of phi don't match number of levels.");
+        }
+    }
     
     // get pdf from phi and psi
-    int size = floor(l[0]*l[1]);
-    double pdf[size];
-    double sum = 0;
-    int ind;
-    int ip, kp, indp;
-    int l0 = floor(l[0]);
-    int l1 = floor(l[1]);
-    for(i=0; i<l0; i++){
-        for(k=0; k<l1; k++){
-            ip = pth[x+i*phiDims[0]]-1;
-            kp = pth[x+(k+l0)*phiDims[0]]-1;
-            ind = i+k*l0;
-            if(phiDims[1]==l0){
-                indp = ind;
-            } else{
-                indp = ip+kp*phiDims[1];
-            }
-            pdf[ind] = phi[x+indp*phiDims[0]];
-            pdf[ind] *= psi1[y1+ip*psi1Dims[0]];
-            pdf[ind] *= psi2[y2+kp*psi2Dims[0]];
-            sum = sum + pdf[ind];
-            if(sum >= DBL_MAX) {
-                mexErrMsgIdAndTxt("MyProg:sum:overflow",
-                                  "Sum overflow.");
-            }
+    long long int size=1;
+    for(i=0; i<modes; i++){
+        size *= floor(l[i]);
+    }
+    double pdf[size]; double pdf1; double sum = 0; int ind, ip, lsum;
+    double *psik; const mwSize *psikDims;
+    for(i=0; i<size; i++){
+        pdf1 = log(phi[x+i*phiDims[0]]);
+        lsum = 0;
+        for(k=0; k<modes; k++){
+            ind = indices(i,k,&phiDims[1]);
+            ip = pth[x+(ind+lsum)*phiDims[0]]-1;
+            lsum += l[k];
+            y = sampIn[(k+1)*sampRows+j]-1;
+            psik = mxGetPr(mxGetCell(psi,k));
+            psikDims = mxGetDimensions(mxGetCell(psi,k));
+            pdf1 += log(psik[y+ip*psikDims[0]]);
+        }
+        pdf[i] = exp(pdf1);
+        sum = sum + pdf[i];
+        if(sum >= DBL_MAX) {
+            mexErrMsgIdAndTxt("MyProg:sum:overflow", "Sum overflow.");
         }
     }
     
     // draw new z
-    int z, z1, z2;
+    long long int z; int z1;
     if(sum==0){
-        z1 = 0;
-        z2 = 0;
+        z = 0;
         p[j] = 1.0;
     } else{
         normalize(pdf,sum,size);
         z = multi(pdf,size);
-        z1 = z % l0;
-        z2 = z / l0;
         p[j] = pdf[z];
     }
+    lsum = 0;
+    for(k=0; k<modes; k++){
+        z1 = indices(z,k,&phiDims[1]);
+        //set topic
+        sampOut[(1+modes+k)*sampRows+j] = pth[x+(z1+lsum)*phiDims[0]];
+        lsum += l[k];
+    }
 
-    sampOut[3*sampRows+j] = pth[x+z1*phiDims[0]]; //set topic
-    sampOut[4*sampRows+j] = pth[x+(z2+l0)*phiDims[0]]; //set topic
+}
 
+int indices(long long int x, long long int m, const mwSize *dims){
+    long long int t=1; int i, o;
+    if(m>0){
+        for(i=0; i<m; i++){
+            t *= dims[i];
+        }
+    }
+    o = floor(x/t);
+    t *= dims[m];
+    o = o % t;
+    return o;
 }
 
 //normalizes pdf
 void normalize(double *pdf, double sum, int size){
-    int i;
-    
+    long long int i;
     for(i=0; i<size; i++){
         pdf[i] = pdf[i]/sum;
     }
@@ -130,9 +143,9 @@ void normalize(double *pdf, double sum, int size){
 /* generates single value from multinomial pdf
   pdf = vector of probabilities
   x = sample */
-int multi(double *pdf, int size){
+long long int multi(double *pdf, int size){
     double cdf[size];
-    int i;
+    long long int i;
     
     // compute cdf
     cdf[0]=pdf[0];
@@ -165,11 +178,11 @@ void mexFunction(int nlhs, mxArray *plhs[],
     /* variable declarations */
     double *sIn, *sOut, *prob; // sample row
     double *core; // tucker decomposition tensor core tensor
-    double *aux1, *aux2; // tucker decomposition matrices
+    const mxArray *aux; // tucker decomposition matrices
     double *path; // pathways
     double *L; // levels
-    size_t ncols, nrows, res2Size; // number of columns of sample
-    const mwSize *coreDims, *aux1Dims, *aux2Dims;
+    size_t ncols, nrows; // number of columns of sample
+    const mwSize *coreDims;
     
     /* Check number of inputs and outputs */
     if(nrhs != 5) {
@@ -186,10 +199,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
     nrows = mxGetM(prhs[0]);
     core = mxGetPr(prhs[1]);
     coreDims = mxGetDimensions(prhs[1]);
-    aux1 = mxGetPr(mxGetCell(prhs[2],0));
-    aux1Dims = mxGetDimensions(mxGetCell(prhs[2],0));
-    aux2 = mxGetPr(mxGetCell(prhs[2],1));
-    aux2Dims = mxGetDimensions(mxGetCell(prhs[2],1));
+    aux = prhs[2];
     path = mxGetPr(prhs[3]);
     L = mxGetPr(prhs[4]);
     
@@ -202,6 +212,5 @@ void mexFunction(int nlhs, mxArray *plhs[],
     prob = mxGetPr(plhs[1]);
     
     /* call the computational routine */
-    drawZs(sIn,sOut,prob,ncols,nrows,core,aux1,aux2,path,L,coreDims,
-            aux1Dims,aux2Dims);
+    drawZs(sIn,sOut,prob,ncols,nrows,core,aux,path,L,coreDims);
 }

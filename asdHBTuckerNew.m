@@ -117,7 +117,11 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
     if options.collapsed==1
         
         %initialize zero counts
-        cphi=zeros(coreDims);
+        if options.sparse
+            cphi=zeros([coreDims(1),L]);
+        else
+            cphi=zeros(coreDims);
+        end
         
         %draw latent topic z's
         zStart=tic;
