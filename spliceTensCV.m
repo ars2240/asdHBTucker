@@ -1,6 +1,6 @@
 try
-    asdSparse=csvread('cancerSparse.csv',1,1);
-    asd=sptensor(asdSparse(:,1:3),asdSparse(:,4));
+    load(save('splice.mat'));
+    asd=sptensor(asdSparse,ones(size(asdSparse,1),1));
     %asd=sptensor(asdSparse(:,1:3),ones(size(asdSparse,1),1));
 
     pTest=.3; %percent of data in test
@@ -16,11 +16,13 @@ try
     cvInd=crossvalind('Kfold',nTrain,nFolds); %split data into k folds
 
     options=init_options();
-    % mex drawZscPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
+    mex drawZscPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
+    mex drawZscCollapsedPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
+    mex drawZscSparsePar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
     tpl=10; % topics per level
     options.gam = 1;
     options.L = 2;
-    options.topicModel = 'PAM';
+    % options.topicModel = 'PAM';
     % options.par = 0;
     options.maxIter = 1000;
     options.topicsPerLevel{1}=tpl;
@@ -49,7 +51,7 @@ try
             b, options);
         
         %save data
-        save(['data/cancerHBTuckerCV_L', int2str(options.L), '_tpl', ...
+        save(['data/spliceHBTuckerCV_L', int2str(options.L), '_tpl', ...
             num2str(tpl), '_', int2str(f), '_', ...
             options.topicType, '_PAM.mat'],'phi', 'testPhi', ...
             'psi', 'tree', 'samples', 'paths', 'prob', 'options');
