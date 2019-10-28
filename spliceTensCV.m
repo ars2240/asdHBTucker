@@ -1,5 +1,5 @@
 try
-    load(save('splice.mat'));
+    load('splice.mat');
     asd=sptensor(asdSparse,ones(size(asdSparse,1),1));
     %asd=sptensor(asdSparse(:,1:3),ones(size(asdSparse,1),1));
 
