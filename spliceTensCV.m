@@ -9,7 +9,9 @@ try
     ind=crossvalind('HoldOut',nPat,pTest); %split data into test & train sets
 
     %split data based on index into training and testing sets
-    asd=asd(find(ind),:,:);
+    asdSparse=asdSparse(ismember(asdSparse(:,1),find(ind)),:);
+    [~,~,asdSparse(:,1)]=unique(asdSparse(:,1));
+    asd=sptensor(asdSparse,ones(size(asdSparse,1),1));
 
     nFolds=10; %set number of folds
     nTrain=sum(ind); %size of training set
@@ -44,9 +46,12 @@ try
     for f=1:nFolds
         b=cvInd==f; %logical indices of test fold
         ind=find(~b);
+        trSparse=asdSparse(ismember(asdSparse(:,1),find(ind)),:);
+        [~,~,trSparse(:,1)]=unique(trSparse(:,1));
+        asdTr=sptensor(trSparse,ones(size(trSparse,1),1));
         fprintf('Fold # %6i\n',f);
         [phi, psi, tree, samples, paths,prob, ~,~] = ...
-            asdHBTucker3(asd(ind,:,:),options);
+            asdHBTucker3(asdTr,options);
         testPhi = asdHBTuckerNew(asd, psi, samples, paths, tree, prob, ...
             b, options);
         
@@ -61,8 +66,11 @@ try
         r{2}=unique(paths(:,(L(1)+1):(sum(L))));
 
         %compute LL
-        LL(f)=logLikelihood(asd(find(~b),:,:), asd(find(b),:,:), npats, ...
-            1, 1/(size(asd,2)*size(asd,3)), psi, r, paths, tree, prob, ...
+        teSparse=asdSparse(~ismember(asdSparse(:,1),find(ind)),:);
+        [~,~,teSparse(:,1)]=unique(teSparse(:,1));
+        asdTe=sptensor(teSparse,ones(size(teSparse,1),1));
+        LL(f)=logLikelihood(asdTr, asdTe, npats, 1, ...
+            1/(size(asd,2)*size(asd,3)), psi, r, paths, tree, prob, ...
             samples, options);
     end
 
