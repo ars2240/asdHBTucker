@@ -26,7 +26,7 @@ void drawZsc(double *sampIn, double *sampOut, double *p, size_t sampCols,
 void drawZ(int j, double *sampIn, double *sampOut, double *p,
         size_t sampCols, size_t sampRows, double *phi, const mxArray *psi,
         const mxArray *r, const mwSize *phiDims);
-int indices(long long int x, long long int m, const mwSize *dims);
+int indices(long long int x, int m, const mwSize *dims);
 long long int multi(double *pdf, int size);
 void normalize(double *pdf, double sum, int size);
 void mexFunction(int nlhs, mxArray *plhs[],
@@ -97,21 +97,25 @@ void drawZ(int j, double *sampIn, double *sampOut, double *p,
     for(k=0; k<modes; k++){
         z1 = indices(z,k,&phiDims[1]);
         r1 = mxGetPr(mxGetCell(r,k));
-        sampOut[(1+modes+k)*sampRows+j] = r1[z1]; //set topic
+        sampOut[(1+modes+k)*sampRows+j] = round(r1[z1]); //set topic
+        if(round(r1[z1]) ==0){
+            mexPrintf("k = %d\n", k);
+            mexPrintf("z = %d\n", z);
+            mexPrintf("z1 = %d\n", z1);
+            mexErrMsgIdAndTxt("MyProg:badVal:badTopic", "Bad Topic.");
+        }
     }
 
 }
 
-int indices(long long int x, long long int m, const mwSize *dims){
-    long long int t=1; int i, o;
-    if(m>0){
-        for(i=0; i<m; i++){
-            t *= dims[i];
-        }
+int indices(long long int x, int m, const mwSize *dims){
+    int t=1; int i, o;
+    for(i=0; i<=m; i++){
+        t *= dims[i];
     }
-    o = floor(x/t);
-    t *= dims[m];
-    o = o % t;
+    o = x % t;
+    t /= dims[m];
+    o = floor(o/t);
     return o;
 }
 

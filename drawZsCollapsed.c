@@ -28,7 +28,7 @@ void drawZ(int j, double *sampIn, double *sampOut, double *p,
         size_t sampCols, size_t sampRows, double *phi, const mxArray *psi,
         double *psis, double *pth, double *l, const mwSize *phiDims,
         double *a);
-int indices(long long int x, long long int m, const mwSize *dims);
+int indices(long long int x, int m, const mwSize *dims);
 void normalize(double *pdf, double sum, int size);
 long long int multi(double *pdf, int size);
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
@@ -125,14 +125,47 @@ void drawZ(int j, double *sampIn, double *sampOut, double *p,
             psikDims = mxGetDimensions(mxGetCell(psi,k));
             pdf1 += log(psik[y+ip*psikDims[0]]+a[k+1]-s);
             pdf1 -= log(psis[ip+psiSum]);
+            if(pdf1 != pdf1) {
+                mexPrintf("i = %d\n", i);
+                mexPrintf("k = %f\n", k);
+                mexPrintf("ind = %f\n", ind);
+                mexPrintf("x = %d\n", x);
+                mexPrintf("lsum = %d\n", lsum);
+                mexPrintf("ip = %d\n", ip);
+                mexPrintf("j = %d\n", j);
+                mexPrintf("zo = %d\n", zo);
+                mexPrintf("y = %d\n", y);
+                mexPrintf("phi = %f\n", phi[x+i*phiDims[0]]);
+                mexPrintf("a = %f\n", a[k+1]);
+                mexPrintf("s = %d\n", s);
+                mexPrintf("psik = %f\n", psik[y+ip*psikDims[0]]);
+                mexPrintf("psis = %f\n", psis[ip+psiSum]);
+                mexPrintf("pdf1 = %f\n", pdf1);
+                mexErrMsgIdAndTxt("MyProg:sum:NaN", "Sum NaN.");
+            }
             psiSum += psikDims[1];
         }
         pdf1 += log(phi[x+i*phiDims[0]]+a[0]-st);
+        if(pdf1 != pdf1) {
+            mexPrintf("x = %d\n", x);
+            mexPrintf("i = %d\n", i);
+            mexPrintf("phi = %f\n", phi[x+i*phiDims[0]]);
+            mexPrintf("a = %f\n", a[0]);
+            mexPrintf("st = %d\n", st);
+            mexPrintf("pdf1 = %f\n", pdf1);
+            mexErrMsgIdAndTxt("MyProg:sum:NaN", "Sum NaN.");
+        }
         pdf[i] = exp(pdf1);
         sum = sum + pdf[i];
         if(sum >= DBL_MAX) {
-            mexErrMsgIdAndTxt("MyProg:sum:overflow",
-                              "Sum overflow.");
+            mexPrintf("pdf1 = %f\n", pdf1);
+            mexPrintf("pdf[%d] = %f\n", i, pdf[i]);
+            mexErrMsgIdAndTxt("MyProg:sum:overflow", "Sum overflow.");
+        }
+        if(sum != sum) {
+            mexPrintf("pdf1 = %f\n", pdf1);
+            mexPrintf("pdf[%d] = %f\n", i, pdf[i]);
+            mexErrMsgIdAndTxt("MyProg:sum:NaN", "Sum NaN.");
         }
     }
     
@@ -151,21 +184,27 @@ void drawZ(int j, double *sampIn, double *sampOut, double *p,
         z1 = indices(z,k,&phiDims[1]);
         //set topic
         sampOut[(1+modes+k)*sampRows+j] = pth[x+(z1+lsum)*phiDims[0]];
+        if(round(pth[x+(z1+lsum)*phiDims[0]]) ==0){
+            mexPrintf("k = %d\n", k);
+            mexPrintf("x = %d\n", x);
+            mexPrintf("z = %d\n", z);
+            mexPrintf("z1 = %d\n", z1);
+            mexPrintf("ind = %d\n", x+(z1+lsum)*phiDims[0]);
+            mexErrMsgIdAndTxt("MyProg:badVal:badTopic", "Bad Topic.");
+        }
         lsum += l[k];
     }
 
 }
 
-int indices(long long int x, long long int m, const mwSize *dims){
-    long long int t=1; int i, o;
-    if(m>0){
-        for(i=0; i<m; i++){
-            t *= dims[i];
-        }
+int indices(long long int x, int m, const mwSize *dims){
+    int t=1; int i, o;
+    for(i=0; i<=m; i++){
+        t *= dims[i];
     }
-    o = floor(x/t);
-    t *= dims[m];
-    o = o % t;
+    o = x % t;
+    t /= dims[m];
+    o = floor(o/t);
     return o;
 }
 
@@ -173,6 +212,11 @@ int indices(long long int x, long long int m, const mwSize *dims){
 void normalize(double *pdf, double sum, int size){
     long long int i;
     for(i=0; i<size; i++){
+        if(pdf[i]/sum != pdf[i]/sum){
+            mexPrintf("pdf[%d] = %f\n", i, pdf[i]);
+            mexPrintf("sum = %f\n", sum);
+            mexErrMsgIdAndTxt("MyProg:badSum:badSum", "Bad Sum.");
+        }
         pdf[i] = pdf[i]/sum;
     }
 }
@@ -202,6 +246,12 @@ long long int multi(double *pdf, int size){
         } else{
             i++;
         }
+    }
+    
+    if(found == 0){
+        mexPrintf("cdf = %f\n", cdf[i-1]);
+        mexPrintf("n = %f\n", n);
+        mexErrMsgIdAndTxt("MyProg:badVal:badTopic", "Bad Topic.");
     }
     
     //free(cdf);

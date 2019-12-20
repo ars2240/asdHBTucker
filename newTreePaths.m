@@ -9,7 +9,7 @@ function nPaths = newTreePaths(asdTens,ocpsi,ctree,paths,tree,ind,options)
         L=repelem(L,modes);
     end
 
-    nPaths=ones(sum(ind),sum(L));
+    nPaths=ones(length(ind),sum(L));
     
     for j=1:modes
         
@@ -38,7 +38,7 @@ function nPaths = newTreePaths(asdTens,ocpsi,ctree,paths,tree,ind,options)
        
        gcts = gammaln(ctsA+prior);
        
-       for i=1:sum(ind)
+       for i=1:length(ind)
            curRes=1; %set current restaurant as root
 
            for k=2:L(j)

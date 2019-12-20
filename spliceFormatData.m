@@ -65,12 +65,14 @@ for j=1:len
     end
 end
 
+ind=~ismember(asdSparse(:,1),asdSparse(bad,1));
+asdSparse=asdSparse(ind,:);
+T2=T2(ind,:);
+[~,~,asdSparse(:,1)]=unique(asdSparse(:,1));
+asd=asd(~ismember(1:npats,bad));
+
 for i=1:len
     [~,~,asdSparse(:,i+1)]=unique(T2(:,i));
 end
-
-asdSparse=asdSparse(~ismember(asdSparse(:,1),bad),:);
-[~,~,asdSparse(:,1)]=unique(asdSparse(:,1));
-asd=asd(~ismember(1:npats,bad));
 
 save('splice.mat','asdSparse','asd');

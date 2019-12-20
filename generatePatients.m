@@ -1,4 +1,4 @@
-function sparse = generatePatients(x, npats, prior, psi, r, opaths, tree, varargin)
+function sparse = generatePatients(x, npats, prior, psi, opaths, tree, varargin)
     %generates new patients given trained parameters and information about
     %   the hierarchical structure of the model
     
@@ -99,7 +99,7 @@ function sparse = generatePatients(x, npats, prior, psi, r, opaths, tree, vararg
         prior=repmat(prior,1,L(1));
     end
     if length(prior)==L(1) && strcmp(options.topicType,'Cartesian')
-        prior=repmat(prior,1,L(2:modes));
+        prior=repmat(prior,1,prod(L(2:modes)));
     end
         
     res=cell(modes,1);
@@ -125,8 +125,8 @@ function sparse = generatePatients(x, npats, prior, psi, r, opaths, tree, vararg
             switch options.topicType
                 case 'Cartesian'
                     for k=1:modes
-                        zt=floor((z-1)/prod(L(1:(k-1))));
-                        zt=mod(zt,prod(L(1:k)))+1;
+                        zt=mod(z-1,prod(L(1:k)));
+                        zt=floor(zt/prod(L(1:(k-1))))+1;
                         zr{k}=res{k}(zt);
                     end
                 case 'Level'
@@ -146,16 +146,9 @@ function sparse = generatePatients(x, npats, prior, psi, r, opaths, tree, vararg
             gvs(tensIndex2(y, dims(2:end)))=gvs(tensIndex2(y, dims(2:end)))+1;
         end
         
-        yf=find(gvs);
-        v=gvs(yf);
-        y2=zeros(length(yf),modes);
-        for j=1:length(yf)
-            for k=1:modes
-                yt=floor((yf(j)-1)/prod(dims(2:k)));
-                yt=mod(yt,prod(dims(2:(k+1))))+1;
-                y2(j,k)=yt;
-            end
-        end
+        gvs=sptensor(gvs);
+        y2=gvs.subs;
+        v=gvs.vals;
         
         t=[i*ones(size(y2,1),1),y2,v];
         

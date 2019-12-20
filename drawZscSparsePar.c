@@ -27,7 +27,7 @@ void drawZs(double *sampIn, double *sampOut, double *p, size_t sampCols,
 void drawZ(int j, double *sampIn, double *sampOut, double *p,
         size_t sampCols, size_t sampRows, double *phi, const mxArray *psi,
         double *pth, double *l, const mwSize *phiDims);
-int indices(long long int x, long long int m, const mwSize *dims);
+int indices(long long int x, int m, const mwSize *dims);
 void normalize(double *pdf, double sum, int size);
 long long int multi(double *pdf, int size);
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
@@ -119,16 +119,14 @@ void drawZ(int j, double *sampIn, double *sampOut, double *p,
 
 }
 
-int indices(long long int x, long long int m, const mwSize *dims){
-    long long int t=1; int i, o;
-    if(m>0){
-        for(i=0; i<m; i++){
-            t *= dims[i];
-        }
+int indices(long long int x, int m, const mwSize *dims){
+    int t=1; int i, o;
+    for(i=0; i<=m; i++){
+        t *= dims[i];
     }
-    o = floor(x/t);
-    t *= dims[m];
-    o = o % t;
+    o = x % t;
+    t /= dims[m];
+    o = floor(o/t);
     return o;
 }
 

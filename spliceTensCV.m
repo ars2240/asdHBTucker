@@ -1,4 +1,4 @@
-try
+%try
     load('splice.mat');
     asd=sptensor(asdSparse,ones(size(asdSparse,1),1));
     %asd=sptensor(asdSparse(:,1:3),ones(size(asdSparse,1),1));
@@ -18,14 +18,14 @@ try
     cvInd=crossvalind('Kfold',nTrain,nFolds); %split data into k folds
 
     options=init_options();
-    mex drawZscPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
-    mex drawZscCollapsedPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
-    mex drawZscSparsePar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
+    %mex drawZscPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
+    %mex drawZsCollapsedPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
+    %mex drawZscSparsePar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
     tpl=10; % topics per level
     options.gam = 1;
     options.L = 2;
     % options.topicModel = 'PAM';
-    % options.par = 0;
+    options.par = 0;
     options.maxIter = 1000;
     options.topicsPerLevel{1}=tpl;
     options.topicsPerLevel{2}=tpl;
@@ -78,10 +78,10 @@ try
     output_header=sprintf('%13s %13s','mean','stDev');
     fprintf('%s\n',output_header);
     fprintf('%13.6e %13.6e\n', mean(LL), std(LL));
-catch e
-    display(e.identifier);
-    display(e.message);
-    for i=1:size(e.stack,1)
-        display(e.stack(i,1));
-    end
-end
+% catch e
+%     display(e.identifier);
+%     display(e.message);
+%     for i=1:size(e.stack,1)
+%         display(e.stack(i,1));
+%     end
+% end

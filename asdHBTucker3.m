@@ -45,7 +45,7 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
     sStart=tic;
     samples=zeros(l1NormX,1+2*modes);
     s=find(x>0); %find nonzero elements
-    v=x(tensIndex2(s, dims)); %extract values
+    v=x(s); %extract values
     samples(:,1:(1+modes))=repelem(s,v,1); %set samples
     %[~,xStarts]=unique(samples(:,1));
     %xEnds=[xStarts(2:length(xStarts))-1;size(samples,1)];
@@ -55,6 +55,9 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
     treeStart=tic;
     switch options.topicModel
         case 'IndepTrees'
+            if nargout==8
+                error('Incorrect number of outputs for this topic model.');
+            end
             [paths,tree,r,LLtree,entTree]=initializeTree(L,dims,gam);
         case 'PAM'
             [paths,tpl,tree,r,LLtree,entTree]=initializePAM(dims,options);

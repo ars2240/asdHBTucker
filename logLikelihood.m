@@ -1,7 +1,7 @@
-function LL = logLikelihood(x, xTest, npats, prior, epsilon, psi, r, opaths, tree, varargin)
+function LL = logLikelihood(x, xTest, npats, prior, epsilon, psi, opaths, tree, varargin)
 
     % generate artificial patients
-    sparPat=generatePatients(x, npats, prior, psi, r, opaths, tree, varargin);
+    sparPat=generatePatients(x, npats, prior, psi, opaths, tree, varargin);
     
     %convert from sparse to dense
     si = size(x);
@@ -35,7 +35,7 @@ function LL = logLikelihood(x, xTest, npats, prior, epsilon, psi, r, opaths, tre
         xTemp=xTemp(y);
         tTens=double(sptenmat(tens, 1));
         tTens=tTens(:,y);
-        lTens=log(full(tTens)+epsilon./cts);
+        lTens=log(full(tTens)+epsilon./(cts+epsilon));
         xP=xTemp.*lTens;
         lP=sum(xP, 2);
         p=exp(lP);
@@ -55,11 +55,11 @@ function LL = logLikelihood(x, xTest, npats, prior, epsilon, psi, r, opaths, tre
         ll=log(sum(w.*p))+m;
         if isnan(ll)
             display(sum(p));
-        end
-        if ~isfinite(ll)
+        elseif ~isfinite(ll)
             display(sum(w.*p));
+        else
+            LL=LL+ll;
         end
-        LL=LL+ll;
     end
     
     LL=LL/n;

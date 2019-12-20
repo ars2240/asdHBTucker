@@ -42,6 +42,7 @@ function [cphi,cpsi,ctree] = counts(samples, dims, r, varargin)
         cs=size(cphi);
         for i=1:modes
             ind{i+1}=r{i};
+            cs(i+1)=length(r{i});
         end
         cphi=cphi(tensIndex2(ind,cs));
         
@@ -62,7 +63,8 @@ function [cphi,cpsi,ctree] = counts(samples, dims, r, varargin)
                 ind2=ind;
                 %get restaurants for patient
                 for j=1:modes
-                    ind{j+1}=paths(i,(1+sum(L(1:(j-1)))):sum(L(1:j)));
+                    [~,ind{j+1}]=ismember(paths(i,...
+                        (1+sum(L(1:(j-1)))):sum(L(1:j))),r{j});
                     ind2{j+1}=1:L(j);
                 end
                 cphiS(tensIndex2(ind2,[dims(1),L]))=cphi(tensIndex2(ind,cs));

@@ -1,6 +1,6 @@
-function [nPaths,r] = newTreePathsInit(paths,samples,tree,ind,L)
+function [nPaths,r] = newTreePathsInit(paths,tree,ind,L)
     
-    nPaths=ones(sum(ind),sum(L));
+    nPaths=ones(length(ind),sum(L));
     modes=length(L); %number of dependent modes
     r=cell(modes,1);
     
@@ -8,9 +8,9 @@ function [nPaths,r] = newTreePathsInit(paths,samples,tree,ind,L)
         
         col=(j-1)*L(1); %starting column
         
-        r{j}=unique(samples(:,1+modes+j));
+        r{j}=unique(paths(:,(1+sum(L(1:(j-1)))):sum(L(1:j))))';
        
-       for i=1:sum(ind)
+       for i=1:length(ind)
            curRes=1; %set current restaurant as root
 
            for k=2:L(j)

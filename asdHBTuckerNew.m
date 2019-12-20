@@ -28,10 +28,24 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
     
     rng('shuffle'); %seed RNG
     
-    x=asdTens(find(b),:,:);
+    modes=length(tree); %number of dependent modes
+    dims=size(asdTens); %dimensions of tensor
+    ind=cell(modes+1,1);
+    for i=2:(modes+1)
+    	ind{i}=1:dims(i);
+    end
+    ind{1}=b;
+    dims(1)=length(ind{1});
+    x=asdTens(tensIndex2(ind,size(asdTens)));
     
-    dims=size(x); %dimensions of tensor
-    modes=length(dims)-1;  %number of dependent modes
+    %calculate L1 norm of tensor
+    l1NormX=sum(x);
+    if l1NormX==0
+        error('empty array');
+    end
+    
+    % reshape x
+    x=sptensor(reshape(x,dims));
     
     L=options.L;
     LL=0; %initialize log-likelihood
@@ -42,17 +56,12 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
         L=repelem(L,modes);
     end
     
-    %calculate L1 norm of tensor
-    l1NormX=sum(x.vals);
-    if l1NormX==0
-        error('empty array');
-    end
     
     %initialize sample matrix
     sStart=tic;
     samples=zeros(l1NormX,1+2*modes);
-    s=find(x>0); %find nonzero elements
-    v=x(tensIndex2(s, dims)); %get nonzero values
+    s=x.subs; %find nonzero elements
+    v=x.vals; %get nonzero values
     samples(:,1:(1+modes))=repelem(s,v,1); %set samples
     %[~,xStarts]=unique(samples(:,1));
     %xEnds=[xStarts(2:length(xStarts))-1;size(samples,1)];
@@ -62,7 +71,7 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
     treeStart=tic;
     switch options.topicModel
         case 'IndepTrees'
-            [paths,r] = newTreePathsInit(oPaths,oSamples,tree,b,L);
+            [paths,r] = newTreePathsInit(oPaths,tree,b,L);
             
             %old counts
             cStart=tic;
@@ -111,7 +120,7 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
     coreDims(1)=dims(1);
     for i=1:modes
        %set core dimensions to the number of topics in each mode
-       coreDims(i+1)=length(r{i});
+       coreDims(i+1)=max(r{i});
     end
     
     if options.collapsed==1
