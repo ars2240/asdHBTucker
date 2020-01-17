@@ -18,13 +18,15 @@ from sklearn.svm import SVC
 from sklearn.preprocessing import StandardScaler
 import random
 
-fname = 'cancerLDAGenNumber'  # count file name
+fname = 'cancerHBTGenNumberGV'  # count file name
 indF = 'cancerGenCVInd'  # index file name
+head = 'cancerHBTGenGV'  # file header
 C = 1  # penalty parameter
 
 # import and format data
 # mdict = scipy.io.loadmat(fname)
 # cts = mdict.get('asd')
+# cts = pd.read_csv(fname + '.csv', header=None)
 cts = pd.read_csv(fname + '.csv', header=0, index_col=0)
 ind = pd.read_csv(indF + '.csv', header=None)
 rows = np.where(ind > 0)[0]
@@ -45,7 +47,7 @@ while m < .15:
     rcts = cts.iloc[rows]
     # rcts = cts[rows, :]
     rlabs = range(0, 4)
-    rcts.to_csv('cancerLDAGenDataRoots.csv')
+    rcts.to_csv(head + 'Roots.csv')
     # scipy.io.savemat('cancerHBTuckerGenDataRootsBoth.mat', mdict={'rcts': rcts})
 
     # normalize
@@ -56,7 +58,7 @@ while m < .15:
 
     model.fit(trcts, rlabs)
 
-    pd.DataFrame(model.support_vectors_).to_csv('cancerLDAGenDataSVs.csv')
+    pd.DataFrame(model.support_vectors_).to_csv(head + 'SVs.csv')
 
     y_hat = model.predict(tcts)
 
@@ -73,6 +75,6 @@ while m < .15:
     m = np.min(dis)
 
     iters += 1
-    pd.DataFrame(y_hat).to_csv('cancerLDAGenDataLabel.csv')
+    pd.DataFrame(y_hat).to_csv(head + 'Label.csv')
 
 print(iters)

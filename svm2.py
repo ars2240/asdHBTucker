@@ -16,11 +16,12 @@
 from acc_cv import acc
 from sklearn.svm import SVC
 
-fname = 'cancerLDAGenData_noDecomp'
+fname = 'cancerHBTGenGV_noDecomp'
 
 # #############################################################################
 # Classification and ROC analysis
 
+print(fname)
 print('%6s\t %6s\t %6s\t %6s\t %6s' % ('dset', 'lam', 'mean', 'stdev', 'pval'))
 
 C_v = [1e-6, 1e-3, 1, 1e3, 1e6]
