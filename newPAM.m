@@ -22,11 +22,11 @@ function [paths,LL,ent] = newPAM(dims,ocpsi,ctree,paths,tpl,prob,options)
     subs=cell(modes,1);
     vals=cell(modes,1);
     start=cell(modes,1);
-    for j=1:2
+    for j=1:modes
        %get counts
        cts{j}=ctree{j};
        if options.sparse==0 || ~issparse(cts{j})
-           cts{j}=permute(cts{j},[2:(modes+1),1]);
+           cts{j}=permute(cts{j},[2:3,1]);
        else
            if ~issparse(cts{j})
                cts{j}=sparse(cts{j});
@@ -48,7 +48,7 @@ function [paths,LL,ent] = newPAM(dims,ocpsi,ctree,paths,tpl,prob,options)
             %get restaurant list
             rStart=sum(tpl{i}(1:(j-1)))+1;
             rList=rStart:sum(tpl{i}(1:j));
-            pdf=prob{mod(i,modes)+1,j-(i==1)}(res,:);
+            pdf=prob{mod(i-2,modes)+1,j-(i==1)}(res,:);
 
             %get counts
             cts1=ctsA{i}(:,rList);
@@ -91,7 +91,7 @@ function [paths,LL,ent] = newPAM(dims,ocpsi,ctree,paths,tpl,prob,options)
                 %get restaurant list
                 rStart=sum(tpl{i}(1:(j-1)))+1;
                 rList=rStart:sum(tpl{i}(1:j));
-                pdf=prob{mod(i,modes)+1,j-(i==1)}(res,:);
+                pdf=prob{mod(i-2,modes)+1,j-(i==1)}(res,:);
                 
                 %get counts
                 cts1=ctsA{i}(:,rList);

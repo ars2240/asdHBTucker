@@ -93,7 +93,7 @@ function [paths,tpl,prob,r,LL,ent]=initializePAM(dims,options)
         %modes 2:modes, level 1
         j=1;
         for i=2:modes
-            pdf=prob{mod(i,modes)+1,j-(i==1)}(res,:);
+            pdf=prob{mod(i-2,modes)+1,j-(i==1)}(res,:);
             res=multi(pdf);
             top=res+sum(tpl{i}(1:(j-1)));
             paths(p,j+(i-1)*L(1))=top;
@@ -104,7 +104,7 @@ function [paths,tpl,prob,r,LL,ent]=initializePAM(dims,options)
         %other modes
         for j=2:L(1)
             for i=1:modes
-                pdf=prob{mod(i,modes)+1,j-(i==1)}(res,:);
+                pdf=prob{mod(i-2,modes)+1,j-(i==1)}(res,:);
                 res=multi(pdf);
                 top=res+sum(tpl{i}(1:(j-1)));
                 paths(p,j+(i-1)*L(1))=top;

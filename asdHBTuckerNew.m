@@ -85,7 +85,7 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
             %old counts
             cStart=tic;
             [~,ocpsi,~] = counts(oSamples, ...
-                [max(oSamples(:,1)), dims(2:3)], r, paths, [0,1,0], options);
+                [max(oSamples(:,1)), dims(2:end)], r, paths, [0,1,0], options);
             cTime=toc(cStart);
             
             ctree=cell(modes,1);
@@ -339,7 +339,8 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
                     for j=1:modes
                         subs(:,j+1)=res{j};
                     end
-                    vals=diag(squeeze(phi(i,:)));
+                    vals=squeeze(phi(i,:));
+                    vals=vals(vals>0)';
                 otherwise
                     error('Error. \nNo topic type selected');
             end   

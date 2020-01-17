@@ -129,7 +129,7 @@ function [paths,prob,varargout] = redrawPAM(dims,cpsi,ctree,paths,tpl,prob,L,opt
             %get restaurant list
             rStart=sum(tpl{i}(1:(j-1)))+1;
             rList=rStart:sum(tpl{i}(1:j));
-            pdf=prob{mod(i,2)+1,j-(i==1)}(res,:);
+            pdf=prob{mod(i-2,modes)+1,j-(i==1)}(res,:);
             
             %get counts
             if options.sparse==1
@@ -171,7 +171,7 @@ function [paths,prob,varargout] = redrawPAM(dims,cpsi,ctree,paths,tpl,prob,L,opt
                 %get restaurant list
                 rStart=sum(tpl{i}(1:(j-1)))+1;
                 rList=rStart:sum(tpl{i}(1:j));
-                pdf=prob{mod(i,modes)+1,j-(i==1)}(res,:);
+                pdf=prob{mod(i-2,modes)+1,j-(i==1)}(res,:);
                 
                 %get counts
                 if options.sparse==1

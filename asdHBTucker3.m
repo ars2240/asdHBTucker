@@ -422,7 +422,8 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
                     for j=1:modes
                         subs(:,j+1)=res{j};
                     end
-                    vals=diag(squeeze(phi(i,:)));
+                    vals=squeeze(phi(i,:));
+                    vals=vals(vals>0)';
                 otherwise
                     error('Error. \nNo topic type selected');
             end   

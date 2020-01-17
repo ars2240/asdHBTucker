@@ -68,7 +68,7 @@ function sparse = generatePatients(x, npats, prior, psi, opaths, tree, varargin)
                 end
             end
         case 'PAM'
-            paths=ones(dims(1),sum(L));
+            paths=ones(npats,sum(L));
             [tpl, r]=initPAM(dims,options);
 
             %old counts
@@ -77,7 +77,7 @@ function sparse = generatePatients(x, npats, prior, psi, opaths, tree, varargin)
             
             ctree=cell(modes,1);
             for i=1:modes
-                ctree{i}=zeros(dims(1),dims(i+1),length(r{i}));
+                ctree{i}=zeros(npats,dims(i+1),length(r{i}));
             end
             
             [paths,~,~] = newPAM(dims,ocpsi,ctree,paths,tpl,prob,options);

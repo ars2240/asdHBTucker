@@ -35,10 +35,10 @@ try
     %mex drawZsCollapsedPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
     %mex drawZscSparsePar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
     tpl=2; % topics per level
-    options.gam = .5;
+    options.gam = 1;
     options.L = 2;
-    options.topicModel = 'PAM';
-    options.topicType = 'Cartesian';
+    options.topicModel = 'IndepTrees';
+    options.topicType = 'Level';
     options.par = 0;
     options.maxIter = 1000;
     options.topicsPerLevel{1}=tpl;
@@ -49,42 +49,26 @@ try
     
     disp(options); %print options
 
-    L=options.L;
-
-    %adjustment if using constant L across dims
-    if length(L)==1
-        L=repelem(L,2);
-    end
-
-    asdTr=sptensor([(1:n)',x],ones(size(x,1),1));
-    asd = sptensor([(1:N)',X0],ones(size(X0,1),1));
-    b = setdiff(1:N, train);
-    [phi, psi, tree, samples, paths, prob, ~,~] = ...
-        asdHBTucker3(asdTr,options);
-    testPhi = asdHBTuckerNew(asd, psi, samples, paths, tree, prob, ...
-        b, options);
-
     %save data
-    save(['data/yangHBTuckerCV_L', int2str(options.L), '_gam', ...
-        num2str(tpl), '_', options.topicType, '_PAM.mat'],'phi', ...
-        'testPhi', 'psi', 'tree', 'samples', 'paths', 'prob', 'options');
+    if strcmp(options.topicModel,'PAM')
+        load(['data/yangHBTuckerCV_L', int2str(options.L), '_tpl', ...
+            num2str(tpl), '_', options.topicType, '_PAM.mat']);
+    else
+        load(['data/yangHBTuckerCV_L', int2str(options.L), '_gam', ...
+            num2str(options.gam), '_trees.mat']);
+    end
+    
+    %fit logistic regression
+    x=double(tenmat(phi,1));
+    nzcol=sum(x)>0;
+    mod = mnrfit(x(:,nzcol),Y+1);
+    
+    %test error
+    xt=double(tenmat(phi,1));
+    ypred = mnrval(mod,xt(:,nzcol));
+    [~,yhat]=min(Y0(indpred),[],2);
+    mean(yhat~=(Y0(indpred)+1))
 
-    r=cell(3,1);
-    r{1}=unique(paths(:,1:L(1)));
-    r{2}=unique(paths(:,(L(1)+1):(L(1)+L(2))));
-    r{3}=unique(paths(:,(L(1)+L(2)+1):sum(L)));
-
-    %compute LL
-    teSparse=[(1:N)',X0];
-    teSparse=teSparse(b,:);
-    teSparse(:,1)=1:(N-n);
-    asdTe=sptensor(teSparse,ones(size(teSparse,1),1));
-    s=size(asd);
-    LL=logLikelihood(asdTr, asdTe, npats, 1,  1/(prod(s(2:end))), ...
-        psi, paths, tree, prob, samples, options);
-
-    % print LL info
-    fprintf('LL: %13.6e\n', LL);
 catch e
     display(e.identifier);
     display(e.message);
