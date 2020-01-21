@@ -1,7 +1,7 @@
 # logistic_reg3.py
 #
 # Author: Adam Sandler
-# Date: 9/20/18
+# Date: 1/17/19
 #
 # Computes logistic regression tests with regularization parameter
 #
@@ -9,14 +9,15 @@
 #
 # Dependencies:
 #   Packages: matplotlib, numpy, scipy, sklearn
-#   Files: acc_cv
+#   Files: acc_cv_sep
 #   Data: asdHBTucker
 
 # load packages
-from acc_cv import acc
+from acc_cv_sep import acc
 from sklearn.linear_model import LogisticRegression
 
-fname = 'cancerHBTGenGV_noDecomp'
+fname = 'cancerHBTuckerCV_Rev_L3_tpl25_{i}_Level_PAM'
+yfname = 'cancerHBTuckerCVDataLDA'
 
 # #############################################################################
 # Classification and ROC analysis
@@ -29,7 +30,7 @@ for lam in lam_v:
     # Run classifier with cross-validation and plot ROC curves
     classifier = LogisticRegression(C=1 / lam, solver='liblinear', multi_class='ovr')
 
-    mean_acc, std_acc, p_val, mean_acc_tr, std_acc_tr, p_val_tr = acc(classifier, fname)
+    mean_acc, std_acc, p_val, mean_acc_tr, std_acc_tr, p_val_tr = acc(classifier, fname, yfname)
 
     print('%6s\t %6.3e\t %0.4f\t %0.4f\t %0.4f' % ('valid', lam, mean_acc, std_acc, p_val))
     print('%6s\t %6.3e\t %0.4f\t %0.4f\t %0.4f' % ('train', lam, mean_acc_tr, std_acc_tr, p_val_tr))

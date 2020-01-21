@@ -1,10 +1,11 @@
-# acc_cv.py
+# acc_cv_sep.py
 #
 # Author: Adam Sandler
-# Date: 1/17/20
+# Date: 1/20/20
 #
 # Computes accuracy for each CV, returns plot in /plots/ folder, and
 # mean, stDev, and p-value for both train & validation sets
+# Useful for if each CV fold is in a different file
 #
 # Uses CV data
 #
@@ -23,6 +24,7 @@ from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import SelectFpr
 from sklearn.feature_selection import f_classif
 from sklearn.preprocessing import StandardScaler
+import torch
 
 
 def acc(classifier, fname, yfname=None, splits=10, fselect='min', root='./data/', nfeat=100, fmin=0, fmax=1000, a=.05,
@@ -32,35 +34,73 @@ def acc(classifier, fname, yfname=None, splits=10, fselect='min', root='./data/'
     acc_tr = []
     # coeffs = []
 
-    # load data
-    mdict = scipy.io.loadmat(root + fname)  # import dataset from matlab
-    if yfname is None:
-        ymdict = mdict
-    else:
-        ymdict = scipy.io.loadmat(root + yfname)  # import dataset from matlab
-    phi = mdict.get('phi')
-    testPhi = mdict.get('testPhi')
-    asd = ymdict.get('cvTrainASD')
-    testASD = ymdict.get('cvTestASD')
+    if '{i}' not in fname:
+        # load data
+        mdict = scipy.io.loadmat(root + fname)  # import dataset from matlab
+        phi = mdict.get('phi')
+        testPhi = mdict.get('testPhi')
+    if '{i}' not in yfname:
+        if yfname is None:
+            ymdict = mdict
+        else:
+            ymdict = scipy.io.loadmat(root + yfname)  # import dataset from matlab
+        asd = ymdict.get('cvTrainASD')
+        testASD = ymdict.get('cvTestASD')
 
     i = 0
     for i in range(0, splits):
 
-        X = phi[(i, 0)]
+        if '{i}' in fname:
+            # load data
+            mdict = scipy.io.loadmat(root + fname.replace('{i}', str(i+1)))  # import dataset from matlab
+            phi = mdict.get('phi')
+            testPhi = mdict.get('testPhi')
+        if '{i}' in yfname:
+            if yfname is None:
+                ymdict = mdict
+            else:
+                ymdict = scipy.io.loadmat(root + yfname.replace('{i}', str(i+1)))  # import dataset from matlab
+            asd = ymdict.get('cvTrainASD')
+            testASD = ymdict.get('cvTestASD')
+
+        if '{i}' in fname:
+            X = phi
+            X_test = testPhi
+            if X.shape == (1, 1):
+                X = phi[(0, 0)]
+            if X_test.shape == (1, 1):
+                X_test = testPhi[(0, 0)]
+        else:
+            X = phi[(i, 0)]
+            X_test = testPhi[(i, 0)]
+        if isinstance(X, np.void):
+            s = X[2][0]
+            X = torch.sparse.FloatTensor(torch.from_numpy(X[0].astype(dtype='float32') - 1).t().type(torch.LongTensor),
+                                         torch.from_numpy(X[1][:, 0].astype(dtype='float32')), torch.Size(tuple(s)))
+            X = X.to_dense().reshape(s[0], -1).numpy()
+        if isinstance(X_test, np.void):
+            s = X_test[2][0]
+            X_test = torch.sparse.FloatTensor(
+                torch.from_numpy(X_test[0].astype(dtype='float32') - 1).t().type(torch.LongTensor),
+                torch.from_numpy(X_test[1][:, 0].astype(dtype='float32')), torch.Size(tuple(s)))
+            X_test = X_test.to_dense().reshape(s[0], -1).numpy()
         s = X.shape
         if len(s) == 3:
             X = np.reshape(X, [s[0], s[1] * s[2]])
         else:
             X = np.reshape(X, [s[0], s[1]])
-        y = asd[(i, 0)]
+        if '{i}' in yfname:
+            y = asd
+            y_test = testASD
+        else:
+            y = asd[(i, 0)]
+            y_test = testASD[(i, 0)]
         y = np.reshape(y, s[0])
-        X_test = testPhi[(i, 0)]
         s = X_test.shape
         if len(s) == 3:
             X_test = np.reshape(X_test, [s[0], s[1] * s[2]])
         else:
             X_test = np.reshape(X_test, [s[0], s[1]])
-        y_test = testASD[(i, 0)]
         y_test = np.reshape(y_test, s[0])
 
         # add zero column if dims don't match
@@ -132,10 +172,10 @@ def acc(classifier, fname, yfname=None, splits=10, fselect='min', root='./data/'
 
     #np.savetxt("data/cancer_coeffs.csv", coeffs, delimiter=",")
 
-    results = stats.ttest_1samp(acc, popmean=755/2126)
+    results = stats.ttest_1samp(acc, popmean=1066/3037)
     p_val = results[1]
 
-    results = stats.ttest_1samp(acc_tr, popmean=755/2126)
+    results = stats.ttest_1samp(acc_tr, popmean=1066/3037)
     p_val_tr = results[1]
 
     return np.mean(acc), np.std(acc), p_val, np.mean(acc_tr), np.std(acc_tr), p_val_tr
