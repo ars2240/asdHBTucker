@@ -1,7 +1,7 @@
 # acc_cv_sep.py
 #
 # Author: Adam Sandler
-# Date: 1/20/20
+# Date: 1/31/20
 #
 # Computes accuracy for each CV, returns plot in /plots/ folder, and
 # mean, stDev, and p-value for both train & validation sets
@@ -34,16 +34,16 @@ def acc(classifier, fname, yfname=None, splits=10, fselect='min', root='./data/'
     acc_tr = []
     # coeffs = []
 
+    if yfname is None:
+        yfname = fname
+
     if '{i}' not in fname:
         # load data
         mdict = scipy.io.loadmat(root + fname)  # import dataset from matlab
         phi = mdict.get('phi')
         testPhi = mdict.get('testPhi')
     if '{i}' not in yfname:
-        if yfname is None:
-            ymdict = mdict
-        else:
-            ymdict = scipy.io.loadmat(root + yfname)  # import dataset from matlab
+        ymdict = scipy.io.loadmat(root + yfname)  # import dataset from matlab
         asd = ymdict.get('cvTrainASD')
         testASD = ymdict.get('cvTestASD')
 
@@ -56,10 +56,7 @@ def acc(classifier, fname, yfname=None, splits=10, fselect='min', root='./data/'
             phi = mdict.get('phi')
             testPhi = mdict.get('testPhi')
         if '{i}' in yfname:
-            if yfname is None:
-                ymdict = mdict
-            else:
-                ymdict = scipy.io.loadmat(root + yfname.replace('{i}', str(i+1)))  # import dataset from matlab
+            ymdict = scipy.io.loadmat(root + yfname.replace('{i}', str(i+1)))  # import dataset from matlab
             asd = ymdict.get('cvTrainASD')
             testASD = ymdict.get('cvTestASD')
 
