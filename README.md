@@ -1,13 +1,15 @@
 Simulink Project: asdHBTucker
 
 Author: Adam Sandler
-Date: 10/10/18
+Date: 3/16/20
 
 Instructions:
 
 Tensor decompsition:
     Required data files: asdSparse.csv or cancerSparse.csv
     Required packages: Sandia NL Tensor Toolbox
+    
+    codeDiagram.jpg may be a helpful reference
     
     1. Compile appropriate MEX file (sample code provided but commented out in lines 5-6)
     Note: parallel verion requires OpenMP
@@ -94,8 +96,11 @@ Files:
 - cancerGatherGenData_noDecomp.m- 
 - cancerGenData.m- 
 - cancerGenDataLoad.m- 
+- cancerGenDataLoadSumPwy.m- 
+- cancerGenNumInd.m- 
 - cancerGenLabs.m- 
 - cancerInd.m- 
+- cancerLLGraph.R- 
 - cancerTensCV.m- main run file for cancer dataset, separates decomposition into CV folds
 - cancerTensCVGen.m- 
 - cancerTensCVGen2.m- 
@@ -132,25 +137,21 @@ Files:
 - ldaCoherence.py- 
 - ldaCust.py- 
 - ldaGV.py- 
+- ldaGVcheat.py- 
 - ldaGVcancer.py- 
+- ldaMI.py- 
 - ldaParseLog.py- 
 - ldaTests.R- computes LDA decomposition baseline tests
 - logLikelihood.m- 
-- logisticReg.m- uses a logistic regression model to learn & predict ASD
-- logisticRegDecompCV.m- 
-- logisticRegPCA.m- 
-- logisticReg_augmentData.m- uses a logistic regression model to learn & predict ASD, augmented data set
 - logisticReg_mRMR.r- uses a logistic regression model to learn & predict ASD, with mRMR feature selection
-- logisticReg_noDecomp.m- uses a logistic regression model to learn & predict ASD, uses gene selection rather than a decomposition
-- logisticReg_noDecomp_genes.m- uses a logistic regression model to learn & predict ASD, uses gene selection rather than a decomposition, using genetic variants only
-- logisticRegDecompCV.m- uses a logistic regression model to learn & predict ASD, uses results from asdTensCV.m
-- logisticRegPCA.m- predict using logistic regression, using first X PCs
 - logistic_feature_select.py- predict using logistic regression with MI feature selection
 - logistic_reg.py- predict using logistic regression with regularization
 - logistic_reg2.py- predict using logistic regression with regularization, uses CV tensors
 - logistic_reg3.py- predict using logistic regression with regularization, multi-class accuracy (for cancer dataset)
 - logistic_reg4.py- 
 - logistic_reg_yang.py- 
+- logml.m- 
+- logml2.m- 
 - mRMR.r- selects features using mRMR method
 - multi.m- draws a single sample from the multinomial distribution
 - newPAM- draws PAM model for test documents
@@ -174,14 +175,17 @@ Files:
 - spliceFormatData.m- 
 - spliceFormatDataRand.m- 
 - spliceTensCV.m- 
+- stirling.m- 
 - svm.py- uses SVM to learn & predict ASD
 - svm2.py- 
 - svm_yang.py- 
 - tenDec.py- 
 - tensIndex.m- 
 - tensIndex2.m- 
+- topicCount.m- 
 - tuckerCompMH.m- 
 - tuckerCompPCA.m- 
 - tuckerMH.m- 
+- yang.m- 
 - yangAcc.m- 
 - yangTest.m- 
