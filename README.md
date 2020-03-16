@@ -45,7 +45,7 @@ Tensor decompsition (Yang model):
     4. Run cancerYangCV.m
     5. Output will be in /data/ folder
 
-Old Classification (Python):
+Old Classification:
 
     Required data files: asdHBTucker*.mat or cancerHBTucker*.mat (output of Tensor decomposition)
     Required packages: matplotlib, numpy, scipy, sklearn, xgboost (for gbm.py only)
@@ -56,7 +56,7 @@ Old Classification (Python):
     4. Run gbm.py, logistic_reg.py, logistic_feature_select.py, ran_forest.py, or svm.py
     5. Output will be in command line
 
-ASD Classification Method (Python):
+ASD Classification Method:
 
     Required data files: asdHBTucker*.mat or cancerHBTucker*.mat (output of Tensor decomposition)
     Required packages: matplotlib, numpy, scipy, sklearn
@@ -68,7 +68,7 @@ ASD Classification Method (Python):
     5. Run logistic_reg2.py or ran_forest2.py
     6. Output will be in command line
 
-Cancer Classification Method (Python):
+Cancer Classification Method:
 
     Required data files: cancerHBTucker*.mat or cancerHBTucker*.mat (output of Tensor decomposition)
     Required packages: matplotlib, numpy, scipy, sklearn
