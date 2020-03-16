@@ -6,6 +6,7 @@ Date: 3/16/20
 Instructions:
 
 Tensor decompsition (without CV):
+
     Required data files: asdSparse.csv or cancerSparse.csv
     Required packages: Sandia NL Tensor Toolbox
     
@@ -20,6 +21,7 @@ Tensor decompsition (without CV):
     4. Output will be in asdHBTucker.mat
 
 Tensor decompsition (with CV):
+
     Required data files: asdSparse.csv or cancerSparse.csv
     Required packages: Sandia NL Tensor Toolbox
     
@@ -34,6 +36,7 @@ Tensor decompsition (with CV):
     6. Output will be in /data/ folder
     
 Tensor decompsition (Yang model):
+
     Required data files: asdSparse.csv or cancerSparse.csv
     
     1. Create a /data/ folder (if one does not exist)
@@ -43,6 +46,7 @@ Tensor decompsition (Yang model):
     5. Output will be in /data/ folder
 
 Old Classification (Python):
+
     Required data files: asdHBTucker*.mat or cancerHBTucker*.mat (output of Tensor decomposition)
     Required packages: matplotlib, numpy, scipy, sklearn, xgboost (for gbm.py only)
     
@@ -53,6 +57,7 @@ Old Classification (Python):
     5. Output will be in command line
 
 ASD Classification Method (Python):
+
     Required data files: asdHBTucker*.mat or cancerHBTucker*.mat (output of Tensor decomposition)
     Required packages: matplotlib, numpy, scipy, sklearn
 
@@ -64,6 +69,7 @@ ASD Classification Method (Python):
     6. Output will be in command line
 
 Cancer Classification Method (Python):
+
     Required data files: cancerHBTucker*.mat or cancerHBTucker*.mat (output of Tensor decomposition)
     Required packages: matplotlib, numpy, scipy, sklearn
 
