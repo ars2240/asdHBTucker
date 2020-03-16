@@ -5,15 +5,13 @@ Date: 3/16/20
 
 Instructions:
 
-Tensor decompsition:
+Tensor decompsition (without CV):
     Required data files: asdSparse.csv or cancerSparse.csv
     Required packages: Sandia NL Tensor Toolbox
     
-    codeDiagram.jpg may be a helpful reference
-    
     1. Compile appropriate MEX file (sample code provided but commented out in lines 5-6)
     Note: parallel verion requires OpenMP
-    2. Adjust any settings in asdTens.m (see init_options.m for more info)
+    2. Adjust any settings in asdTensCV.m (see init_options.m for more info)
     Note: for pre-processing of genes, uncomment out (line 2):
         asd=asdGeneSelect(asdSparse, .1);
     and comment out (line 3):
@@ -21,50 +19,59 @@ Tensor decompsition:
     3. Run asdTens.m
     4. Output will be in asdHBTucker.mat
 
-Classification (MatLab):
-    Required data files: asdHBTucker*.mat or cancerHBTucker*.mat (output of Tensor decomposition)
+Tensor decompsition (with CV):
+    Required data files: asdSparse.csv or cancerSparse.csv
+    Required packages: Sandia NL Tensor Toolbox
     
-    1. Ensure logisticReg.m or logisticRegPCA.m loads the right .mat file
-    2. If running logisticRegPCA.m, adjust nPCs (number of principal components) in line 23
-    3. Run logisticReg.m or logisticRegPCA.m
-    4. Output will be in command line
-
-Classification - no decomposition (MatLab):
-    Required data files: asdSparseGenes.csv or cancerSparseGenes.csv (sparse representation of patient and genetic variants counting tensor)
+    Note: codeDiagram.jpg may be a helpful reference
     
-    1. Run logisticReg_noDecomp_genes.m
-    2. Output will be in command line
+    1. Create a /data/ folder (if one does not exist)
+    2. Compile appropriate MEX files
+    Note: parallel verion requires OpenMP
+    3. Adjust any settings in cancerTensCV.m (see init_options.m for more info)
+    4. Adjust saved data file name(s) as appropriate
+    5. Run cancerTensCV.m
+    6. Output will be in /data/ folder
+    
+Tensor decompsition (Yang model):
+    Required data files: asdSparse.csv or cancerSparse.csv
+    
+    1. Create a /data/ folder (if one does not exist)
+    2. Some settings can be adjusted in the yang.m function
+    3. Adjust saved data file name(s) as appropriate
+    4. Run cancerYangCV.m
+    5. Output will be in /data/ folder
 
-Classification (Python):
+Old Classification (Python):
     Required data files: asdHBTucker*.mat or cancerHBTucker*.mat (output of Tensor decomposition)
     Required packages: matplotlib, numpy, scipy, sklearn, xgboost (for gbm.py only)
     
-    1. Make create a /plot/ folder (if one does not exist)
+    1. Create a /plot/ folder (if one does not exist)
     2. Ensure gbm.py, logistic_reg.py, logistic_feature_select.py, ran_forest.py, or svm.py loads the right .mat file
     3. Adjust any settings (number of features, regression factors, depth, and/or # of estimators)
     4. Run gbm.py, logistic_reg.py, logistic_feature_select.py, ran_forest.py, or svm.py
     5. Output will be in command line
 
-New ASD Classification Method (Python):
+ASD Classification Method (Python):
     Required data files: asdHBTucker*.mat or cancerHBTucker*.mat (output of Tensor decomposition)
     Required packages: matplotlib, numpy, scipy, sklearn
 
-    1. Make create a /plot/ folder (if one does not exist)
+    1. Create a /plot/ folder (if one does not exist)
     2. Compile data using proper *gatherCVData*.m script
     3. Ensure logistic_reg2.py or ran_forest2.py loads the right .mat file
     4. Adjust any settings (number of features, regression factors, depth, and/or # of estimators)
     5. Run logistic_reg2.py or ran_forest2.py
     6. Output will be in command line
 
-New Cancer Classification Method (Python):
+Cancer Classification Method (Python):
     Required data files: cancerHBTucker*.mat or cancerHBTucker*.mat (output of Tensor decomposition)
     Required packages: matplotlib, numpy, scipy, sklearn
 
-    1. Make create a /plot/ folder (if one does not exist)
+    1. Create a /plot/ folder (if one does not exist)
     2. Compile data using proper *gatherCVData*.m script
-    3. Ensure logistic_reg3.py loads the right .mat file
+    3. Ensure logistic_reg*.py (* other than above) loads the right .mat file
     4. Adjust any settings (number of features, regression factors, depth, and/or # of estimators)
-    5. Run logistic_reg3.py
+    5. Run logistic_reg*.py
     6. Output will be in command line
 
 Yang Model:
@@ -106,6 +113,7 @@ Files:
 - cancerTensCVGen.m- HBT decomposition function (for generated cancer data)
 - cancerTensGen.m- HBT decomposition function (for generated cancer data, without CV)
 - cancerTensHLDA.m- main run file for cancer dataset for hLDA decompositons, separates decomposition into CV folds
+- cancerYangCV.m- computes Yang model for cancer dataset
 - computeLL.m- computes LL for existing cancer HBT decomposition data (from single .mat file)
 - counts.m- computes counts of samples in tree and for the decomposition tensor (phi & psi)
 - createMRMRcsv.m- creates data csv for use in mRMR
