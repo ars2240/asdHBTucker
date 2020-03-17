@@ -1,5 +1,4 @@
-asdHBTucker
-
+# asdHBTucker
 Conditional Hierarchical Bayesian Tucker Decomposition
 
 Author: Adam Sandler
