@@ -5,7 +5,7 @@ Author: Adam Sandler
 
 Date: 3/17/20
 
-## Instructions:
+## Instructions
 
 Tensor decompsition (without CV):
 
@@ -92,7 +92,7 @@ Data Pre-Processing:
     3. Run asdProc.R (if using ASD data)
     4. Run asdPath2.R or formatCancerData.R
 
-## Files:
+## Files
 
 - acc_cv.py- CV classification accuracy (for cancer dataset)
 - acc_cv2.py- CV classification accuracy - uses csv from no-decomposition model
