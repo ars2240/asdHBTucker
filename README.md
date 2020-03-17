@@ -1,7 +1,7 @@
 Simulink Project: asdHBTucker
 
 Author: Adam Sandler
-Date: 3/16/20
+Date: 3/17/20
 
 Instructions:
 
@@ -35,8 +35,9 @@ Tensor decompsition (with CV):
     5. Run cancerTensCV.m
     6. Output will be in /data/ folder
     
-Tensor decompsition (Yang model):
-
+Yang model decomposition:
+    
+    From: "Bayesian Conditional Tensor Factorizations for High-Dimensional Classification" by Yun Yang & David Dunson
     Required data files: asdSparse.csv or cancerSparse.csv
     
     1. Create a /data/ folder (if one does not exist)
@@ -80,8 +81,14 @@ Cancer Classification Method:
     5. Run logistic_reg*.py
     6. Output will be in command line
 
-Yang Model:
-    From: "Bayesian Conditional Tensor Factorizations for High-Dimensional Classification" by Yun Yang & David Dunson
+Data Pre-Processing:
+
+    Required data files: network.txt (KEG pathways) or Ensembl2Reactome_All_Levels.txt (Reactome pathways), and appropriate ASD or cancer data
+    
+    1. Run appropriate geneRef*.R script
+    2. Run appropriate genePath*.R script
+    3. Run asdProc.R (if using ASD data)
+    4. Run asdPath2.R or formatCancerData.R
 
 Files:
 - acc_cv.py- CV classification accuracy (for cancer dataset)
@@ -95,6 +102,8 @@ Files:
 - asdHBTucker3.m- hierarchical Bayesian Tucker (HBT) decomposition function
 - asdHBTuckerNew.m- HBT decomposition function (for new/test/validation data)
 - AsdHBTucker.prj- Simulink Project file
+- asdPath2.R- adds pathway information to ASD dataset
+- asdProc.R- processes ASD datasets into single dataset (with patients, genes, & pathways)
 - asdTens.m- main run file
 - asdTensCV.m- main run file for ASD dataset, separates decomposition into CV folds
 - asdTensCVTest.m- main run file, computes groups for CV test folds
@@ -137,13 +146,18 @@ Files:
 - drchrnd.m- generates probabilities from the Dirichlet distribution
 - elems.m- returns all values between two vectors
 - entropy.m- calculates entropy of probability vector
+- formatCancerData.R- format cancer data into sparse representation of patients, genes, & pathways
 - gatherCVData.m- collects all data into one file for CV classification
 - gbm.py- uses a gradient boosting model to learn & predict ASD
 - gbm_mi.py- uses a gradient boosting model to learn & predict ASD, with MI feature selection
 - genLDA.py- generates fictitious patients using LDA
+- genePath.R- format pathway information from KEG
+- genePath2.R- format pathway information from Reactome
 - generatePatients.m- generates new patients from trained HBT model
 - generatedDataClass.py- creates classes for generated data
 - generatedDataLDA.py- computes LDA decomposition (on generated data)
+- geneRef.R- converts genes to refGen label (for KEG)
+- geneRef2.R- converts genes to ensGen label (for Reactome)
 - initPAM.m- initializes variales for initializePAM.m
 - init_options.m- option initialization
 - initializePAM.m- initializes hierarchical DAG from the PAM
@@ -155,10 +169,9 @@ Files:
 - ldaGVcancer.py- main file for doing LDA decomposition on cancer dataset
 - ldaMI.py- computes mutual information for LDA topics
 - ldaParseLog.py- parses LDA log files to get LL and perplexity values, plot LL over iterations
-- ldaTests.R- computes LDA decomposition baseline tests
 - logLikelihood.m- computes the LL of a HBT model
-- logisticReg_mRMR.r- uses a logistic regression model to learn & predict ASD, with mRMR feature selection
 - logistic_feature_select.py- predict using logistic regression with MI feature selection
+- logistic_feature_select_mrmr.py- 
 - logistic_reg.py- predict using logistic regression with regularization
 - logistic_reg2.py- predict using logistic regression with regularization, uses CV tensors
 - logistic_reg3.py- predict using logistic regression with regularization, multi-class accuracy (for cancer dataset)
