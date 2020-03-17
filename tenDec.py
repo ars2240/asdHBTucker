@@ -42,12 +42,18 @@ def ten_dec(fname='cancerSparse', indF='cancerCVInd', rank=5, fselect='min dupe'
             #print(np.where((X.astype(bool).sum(axis=(0, 2)) <= fmin).todense())[0])
             X = X[:, cols, :]
             Xv = Xv[:, cols, :]
+            cols = (X.astype(bool).max(axis=1).sum(axis=0) > 0).todense()
+            X = X[:, :, cols]
+            Xv = Xv[:, :, cols]
         if 'max' in fselect:
             # remove slices with max or more occurances
             cols = (X.astype(bool).max(axis=2).sum(axis=0) < fmax).todense()
             #print((X.astype(bool).sum(axis=(0, 2)) >= fmin).todense())
             X = X[:, cols, :]
             Xv = Xv[:, cols, :]
+            cols = (X.astype(bool).max(axis=1).sum(axis=0) > 0).todense()
+            X = X[:, :, cols]
+            Xv = Xv[:, :, cols]
         if 'thresh' in fselect:
             # change elements below threashold to zero
             X[X < thresh] = 0
@@ -56,13 +62,6 @@ def ten_dec(fname='cancerSparse', indF='cancerCVInd', rank=5, fselect='min dupe'
             s = X.shape
             # check for and remove duplicate slices
             dupes = []
-            """
-            dupes = [8, 10, 24, 30, 32, 174, 205, 206, 237, 240, 241, 245, 248, 251, 303, 311, 318, 355, 360, 392, 412,
-                     448, 499, 595, 640, 642, 647, 662, 684, 711, 729, 741, 962, 972, 985, 992, 993, 994, 995, 996,
-                     1009, 1012, 1041, 1057, 1095, 1133, 1134, 1135, 1169, 1179, 1181, 1182, 1187, 1188, 1217, 1233,
-                     1239, 1285, 1286, 1299, 1321, 1342, 1346, 1351, 1356, 1406, 1408, 1413, 1425, 1438, 1441, 1445,
-                     1446, 1455, 1490, 1557, 1565, 1651, 1653, 1675]
-            """
             for j in range(1, s[2]):
                 for k in range(0, j):
                     #start = time.time()
