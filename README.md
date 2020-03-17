@@ -1,6 +1,9 @@
 asdHBTucker
+
 Conditional Hierarchical Bayesian Tucker Decomposition
+
 Author: Adam Sandler
+
 Date: 3/17/20
 
 Instructions:
