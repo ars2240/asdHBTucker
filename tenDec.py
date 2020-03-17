@@ -38,24 +38,16 @@ def ten_dec(fname='cancerSparse', indF='cancerCVInd', rank=5, fselect='min dupe'
 
         if 'min' in fselect:
             # remove slices with min or fewer occurances
-            cols = (X.astype(bool).sum(axis=(0, 2)) > fmin).todense()
+            cols = (X.astype(bool).max(axis=2).sum(axis=0) > fmin).todense()
             #print(np.where((X.astype(bool).sum(axis=(0, 2)) <= fmin).todense())[0])
             X = X[:, cols, :]
             Xv = Xv[:, cols, :]
-            cols = (X.astype(bool).sum(axis=(0, 1)) > fmin).todense()
-            #print(np.where((X.astype(bool).sum(axis=(0, 1)) <= fmin).todense())[0])
-            X = X[:, :, cols]
-            Xv = Xv[:, :, cols]
         if 'max' in fselect:
             # remove slices with max or more occurances
-            cols = (X.astype(bool).sum(axis=(0, 2)) < fmax).todense()
+            cols = (X.astype(bool).max(axis=2).sum(axis=0) < fmax).todense()
             #print((X.astype(bool).sum(axis=(0, 2)) >= fmin).todense())
             X = X[:, cols, :]
             Xv = Xv[:, cols, :]
-            cols = (X.astype(bool).sum(axis=(0, 1)) < fmax).todense()
-            #print((X.astype(bool).sum(axis=(0, 1)) >= fmin).todense())
-            X = X[:, :, cols]
-            Xv = Xv[:, :, cols]
         if 'thresh' in fselect:
             # change elements below threashold to zero
             X[X < thresh] = 0
@@ -63,6 +55,8 @@ def ten_dec(fname='cancerSparse', indF='cancerCVInd', rank=5, fselect='min dupe'
         if 'dupe' in fselect:
             s = X.shape
             # check for and remove duplicate slices
+            dupes = []
+            """
             dupes = [8, 10, 24, 30, 32, 174, 205, 206, 237, 240, 241, 245, 248, 251, 303, 311, 318, 355, 360, 392, 412,
                      448, 499, 595, 640, 642, 647, 662, 684, 711, 729, 741, 962, 972, 985, 992, 993, 994, 995, 996,
                      1009, 1012, 1041, 1057, 1095, 1133, 1134, 1135, 1169, 1179, 1181, 1182, 1187, 1188, 1217, 1233,
@@ -80,12 +74,10 @@ def ten_dec(fname='cancerSparse', indF='cancerCVInd', rank=5, fselect='min dupe'
                     #t = end - start
                     #print(t)
             print(dupes)
-            """
             #print(len(dupes))
             cols = list(set(range(0, s[2])).difference(set(dupes)))
             X = X[:, :, cols]
             Xv = Xv[:, :, cols]
-            """
             dupes = []
             for j in range(1, s[1]):
                 for k in range(0, j):
@@ -97,27 +89,6 @@ def ten_dec(fname='cancerSparse', indF='cancerCVInd', rank=5, fselect='min dupe'
             cols = list(set(range(0, s[1])).difference(set(dupes)))
             X = X[:, cols, :]
             Xv = Xv[:, cols, :]
-            """
-        fmin = 200
-        # remove slices with min or fewer occurances
-        cols = (X.astype(bool).sum(axis=(0, 2)) > fmin).todense()
-        #print(np.where((X.astype(bool).sum(axis=(0, 2)) <= fmin).todense())[0])
-        X = X[:, cols, :]
-        Xv = Xv[:, cols, :]
-        cols = (X.astype(bool).sum(axis=(0, 1)) > fmin).todense()
-        #print(np.where((X.astype(bool).sum(axis=(0, 1)) <= fmin).todense())[0])
-        X = X[:, :, cols]
-        Xv = Xv[:, :, cols]
-        fmax = 1000
-        # remove slices with max or more occurances
-        cols = (X.astype(bool).sum(axis=(0, 2)) < fmax).todense()
-        # print((X.astype(bool).sum(axis=(0, 2)) >= fmin).todense())
-        X = X[:, cols, :]
-        Xv = Xv[:, cols, :]
-        cols = (X.astype(bool).sum(axis=(0, 1)) < fmax).todense()
-        # print((X.astype(bool).sum(axis=(0, 1)) >= fmin).todense())
-        X = X[:, :, cols]
-        Xv = Xv[:, :, cols]
         print(X.shape)
 
         phiT = tensor(X)
