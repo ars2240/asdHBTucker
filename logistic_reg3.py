@@ -16,7 +16,7 @@
 from acc_cv_sep import acc
 from sklearn.linear_model import LogisticRegression
 
-fname = 'cancerCP_450_{i}'
+fname = 'cancerHBTuckerCVND_L2_tpl0.1_{i}_Cartesian_Trees'
 yfname = 'cancerHBTuckerCVDataLDA'
 #yfname = None
 
