@@ -23,17 +23,23 @@ from sklearn.feature_selection import f_classif
 from sklearn.decomposition import PCA
 
 
-def acc(classifier, fname, labelF, indF, splits=10, fselect='None', nfeat=100, featmin= 3, a=.05):
+def acc(classifier, fname, labelF, indF, splits=10, fselect='None', nfeat=100, featmin=3, a=.05, header=True):
 
     acc = []
     acc_tr = []
 
     # load data
-    cts = pd.read_csv(fname + '.csv', header=0, index_col=0, dtype={0: str})
+    if header:
+        cts = pd.read_csv(fname + '.csv', header=0, index_col=0, dtype={0: str})
+    else:
+        cts = pd.read_csv(fname + '.csv', header=None, index_col=None)
     ind = pd.read_csv(indF + '.csv', header=None)
     label = pd.read_csv(labelF + '.csv', header=0, index_col=0)
     rows = np.where(ind > 0)[0]
-    phi = cts.iloc[rows]
+    if cts.shape[0] == len(rows):
+        phi = cts
+    else:
+        phi = cts.iloc[rows]
     cancer = label.iloc[rows, 0]
     ind = ind.iloc[rows, 0]
 
