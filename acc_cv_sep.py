@@ -13,6 +13,7 @@
 #   Packages: matplotlib, numpy, scipy, sklearn
 #   Data: asdHBTucker
 
+from hmap import heatmap
 import numpy as np
 import pandas as pd
 from scipy import stats
@@ -28,7 +29,7 @@ import torch
 
 
 def acc(classifier, fname, yfname=None, splits=10, fselect='min', root='./data/', nfeat=100, fmin=0, fmax=1000, a=.05,
-        thresh=0):
+        thresh=0, hmap=False):
 
     acc = []
     acc_tr = []
@@ -144,6 +145,10 @@ def acc(classifier, fname, yfname=None, splits=10, fselect='min', root='./data/'
             model = SelectKBest(f_classif, k=nfeat).fit(X, y)
             X = model.transform(X)
             X_test = model.transform(X_test)
+
+        if hmap:
+            heatmap(X, y, tail='_{0}_train'.format(i))
+            heatmap(X_test, y_test, tail='_{0}_test'.format(i))
 
         # fit model
         model = classifier.fit(X, y)

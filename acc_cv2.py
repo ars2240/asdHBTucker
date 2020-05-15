@@ -21,9 +21,10 @@ from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import SelectFpr
 from sklearn.feature_selection import f_classif
 from sklearn.decomposition import PCA
+from hmap import heatmap
 
 
-def acc(classifier, fname, labelF, indF, splits=10, fselect='None', nfeat=100, featmin=3, a=.05, header=True):
+def acc(classifier, fname, labelF, indF, splits=10, fselect='None', nfeat=100, featmin=3, a=.05, header=True, hmap=False):
 
     acc = []
     acc_tr = []
@@ -84,6 +85,9 @@ def acc(classifier, fname, labelF, indF, splits=10, fselect='None', nfeat=100, f
             X = model.transform(X)
             X_test = model.transform(X_test)
 
+        if hmap:
+            heatmap(X, y, tail='_{0}_train'.format(i))
+            heatmap(X_test, y_test, tail='_{0}_test'.format(i))
 
         # fit model
         model = classifier.fit(X, y)
