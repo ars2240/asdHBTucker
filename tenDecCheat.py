@@ -25,7 +25,7 @@ def impose(x, sp):
 
 
 def ten_dec(fname='cancerSparse', indF='cancerCVInd', rank=5, fselect='min dupe', fmin=0, fmax=1000, thresh=0,
-            head='./data/cancer_tensorlyCP', sp=True):
+            head='./data/cancer_tensorlyCP', sp=True, decomp=True, norm=True):
     if '.pik' in fname:
         import pickle
         with open(fname, "rb") as f:
@@ -34,14 +34,12 @@ def ten_dec(fname='cancerSparse', indF='cancerCVInd', rank=5, fselect='min dupe'
         cts = np.array(pd.read_csv(fname + '.csv', header=0, index_col=0, dtype={0: str}))
 
     if sp:
-        from tensorly.contrib.sparse import tensor
-        from tensorly.contrib.sparse.decomposition import parafac
+        import tensorly.contrib.sparse as tl
 
         s = np.max(cts[:, :-1], axis=0)
         p = sparse.COO(np.transpose(cts[:, :-1] - 1), cts[:, -1], shape=tuple(s))
     else:
-        from tensorly import tensor
-        from tensorly.decomposition import parafac
+        import tensorly as tl
 
         p = cts
 
@@ -157,11 +155,55 @@ def ten_dec(fname='cancerSparse', indF='cancerCVInd', rank=5, fselect='min dupe'
     Xsp = np.c_[X.coords.T, X.data.T]
     np.savetxt('Xsp.csv', Xsp, delimiter=',')
 
-    phiT = tensor(X, dtype=tl.float32)
-    weights, factors = parafac(phiT, rank=rank, init='random')
-    np.savetxt('{0}_{1}_weights.csv'.format(head, rank), impose(weights, sp), delimiter=',')
-    for i, f in enumerate(factors):
-        np.savetxt('{0}_{1}_{2}.csv'.format(head, rank, i), impose(f, sp), delimiter=',')
+    phiT = tl.tensor(X, dtype=tl.float32)
+    if decomp:
+        weights, factors = tl.parafac(phiT, rank=rank, init='random')
+        np.savetxt('{0}_{1}_weights.csv'.format(head, rank), impose(weights, sp), delimiter=',')
+        for i, f in enumerate(factors):
+            np.savetxt('{0}_{1}_{2}.csv'.format(head, rank, i), impose(f, sp), delimiter=',')
+    else:
+        weights = np.squeeze(pd.read_csv('{0}_{1}_weights.csv'.format(head, rank), header=None).to_numpy())
+        if sp:
+            weights = sparse.COO(weights)
+        factors = []
+        for i in range(3):
+            factors.append(pd.read_csv('{0}_{1}_{2}.csv'.format(head, rank, i), header=None).to_numpy())
+            if sp:
+                factors[i] = sparse.COO(factors[i])
+
+    if norm:
+        if sp:
+            import tensorly as tl
+            weights = weights.todense()
+            for i in range(3):
+                factors[i] = factors[i].todense()
+        splits = np.max(np.array(ind))
+        tr_norm = np.zeros(splits)
+        va_norm = np.zeros(splits)
+        factors_t = list(factors)
+        for i in range(1, splits+1):
+            # training set
+            indTr = np.where(indT != i)[0]
+            psq = 0
+            for j in range(len(indTr)):
+                x = X[indTr[j]]
+                factors_t[0] = np.expand_dims(factors[0][indTr[j], :], axis=0)
+                temp = tl.kruskal_to_tensor((weights, factors_t))[0]
+                psq += np.power(x - temp, 2).sum()
+            tr_norm[i] = np.sqrt(psq)
+
+            # valid set
+            indV = np.where(indT == i)[0]
+            psq = 0
+            for j in range(len(indV)):
+                x = X[indV[j]]
+                factors_t[0] = np.expand_dims(factors[0][indV[j], :], axis=0)
+                temp = tl.kruskal_to_tensor((weights, factors_t))[0]
+                psq += np.power(x - temp, 2).sum()
+            va_norm[i] = np.sqrt(psq)
+
+        print('Train Norm: {0}'.format(np.mean(tr_norm)))
+        print('Valid Norm: {0}'.format(np.mean(va_norm)))
 
 
-ten_dec(fname='cancerSparseND4', rank=25, fselect='min', fmin=0)
+ten_dec(fname='cancerSparseND4', rank=10, fselect='min', fmin=0, decomp=False)
