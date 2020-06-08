@@ -48,7 +48,6 @@ def acc(classifier, fname, yfname=None, splits=10, fselect='min', root='./data/'
         asd = ymdict.get('cvTrainASD')
         testASD = ymdict.get('cvTestASD')
 
-    i = 0
     for i in range(0, splits):
 
         if '{i}' in fname:

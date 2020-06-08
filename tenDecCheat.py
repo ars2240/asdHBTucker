@@ -11,8 +11,8 @@
 
 import numpy as np
 import pandas as pd
+import scipy.stats as stats
 import sparse
-import tensorly as tl
 import time
 
 
@@ -25,7 +25,7 @@ def impose(x, sp):
 
 
 def ten_dec(fname='cancerSparse', indF='cancerCVInd', rank=5, fselect='min dupe', fmin=0, fmax=1000, thresh=0,
-            head='./data/cancer_tensorlyCP', sp=True, decomp=True, norm=True):
+            head='./data/cancer_tensorlyCP_nonNeg', sp=True, decomp=True, norm=True, ll=1000):
     if '.pik' in fname:
         import pickle
         with open(fname, "rb") as f:
@@ -35,11 +35,13 @@ def ten_dec(fname='cancerSparse', indF='cancerCVInd', rank=5, fselect='min dupe'
 
     if sp:
         import tensorly.contrib.sparse as tl
+        from tensorly.contrib.sparse.decomposition import parafac
 
         s = np.max(cts[:, :-1], axis=0)
         p = sparse.COO(np.transpose(cts[:, :-1] - 1), cts[:, -1], shape=tuple(s))
     else:
         import tensorly as tl
+        from tensorly.decomposition import parafac
 
         p = cts
 
@@ -157,7 +159,7 @@ def ten_dec(fname='cancerSparse', indF='cancerCVInd', rank=5, fselect='min dupe'
 
     phiT = tl.tensor(X, dtype=tl.float32)
     if decomp:
-        weights, factors = tl.parafac(phiT, rank=rank, init='random')
+        weights, factors = parafac(phiT, rank=rank, init='random', non_negative=True)
         np.savetxt('{0}_{1}_weights.csv'.format(head, rank), impose(weights, sp), delimiter=',')
         for i, f in enumerate(factors):
             np.savetxt('{0}_{1}_{2}.csv'.format(head, rank, i), impose(f, sp), delimiter=',')
@@ -171,39 +173,68 @@ def ten_dec(fname='cancerSparse', indF='cancerCVInd', rank=5, fselect='min dupe'
             if sp:
                 factors[i] = sparse.COO(factors[i])
 
-    if norm:
+    if norm or ll>0:
         if sp:
             import tensorly as tl
             weights = weights.todense()
             for i in range(3):
                 factors[i] = factors[i].todense()
         splits = np.max(np.array(ind))
-        tr_norm = np.zeros(splits)
-        va_norm = np.zeros(splits)
+
+    # norm of difference between decomposed tensor and original
+    if norm:
         factors_t = list(factors)
-        for i in range(1, splits+1):
-            # training set
-            indTr = np.where(indT != i)[0]
-            psq = 0
-            for j in range(len(indTr)):
-                x = X[indTr[j]]
-                factors_t[0] = np.expand_dims(factors[0][indTr[j], :], axis=0)
-                temp = tl.kruskal_to_tensor((weights, factors_t))[0]
-                psq += np.power(x - temp, 2).sum()
-            tr_norm[i] = np.sqrt(psq)
+        # training set
+        psq = 0
+        for j in range(len(indT)):
+            x = X[j]
+            factors_t[0] = np.expand_dims(factors[0][j, :], axis=0)
+            temp = tl.kruskal_to_tensor((weights, factors_t))[0]
+            psq += np.power(x - temp, 2).sum()
 
-            # valid set
-            indV = np.where(indT == i)[0]
-            psq = 0
-            for j in range(len(indV)):
-                x = X[indV[j]]
-                factors_t[0] = np.expand_dims(factors[0][indV[j], :], axis=0)
-                temp = tl.kruskal_to_tensor((weights, factors_t))[0]
-                psq += np.power(x - temp, 2).sum()
-            va_norm[i] = np.sqrt(psq)
+        print('Train Norm: {0}'.format(np.sqrt(psq*(splits-1)/splits)))
+        print('Valid Norm: {0}'.format(np.sqrt(psq/splits)))
 
-        print('Train Norm: {0}'.format(np.mean(tr_norm)))
-        print('Valid Norm: {0}'.format(np.mean(va_norm)))
+    # log-likelihood
+    if ll > 0:
+        # transform/normalize tensor
+        for i in range(1, 3):
+            fsum = np.sum(factors[i], axis=0)
+            weights *= fsum
+            factors[i] /= fsum
+        fsum = np.sum(weights)
+        factors[0] *= fsum
+        weights /= fsum
+        psum = np.sum(factors[0], axis=1)
+        factors[0] /= psum[:, None]
+
+        # fit parameters
+        # lam = psum.mean()
+        alpha = np.mean(factors[0], axis=0)
+        factors_t = list(factors)
+
+        # generate samples
+        # sim_cts = stats.poisson.rvs(lam, size=ll)
+        sim_dist = stats.dirichlet.rvs(alpha, size=ll)
+
+        eps = 1/X.shape[1]*X.shape[2]
+        l = 0
+        for j in range(len(indT)):
+            start_time = time.time()
+            x = X[j]
+            x = np.reshape(x, -1)
+            ind = np.where(x > 0)[0]
+            x = x[ind]
+            for k in range(ll):
+                factors_t[0] = np.expand_dims(sim_dist[k], axis=0)  # *sim_cts[:, None]
+                tens = tl.kruskal_to_tensor((weights, factors_t))
+                tens = np.reshape(tens, -1) + eps
+                psum = np.sum(tens)
+                tens = tens[ind]
+                p = x*(np.log(tens)-np.log(psum))
+                l += p.sum()
+            print("{0}, {1}".format(j, time.time() - start_time))
+        print('Log-likelihood: {0}'.format(l/len(indT)))
 
 
-ten_dec(fname='cancerSparseND4', rank=10, fselect='min', fmin=0, decomp=False)
+ten_dec(fname='cancerSparseND4', rank=25, fselect='min', fmin=0, decomp=False, norm=False)
