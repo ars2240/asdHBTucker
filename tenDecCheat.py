@@ -222,17 +222,30 @@ def ten_dec(fname='cancerSparse', indF='cancerCVInd', rank=5, fselect='min dupe'
         for j in range(len(indT)):
             start_time = time.time()
             x = X[j]
+            indF = np.where(x > 0)
             x = np.reshape(x, -1)
-            ind = np.where(x > 0)[0]
-            x = x[ind]
-            for k in range(ll):
-                factors_t[0] = np.expand_dims(sim_dist[k], axis=0)  # *sim_cts[:, None]
-                tens = tl.kruskal_to_tensor((weights, factors_t))
-                tens = np.reshape(tens, -1) + eps
-                psum = np.sum(tens)
-                tens = tens[ind]
-                p = x*(np.log(tens)-np.log(psum))
-                l += p.sum()
+            x = x[np.where(x > 0)]
+            factors_t[0] = sim_dist
+            factors_t[1] = factors[1][indF[0], :]
+            factors_t[2] = factors[2][indF[1], :]
+            tens = tl.kruskal_to_tensor((weights, factors_t))
+            tens = np.vstack([np.diagonal(tens[i]) for i in range(ll)])
+            tens = np.reshape(tens, (ll, -1)) + eps
+            p = x*(np.log(tens)-np.log(1+eps*tens.shape[1]))
+            lP = np.sum(p, axis=1)
+            p = np.exp(lP)
+            m = 0
+            k = 1
+            # handling of underflow/overflow error
+            while np.sum(p) == 0 or np.isinf(np.sum(p)):
+                if np.sum(p) == 0:
+                    k = k * 1.5
+                else:
+                    k = k / 2
+                m = k * np.mean(lP)
+                p = np.exp(lP - m)
+            w = p / np.sum(p)
+            l += np.log(sum(w * p)) + m
             print("{0}, {1}".format(j, time.time() - start_time))
         print('Log-likelihood: {0}'.format(l/len(indT)))
 

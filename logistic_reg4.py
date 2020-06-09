@@ -17,7 +17,7 @@
 from acc_cv2 import acc
 from sklearn.linear_model import LogisticRegression
 
-fname = 'data/cancer_tensorlyCP_25_0'
+fname = 'data/cancerBCPF'
 indF = 'cancerCVInd'
 labelF = 'cancerLabel'
 
@@ -27,7 +27,7 @@ labelF = 'cancerLabel'
 
 print('%6s\t %6s\t %6s\t %6s\t %6s' % ('dset', 'lam', 'mean', 'stdev', 'pval'))
 
-lam_v = [1]
+lam_v = [1e-6, 1e-3, 1, 1e3, 1e6]
 
 for lam in lam_v:
     # Run classifier with cross-validation and plot ROC curves
