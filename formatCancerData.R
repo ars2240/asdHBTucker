@@ -26,15 +26,28 @@ number=number[order(rownames(number)),]
 label=label[order(label$SampleLabel),]
 rownames(label)=label$SampleLabel
 
-genepath = read.csv("/Users/adamsandler/Documents/Northwestern/Research/Code/genePath2.csv", row.names = 1, header= T, check.names=F, stringsAsFactors = F)
+genepath = read.csv("/Users/adamsandler/Documents/Northwestern/Research/Code/genePathND5.csv", row.names = 1, header= T, check.names=F, stringsAsFactors = F)
+ptsYL = read.csv("/Volumes/fsmresfiles/PrevMed/HBMI/LYG/LabWorkstationMount/asandler/tcga/subj_ids.csv", header=F, check.names=F, stringsAsFactors=F)
+number = number[rownames(number) %in% ptsYL$V1,]
 
 #subset genes with pathway information
 genepath=genepath[genepath$V1 %in% genename$ensembl_gene_id,]
 genename=genename[genename$ensembl_gene_id %in% genepath$V1,]
 number=number[,colnames(number) %in% genename$V1]
 number=number[rowSums(number)>0,]
+
+# ensure that all genes and pathways have positive occurances
+while(sum(colSums(number)==0)>0){
+  number=number[,colnames(number) %in% genename$V1]
+  number=number[,colSums(number)>0]
+  genename=genename[genename$V1 %in% colnames(number),]
+  
+  genepath=genepath[genepath$V1 %in% genename$ensembl_gene_id,]
+  genename=genename[genename$ensembl_gene_id %in% genepath$V1,]
+  number=number[,colnames(number) %in% genename$V1]
+  number=number[rowSums(number)>0,]
+}
 print(sum(colSums(number)==0))
-# need to subset by colSums>0 (check) and may need to shrink genename & gene path
 
 #subset tables with patients in both
 label=label[label$SampleLabel %in% rownames(number),]
@@ -45,14 +58,14 @@ cancers=unique(cancerLabel)
 cancers=cancers[order(cancers)]
 cancerLabel=match(cancerLabel, cancers)-1
 
-write.csv(cancerLabel, "/Users/adamsandler/Documents/Northwestern/Research/Code/cancerLabel.csv")
+write.csv(cancerLabel, "/Users/adamsandler/Documents/Northwestern/Research/Code/cancerLabelND5.csv")
 
 #re-order genes
 number=number[,order(colnames(number))]
 genename=genename[order(genename$V1),]
 
-write.csv(number, "/Users/adamsandler/Documents/Northwestern/Research/Code/cancerNumber.csv")
-write.csv(genename, "/Users/adamsandler/Documents/Northwestern/Research/Code/cancerGeneName.csv")
+write.csv(number, "/Users/adamsandler/Documents/Northwestern/Research/Code/cancerNumberND5.csv")
+write.csv(genename, "/Users/adamsandler/Documents/Northwestern/Research/Code/cancerGeneNameND5.csv")
 
 #sparse representation
 sparse=which(number!=0,arr.ind = T)
@@ -60,7 +73,7 @@ rownames(sparse)=1:nrow(sparse)
 colnames(sparse)=c("patient","gene")
 sparse=data.frame(sparse)
 sparse$value=number[which(number!=0,arr.ind = T)] #value
-write.csv(sparse, "/Users/adamsandler/Documents/Northwestern/Research/Code/cancerSparseGenes.csv")
+write.csv(sparse, "/Users/adamsandler/Documents/Northwestern/Research/Code/cancerSparseGenesND5.csv")
 
 #get unique pathways
 pathways=unique(genepath$V2)
@@ -70,7 +83,7 @@ sparse$pathway=NA
 sparse=sparse[,c("patient","gene","pathway","value")]
 for(i in 1:nrow(genename)){
   spRows=which(sparse$gene==i) #rows in sparse matrix
-  gene=genename$V2[i] #get gene ID
+  gene=genename$ensembl_gene_id[i] #get gene ID
   paths=which(genepath[,1]==gene); #get pathways
   k=which(pathways %in% genepath[paths,2]); #get number of pathway
   sparse$pathway[spRows]=k[1];
@@ -83,4 +96,4 @@ for(i in 1:nrow(genename)){
   }
 }
 
-write.csv(sparse, "/Users/adamsandler/Documents/Northwestern/Research/Code/cancerSparse.csv") #export to csv
+write.csv(sparse, "/Users/adamsandler/Documents/Northwestern/Research/Code/cancerSparseND5.csv") #export to csv

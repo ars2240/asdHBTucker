@@ -17,8 +17,25 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
     
     rng('shuffle'); %seed RNG
     
+    % store original tensor
+    odims=size(x); %dimensions of tensor
+    modes=length(odims)-1;  %number of dependent modes
+    
+    % remove zeros
+    cts=collapse(x,[2,3]);
+    zind=cts==0;
+    if sum(zind)>0
+        ind=cell(modes+1,1);
+        for i=1:modes
+            ind{1+i}=1:odims(1+i);
+        end
+        ind{1}=find(cts>0)';
+        x=x(tensIndex2(ind,odims));
+        x=reshape(x,[length(ind{1}),odims(2:end)]);
+        x=sptensor(x);
+    end
+    
     dims=size(x); %dimensions of tensor
-    modes=length(dims)-1;  %number of dependent modes
     
     gam=options.gam;
     L=options.L;
@@ -431,6 +448,12 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
         end
         phi=phiT;
     end
+    
+    % add zeros
+    phio=phi;
+    sph=size(phio);
+    phi=zeros([odims(1),sph(2:end)]);
+    phi(~zind,:,:)=phio;
     
     if nargout==7
         varargout{1}=LL;

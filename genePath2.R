@@ -5,6 +5,7 @@ t=strsplit(t,"\n")[[1]]; #split on returns
 t=strsplit(t,"\t"); #split on tabs
 t=matrix(unlist(t), nrow=length(t), byrow=T); #unlist as matrix
 t=subset(t, t[,6]=="Homo sapiens"); #subset to get humans
+t=t[!duplicated(t[,c(1,2)]),]
 
-write.csv(t, "/Users/adamsandler/Documents/Northwestern/Research/Code/genePath2.csv"); #export to csv
+write.csv(t, "/Users/adamsandler/Documents/Northwestern/Research/Code/genePath3.csv") #export to csv
 #genePath <- read.csv("~/Documents/Northwestern/Research/Code/genePath2.csv", header= T, check.names=F); #import from csv

@@ -27,7 +27,7 @@ function [paths,tree,r,LL,ent] = redrawTree(dims,cpsi,ctree,paths,L,tree,r,optio
        if options.sparse==1
            subs=cts.subs;
            vals=cts.vals;
-           [~,start,~]=unique(subs(:,1));
+           [s,start,~]=unique(subs(:,1));
            start=[start; nnz(cts)+1];
        else
            cts=permute(cts,[2:(modes+1),1]);

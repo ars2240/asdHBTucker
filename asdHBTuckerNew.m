@@ -30,22 +30,23 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
     
     modes=length(tree); %number of dependent modes
     dims=size(asdTens); %dimensions of tensor
-    ind=cell(modes+1,1);
-    for i=2:(modes+1)
-    	ind{i}=1:dims(i);
-    end
-    ind{1}=b;
-    dims(1)=length(ind{1});
-    x=asdTens(tensIndex2(ind,size(asdTens)));
+    cts=collapse(asdTens,[2,3]);
+    bo = b;
+    b = bo & cts>0;
+    dims(1)=sum(b);
+    ind=asdTens.subs;
+    ind=ind(b(ind(:,1)),:);
+    vals=asdTens(tensIndex2(ind,size(asdTens)));
+    [~,~,ind(:,1)]=unique(ind(:,1));
     
     %calculate L1 norm of tensor
-    l1NormX=sum(x);
+    l1NormX=sum(vals);
     if l1NormX==0
         error('empty array');
     end
     
     % reshape x
-    x=sptensor(reshape(x,dims));
+    x=sptensor(ind,vals);
     
     L=options.L;
     LL=0; %initialize log-likelihood
@@ -348,6 +349,12 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
         end
         phi=phiT;
     end
+
+    % add zeros
+    phio=phi;
+    sph=size(phio);
+    phi=zeros([sum(bo),sph(2:end)]);
+    phi(cts(bo)>0,:,:)=phio;
     
     %print times
     if options.time==1

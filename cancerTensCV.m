@@ -1,5 +1,5 @@
 try
-    asdSparse=csvread('cancerSparse.csv',1,1);
+    asdSparse=csvread('cancerSparseND4.csv',1,1);
     asd=sptensor(asdSparse(:,1:3),asdSparse(:,4));
     %asd=sptensor(asdSparse(:,1:3),ones(size(asdSparse,1),1));
 
@@ -14,17 +14,18 @@ try
     nFolds=10; %set number of folds
     nTrain=sum(ind); %size of training set
     cvInd=crossvalind('Kfold',nTrain,nFolds); %split data into k folds
+    save('cancerCVInd','cvInd');
 
     options=init_options();
     % mex drawZscPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
-    tpl=10; % topics per level
-    options.gam = 1;
+    % tpl=10; % topics per level
+    options.gam = .1;
     options.L = 2;
-    options.topicModel = 'PAM';
-    % options.par = 0;
+    % options.topicModel = 'PAM';
+    options.par = 0;
     options.maxIter = 1000;
-    options.topicsPerLevel{1}=tpl;
-    options.topicsPerLevel{2}=tpl;
+    % options.topicsPerLevel{1}=tpl;
+    % options.topicsPerLevel{2}=tpl;
     % options.collapsed = 0;
     npats=1000; %number of articificial patients
     
@@ -33,6 +34,19 @@ try
     LL=zeros(nFolds,1); %initialize log-likelihood
 
     L=options.L;
+    
+    % remove bad genes
+    asdG=collapse(asd,3,@max);
+    asdGC=collapse(asdG>0,1);
+    gG=find(asdGC>400 & asdGC<1000);
+    asd=asd(:,gG,:);
+    % remove zero pathways
+    asdP=collapse(asd,[1,2]);
+    gP=find(asdP>0);
+    asd=asd(:,:,gP);
+    asdGP=collapse(asd,1);
+    [~,gP,~]=unique(double(asdGP)', 'rows');
+    asd=asd(:,:,gP);
 
     %adjustment if using constant L across dims
     if length(L)==1
@@ -43,16 +57,16 @@ try
         b=cvInd==f; %logical indices of test fold
         ind=find(~b);
         fprintf('Fold # %6i\n',f);
-        [phi, psi, tree, samples, paths,prob, ~,~] = ...
+        [phi, psi, tree, samples, paths, ~,~] = ...
             asdHBTucker3(asd(ind,:,:),options);
-        testPhi = asdHBTuckerNew(asd, psi, samples, paths, tree, prob, ...
+        testPhi = asdHBTuckerNew(asd, psi, samples, paths, tree, ...
             b, options);
         
         %save data
-        save(['data/cancerHBTuckerCV_L', int2str(options.L), '_tpl', ...
-            num2str(tpl), '_', int2str(f), '_', ...
-            options.topicType, '_PAM.mat'],'phi', 'testPhi', ...
-            'psi', 'tree', 'samples', 'paths', 'prob', 'options');
+        save(['data/cancerHBTuckerCVNDRG_L', int2str(options.L), '_tpl', ...
+            num2str(options.gam), '_', int2str(f), '_', ...
+            options.topicType, '_Trees.mat'],'phi', 'testPhi', ...
+            'psi', 'tree', 'samples', 'paths', 'options');
     
         r=cell(2,1);
         r{1}=unique(paths(:,1:L(1)));
@@ -60,8 +74,7 @@ try
 
         %compute LL
         LL(f)=logLikelihood(asd(find(~b),:,:), asd(find(b),:,:), npats, ...
-            1, 1/(size(asd,2)*size(asd,3)), psi, paths, tree, prob, ...
-            samples, options);
+            1, 1/(size(asd,2)*size(asd,3)), psi, paths, tree, options);
     end
 
     % print LL info

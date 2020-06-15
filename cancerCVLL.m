@@ -1,5 +1,5 @@
 try
-    asdSparse=csvread('cancerSparse.csv',1,1);
+    asdSparse=csvread('cancerSparseND4.csv',1,1);
     asd=sptensor([asdSparse(:,1),asdSparse(:,3),asdSparse(:,2)], asdSparse(:,4));
     %asd=sptensor(asdSparse(:,1:3),asdSparse(:,4));
     %asd=sptensor(asdSparse(:,1:3),ones(size(asdSparse,1),1));
@@ -19,14 +19,14 @@ try
     options=init_options();
     % mex drawZscPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
     %tpl=25; % topics per level
-    options.gam = 1;
-    options.L = 3;
+    options.gam = .1;
+    options.L = 2;
     %options.topicModel = 'PAM';
     % options.topicType = 'Level';
-    % options.par = 0;
+    options.par = 0;
     % options.maxIter = 100;
-    options.topicsPerLevel{1}=tpl;
-    options.topicsPerLevel{2}=tpl;
+    %options.topicsPerLevel{1}=tpl;
+    %options.topicsPerLevel{2}=tpl;
     % options.collapsed = 0;
     npats=1000; %number of articificial patients
 
@@ -46,7 +46,7 @@ try
         ind=find(~b);
 
         %load data
-        load(['data/cancerHBTuckerCVGen_L', int2str(options.L), '_gam', ...
+        load(['data/cancerHBTuckerCVND_L', int2str(options.L), '_gam', ...
                 num2str(options.gam), '_', int2str(f), '_', ...
                 options.topicType, '_trees.mat']);
 
@@ -55,9 +55,8 @@ try
         r{2}=unique(paths(:,(L(1)+1):(sum(L))));
 
         %compute LL
-        LL(f)=logLikelihood(asd(find(~b),:,:), asd(find(b),:,:), npats, 1, ...
-            1/(size(asd,2)*size(asd,3)), psi, r, paths, tree, prob, ...
-            samples, options);
+        LL(f)=logLikelihood(asd(find(~b),:,:), asd(find(b),:,:), npats, ...
+            1, 1/(size(asd,2)*size(asd,3)), psi, paths, tree, options);
     end
 
     % print LL info
