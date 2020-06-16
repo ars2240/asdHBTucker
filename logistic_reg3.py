@@ -16,7 +16,7 @@
 from acc_cv_sep import acc
 from sklearn.linear_model import LogisticRegression
 
-fname = 'cancerHBTuckerCVND_L2_tpl0.1_{i}_Cartesian_Trees'
+fname = 'cancerHBTuckerCVNDRG_L2_tpl0.1_{i}_Cartesian_Trees'
 yfname = 'cancerHBTuckerCVDataLDA'
 #yfname = None
 
@@ -25,7 +25,7 @@ yfname = 'cancerHBTuckerCVDataLDA'
 
 print('%6s\t %6s\t %6s\t %6s\t %6s' % ('dset', 'lam', 'mean', 'stdev', 'pval'))
 
-lam_v = [1]
+lam_v = [1e-6, 1e-3, 1, 1e3, 1e6]
 
 for lam in lam_v:
     # Run classifier with cross-validation and plot ROC curves

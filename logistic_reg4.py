@@ -17,7 +17,7 @@
 from acc_cv2 import acc
 from sklearn.linear_model import LogisticRegression
 
-fname = 'data/cancerBCPF'
+fname = 'data/cancer_tensorlyCP_nonNeg_RG_25_0'
 indF = 'cancerCVInd'
 labelF = 'cancerLabel'
 

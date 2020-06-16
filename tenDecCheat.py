@@ -25,7 +25,7 @@ def impose(x, sp):
 
 
 def ten_dec(fname='cancerSparse', indF='cancerCVInd', rank=5, fselect='min dupe', fmin=0, fmax=1000, thresh=0,
-            head='./data/cancer_tensorlyCP_nonNeg', sp=True, decomp=True, norm=True, ll=1000):
+            head='./data/cancer_tensorlyCP_nonNeg_RG', sp=True, decomp=True, norm=True, ll=1000):
     if '.pik' in fname:
         import pickle
         with open(fname, "rb") as f:
@@ -149,10 +149,12 @@ def ten_dec(fname='cancerSparse', indF='cancerCVInd', rank=5, fselect='min dupe'
         X = X[cols, :, :]
         print(X.shape)
 
+    """
     cols = (X.astype(bool).max(axis=2).sum(axis=1) > 0)
     cols = impose(cols, sp)
     X = X[cols, :, :]
     print(X.shape)
+    """
 
     Xsp = np.c_[X.coords.T, X.data.T]
     np.savetxt('Xsp.csv', Xsp, delimiter=',')
@@ -173,7 +175,7 @@ def ten_dec(fname='cancerSparse', indF='cancerCVInd', rank=5, fselect='min dupe'
             if sp:
                 factors[i] = sparse.COO(factors[i])
 
-    if norm or ll>0:
+    if norm or ll > 0:
         if sp:
             import tensorly as tl
             weights = weights.todense()
@@ -211,7 +213,6 @@ def ten_dec(fname='cancerSparse', indF='cancerCVInd', rank=5, fselect='min dupe'
         # fit parameters
         # lam = psum.mean()
         alpha = np.mean(factors[0], axis=0)
-        factors_t = list(factors)
 
         # generate samples
         # sim_cts = stats.poisson.rvs(lam, size=ll)
@@ -221,15 +222,12 @@ def ten_dec(fname='cancerSparse', indF='cancerCVInd', rank=5, fselect='min dupe'
         l = 0
         for j in range(len(indT)):
             start_time = time.time()
-            x = X[j]
+            x = impose(X[j], sp)
             indF = np.where(x > 0)
             x = np.reshape(x, -1)
             x = x[np.where(x > 0)]
-            factors_t[0] = sim_dist
-            factors_t[1] = factors[1][indF[0], :]
-            factors_t[2] = factors[2][indF[1], :]
+            factors_t = [sim_dist, factors[1][indF[0], :]*factors[2][indF[1], :]]
             tens = tl.kruskal_to_tensor((weights, factors_t))
-            tens = np.vstack([np.diagonal(tens[i]) for i in range(ll)])
             tens = np.reshape(tens, (ll, -1)) + eps
             p = x*(np.log(tens)-np.log(1+eps*tens.shape[1]))
             lP = np.sum(p, axis=1)
@@ -237,17 +235,22 @@ def ten_dec(fname='cancerSparse', indF='cancerCVInd', rank=5, fselect='min dupe'
             m = 0
             k = 1
             # handling of underflow/overflow error
-            while np.sum(p) == 0 or np.isinf(np.sum(p)):
-                if np.sum(p) == 0:
+            while np.sum(p) == 0 or np.sum(p * p) == 0 or np.isinf(np.sum(p)) or np.isinf(np.sum(p * p)):
+                if np.sum(p) == 0 or np.sum(p * p) == 0:
                     k = k * 1.5
                 else:
                     k = k / 2
                 m = k * np.mean(lP)
                 p = np.exp(lP - m)
-            w = p / np.sum(p)
-            l += np.log(sum(w * p)) + m
-            print("{0}, {1}".format(j, time.time() - start_time))
+            l += np.log(np.sum(p * p)) - np.log(np.sum(p)) + m
+            if np.isinf(l):
+                print(np.log(np.sum(p * p)))
+                print(np.log(np.sum(p)))
+                print(m)
+                print(p)
+                break
+            #print("{0}, {1}, {2}".format(j, l, time.time() - start_time))
         print('Log-likelihood: {0}'.format(l/len(indT)))
 
 
-ten_dec(fname='cancerSparseND4', rank=25, fselect='min', fmin=0, decomp=False, norm=False)
+ten_dec(fname='cancerSparseND4', rank=25, fselect='min', fmin=400, fmax=1000, decomp=False)
