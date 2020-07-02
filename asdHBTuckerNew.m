@@ -102,7 +102,7 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
                 r{i}=1:L(i);
                 path(1+sum(L(1:(i-1))):sum(L(1:i)))=1:L(i);
             end         
-            paths=repmat(path,npats,1);
+            paths=repmat(path,options.npats,1);
             tree=cell(modes,1); %initialize
             
             %old counts

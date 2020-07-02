@@ -55,7 +55,7 @@ try
         r{2}=unique(paths(:,(L(1)+1):(sum(L))));
 
         %compute LL
-        LL(f)=logLikelihood(asd(find(~b),:,:), asd(find(b),:,:), npats, ...
+        LL(f)=logLikelihood(asd(find(~b),:,:), asd(find(b),:,:), ...
             1, 1/(size(asd,2)*size(asd,3)), psi, paths, tree, options);
     end
 

@@ -137,13 +137,7 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
         matTime=0;
         coreTime=0;
     else
-        %calculate dimensions of core
-        coreDims=zeros(1,modes+1);
-        coreDims(1)=dims(1);
-        for i=1:modes
-           %set core dimensions to the number of topics in each mode
-           coreDims(i+1)=length(r{i});
-        end
+        coreDims=coreSize(modes, dims, r);
 
         %draw matrices p(y|z)
         matStart=tic;
@@ -181,30 +175,39 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
             case 0
                 switch options.par
                     case 1
-                        [samples,~]=drawZscPar(samples,phi,psi,r);
+                        [samples,p]=drawZscPar(samples,phi,psi,r);
                     otherwise
-                        [samples,~]=drawZsc(samples,phi,psi,r);
+                        [samples,p]=drawZsc(samples,phi,psi,r);
                 end
             otherwise
                 switch options.par
                     case 1
-                        [samples,~] = drawZscSparsePar(samples,phi,psi,...
+                        [samples,p] = drawZscSparsePar(samples,phi,psi,...
                             paths,L);
                     otherwise
-                        [samples,~] = drawZscSparse(samples,phi,psi,...
+                        [samples,p] = drawZscSparse(samples,phi,psi,...
                             paths,L);
                 end
         end
+        LL=LL+sum(p);
+        ent=ent+entropy(exp(p));
         zTime=toc(zStart);
         
         cTime=0;
     end
     
     if options.print==1
-        output_header=sprintf('%6s %13s %10s','iter','loglikelihood', ...
-            'entropy');
-        fprintf('%s\n',output_header);
-        fprintf('%6i %13.2e %10.2e\n',0,LL,ent);
+        if options.collapsed==1
+            [psi,~,~]=drawpsi(dims, modes, samples, r, options);
+        end
+        LL2=logLikelihood(x, x, 1, 1/(size(x,2)*size(x,3)), psi, paths, ...
+            tree, options);
+        fileID = fopen('verbose.txt','w');
+        output_header=sprintf('%6s %13s %13s %10s', 'iter',...
+            'loglikelihood', 'mixture LL', 'entropy');
+        fprintf(fileID,'%s\n',output_header);
+        fprintf(fileID,'%6i %13.2e %13.2e %10.2e\n',0,LL,LL2,ent);
+        fclose(fileID);
     end
     
     %gibbs sampler
@@ -254,49 +257,14 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
                 end
                 zTime=toc(zStart);
             else
-                if options.collapsed==1
-                    coreDims(1)=dims(1);
-                end
-                %recalculate dimensions of core
-                for i=1:modes
-                   %set core dimensions to the number of topics in each mode
-                   coreDims(i+1)=length(r{i});
-                end
-
-                %matrices
-                for i=1:modes
-                	psi{i}=zeros(dims(i+1),coreDims(i+1));
-                end
+                coreDims=coreSize(modes, dims, r);
 
                 %redraw matrices p(y|z)
                 matStart=tic;
-                for i=1:modes
-                    [u,~,ir]=unique(samples(:,1+modes+i));
-                    samps=accumarray(ir,1:size(samples,1),[],@(w){samples(w,:)});
-                    dim=dims(i+1);
-                    [~,loc]=ismember(r{i},u);
-                    psiT=zeros(dim,coreDims(i+1));
-                    for j=1:coreDims(i+1)
-                        %draw values from dirichlet distribution with uniform prior
-                        %plus counts of occurances of both y & z
-                        switch options.pType
-                            case 0
-                                prior=repelem(1/dim,dim);
-                            case 1
-                                prior=repelem(1,dim);
-                            otherwise
-                                error('Error. \nNo prior type selected');
-                        end
-                        if loc(j)~=0
-                            prior=prior+histc(samps{loc(j)}(:,i+1)',1:dim);
-                        end
-                        [psiT(:,j),p]=drchrnd(prior,1,options);
-                        if btIt==options.btReps
-                            LL=LL+sum(p);
-                            ent=ent+entropy(exp(p));
-                        end
-                    end
-                    psi{i}=psiT;
+                [psi,LLp,entp]=drawpsi(dims, modes, samples, r, options);
+                if btIt==options.btReps
+                    LL=LL+LLp;
+                    ent=ent+entp;
                 end
                 matTime=matTime+toc(matStart);
 
@@ -305,9 +273,6 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
                 coreStart=tic;
                 %redraw core tensor p(z|x)
                 [phi,p]=drawCoreCon(samples,paths,coreDims,r,options);
-                if ndims(phi) < 3
-                    phi(end, end, 2) = 0; 
-                end
                 if btIt==options.btReps
                     LL=LL+sum(p);
                     ent=ent+entropy(exp(p));
@@ -384,8 +349,15 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
         %print loglikelihood & entropy
         if options.print==1
             if mod(nIter,options.freq)==0
-                fprintf('%6i %13.2e %10.2e\n',...
-                    nIter, LL, ent);
+                if options.collapsed==1 && nIter<(options.maxIter-1)
+                    [psi,~,~]=drawpsi(dims, modes, samples, r, options);
+                end
+                LL2=logLikelihood(x, x, 1, 1/(size(x,2)*size(x,3)), ...
+                    psi, paths, tree, options);
+                fileID = fopen('verbose.txt','a');
+                fprintf(fileID,'%6i %13.2e %13.2e %10.2e\n',...
+                    nIter, LL, LL2, ent);
+                fclose(fileID);
             end
         end
         

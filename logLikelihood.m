@@ -1,11 +1,11 @@
-function LL = logLikelihood(x, xTest, npats, prior, epsilon, psi, opaths, tree, varargin)
+function LL = logLikelihood(x, xTest, prior, epsilon, psi, opaths, tree, varargin)
 
     % generate artificial patients
-    sparPat=generatePatients(x, npats, prior, psi, opaths, tree, varargin);
+    sparPat=generatePatients(x, prior, psi, opaths, tree, varargin);
     
     %convert from sparse to dense
     si = size(x);
-    si(1) = npats;
+    si(1) = max(sparPat(:,1));
     modes = length(si)-1;  %number of dependent modes
     tens=sptensor(sparPat(:,1:(modes+1)),sparPat(:,modes+2), si);
     

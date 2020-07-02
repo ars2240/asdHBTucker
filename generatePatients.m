@@ -1,4 +1,4 @@
-function sparse = generatePatients(x, npats, prior, psi, opaths, tree, varargin)
+function sparse = generatePatients(x, prior, psi, opaths, tree, varargin)
     %generates new patients given trained parameters and information about
     %   the hierarchical structure of the model
     
@@ -20,6 +20,7 @@ function sparse = generatePatients(x, npats, prior, psi, opaths, tree, varargin)
     rng('shuffle'); %seed RNG
     
     L=options.L;
+    npats=options.npats;
     
     dims=size(x); %dimensions of tensor
     modes=length(dims)-1;   %number of dependent modes

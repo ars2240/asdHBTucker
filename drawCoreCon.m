@@ -127,4 +127,8 @@ function [phi,p] = drawCoreCon(samples,paths,coreDims,r,options)
         end
     end
     
+    if ndims(phi) < 3
+        phi(end, end, 2) = 0; 
+    end
+    
 end

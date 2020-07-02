@@ -27,13 +27,18 @@ try
     % options.topicsPerLevel{1}=tpl;
     % options.topicsPerLevel{2}=tpl;
     % options.collapsed = 0;
-    npats=1000; %number of articificial patients
+    options.print = 1;
     
     disp(options); %print options
     
     LL=zeros(nFolds,1); %initialize log-likelihood
 
     L=options.L;
+
+    %adjustment if using constant L across dims
+    if length(L)==1
+        L=repelem(L,2);
+    end
     
     % remove bad genes
     asdG=collapse(asd,3,@max);
@@ -47,11 +52,6 @@ try
     asdGP=collapse(asd,1);
     [~,gP,~]=unique(double(asdGP)', 'rows');
     asd=asd(:,:,gP);
-
-    %adjustment if using constant L across dims
-    if length(L)==1
-        L=repelem(L,2);
-    end
 
     for f=1:nFolds
         b=cvInd==f; %logical indices of test fold
@@ -73,7 +73,7 @@ try
         r{2}=unique(paths(:,(L(1)+1):(sum(L))));
 
         %compute LL
-        LL(f)=logLikelihood(asd(find(~b),:,:), asd(find(b),:,:), npats, ...
+        LL(f)=logLikelihood(asd(find(~b),:,:), asd(find(b),:,:), ...
             1, 1/(size(asd,2)*size(asd,3)), psi, paths, tree, options);
     end
 
