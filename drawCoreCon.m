@@ -88,42 +88,25 @@ function [phi,p] = drawCoreCon(samples,paths,coreDims,r,options)
         [vals,p(i)]=drchrnd(prior,1,options);
         
         %set values
-        if options.sparse==0
-            switch options.topicType
-                case 'Cartesian'
-                    ind2=ind;
-                    ind2{1}=ind{modes+1};
-                    ind2{2:(modes+1)}=ind{1:modes};
-                    phi(tensIndex2(ind2,size(phi)))=reshape(vals,L);
-                case 'Level'
-                    ind2=ind;
-                    ind2(:,1)=ind(:,modes+1);
-                    ind2(:,2:(modes+1))=ind(:,1:modes);
-                    phi(tensIndex2(ind2,size(phi)))=vals;
-                otherwise
-                    error('Error. \nNo topic type selected');
-            end
-        else
-            switch options.topicType
-                case 'Cartesian'
-                    ind=cell(modes+1,1);
-                    %get restaurants for patient
-                    ind{1}=i;
-                    for j=1:modes
-                        ind{j+1}=1:L(j);
-                    end
-                    phi(tensIndex2(ind,size(phi)))=reshape(vals,L);
-                case 'Level'
-                    ind = zeros(L(1),modes+1);
-                    ind(:,1)=i;
-                    %get restaurants for patient
-                    for j=1:modes
-                        ind(:,j+1)=1:L(1);
-                    end
-                    phi(tensIndex2(ind,size(phi)))=vals;
-                otherwise
-                    error('Error. \nNo topic type selected');
-            end
+        switch options.topicType
+            case 'Cartesian'
+                ind=cell(modes+1,1);
+                %get restaurants for patient
+                ind{1}=i;
+                for j=1:modes
+                    ind{j+1}=1:L(j);
+                end
+                phi(tensIndex2(ind,size(phi)))=reshape(vals,L);
+            case 'Level'
+                ind = zeros(L(1),modes+1);
+                ind(:,1)=i;
+                %get restaurants for patient
+                for j=1:modes
+                    ind(:,j+1)=1:L(1);
+                end
+                phi(tensIndex2(ind,size(phi)))=vals;
+            otherwise
+                error('Error. \nNo topic type selected');
         end
     end
     

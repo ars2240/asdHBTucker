@@ -83,7 +83,7 @@ function [cphi,cpsi,ctree] = counts(samples, dims, r, varargin)
             ml2=mlist(mlist~=i);
             ctree{i}=collapse(cts,[ml2+1,ml2+modes+1],@sum);
             if options.sparse==0
-                ctree{i}=double(ctree{i});
+                ctree{i}=full(ctree{i});
             end
         end
     end

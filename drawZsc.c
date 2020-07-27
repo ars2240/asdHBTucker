@@ -69,12 +69,14 @@ void drawZ(int j, double *sampIn, double *sampOut, double *p,
     double *psik; const mwSize *psikDims;
     for(i=0; i<size; i++){
         pdf1 = log(phi[x+i*phiDims[0]]);
+        // mexPrintf("phi[%d,%d] = %.3E\n", x+1, i+1, phi[x+i*phiDims[0]]);
         for(k=0; k<modes; k++){
             ind = indices(i,k,&phiDims[1]);
             psik = mxGetPr(mxGetCell(psi,k));
             psikDims = mxGetDimensions(mxGetCell(psi,k));
             y = sampIn[(k+1)*sampRows+j]-1;
             pdf1 += log(psik[y+ind*psikDims[0]]);
+            // mexPrintf("psi{%d}[%d,%d] = %.3E\n", k+1, y+1, ind+1, psik[y+ind*psikDims[0]]);
         }
         pdf[i] = exp(pdf1);
         sum = sum + pdf[i];
@@ -82,6 +84,7 @@ void drawZ(int j, double *sampIn, double *sampOut, double *p,
             mexErrMsgIdAndTxt("MyProg:sum:overflow", "Sum overflow.");
         }
     }
+    // mexPrintf("sum = %.3E\n", sum);
 
     // draw new z
     long long int z; int z1;

@@ -52,7 +52,7 @@ void drawZs(double *sampIn, double *sampOut, double *p, size_t sampCols,
         alpha[0]=1/l[0]/l[1];
         for(i=1; i<modes; i++){
             psikDims = mxGetDimensions(mxGetCell(psi,i-1));
-            alpha[i]=1/psikDims[0];
+            alpha[i]=1.0/psikDims[0];
         }
     }
     int psiDimSum=0; int psiDimPos=0;

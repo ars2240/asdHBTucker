@@ -57,7 +57,6 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
         L=repelem(L,modes);
     end
     
-    
     %initialize sample matrix
     sStart=tic;
     samples=zeros(l1NormX,1+2*modes);
@@ -102,7 +101,7 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
                 r{i}=1:L(i);
                 path(1+sum(L(1:(i-1))):sum(L(1:i)))=1:L(i);
             end         
-            paths=repmat(path,options.npats,1);
+            paths=repmat(path,dims(1),1);
             tree=cell(modes,1); %initialize
             
             %old counts
@@ -138,12 +137,12 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
         switch options.par
             case 1
                 [samples,p]=drawZsCollapsedPar(samples,cphi,ocpsi,paths,...
-                    L,options.prior);
+                    L,options.pType);
                 LL=LL+sum(log(p));
                 ent=ent+entropy(p);
             otherwise
                 [samples,p]=drawZsCollapsed(samples,cphi,ocpsi,paths,...
-                    L,options.prior);
+                    L,options.pType);
                 LL=LL+sum(log(p));
                 ent=ent+entropy(p);
         end
@@ -195,10 +194,12 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
     end
     
     if options.print==1
+        fileID = fopen('verbose.txt','a');
         output_header=sprintf('%6s %13s %10s','iter','loglikelihood', ...
             'entropy');
-        fprintf('%s\n',output_header);
-        fprintf('%6i %13.2e %10.2e\n',0,LL,ent);
+        fprintf(fileID,'%s\n',output_header);
+        fprintf(fileID,'%6i %13.2e %10.2e\n',0,LL,ent);
+        fclose(fileID);
     end
     
     %gibbs sampler
@@ -221,12 +222,12 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
                 switch options.par
                     case 1
                         [samples,p]=drawZsCollapsedPar(samples,cphi,tcpsi,...
-                            paths,L,options.prior);
+                            paths,L,options.pType);
                         LL=LL+sum(log(p));
                         ent=ent+entropy(p);
                     otherwise
                         [samples,p]=drawZsCollapsed(samples,cphi,tcpsi,...
-                            paths,L,options.prior);
+                            paths,L,options.pType);
                         LL=LL+sum(log(p));
                         ent=ent+entropy(p);
                 end
@@ -309,8 +310,10 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
         %print loglikelihood & entropy
         if options.print==1
             if mod(nIter,options.freq)==0
-                fprintf('%6i %13.2e %10.2e\n',...
+                fileID = fopen('verbose.txt','a');
+                fprintf(fileID,'%6i %13.2e %10.2e\n',...
                     nIter, LL, ent);
+                fclose(fileID);
             end
         end
         

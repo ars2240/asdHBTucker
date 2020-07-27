@@ -37,10 +37,7 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
     
     dims=size(x); %dimensions of tensor
     
-    gam=options.gam;
-    L=options.L;
-    LL=0; %initialize log-likelihood
-    ent=0; %initialize entropy
+    gam=options.gam; L=options.L;
     
     %adjustment if using constant gam across dims
     if length(gam)==1
@@ -75,9 +72,9 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
             if nargout==8
                 error('Incorrect number of outputs for this topic model.');
             end
-            [paths,tree,r,LLtree,entTree]=initializeTree(L,dims,gam);
+            [paths,tree,r,treeLL,treeEnt]=initializeTree(L,dims,gam);
         case 'PAM'
-            [paths,tpl,tree,r,LLtree,entTree]=initializePAM(dims,options);
+            [paths,tpl,tree,r,treeLL,treeEnt]=initializePAM(dims,options);
         case 'None'
             levels=ones(1,sum(L));
             r=cell(modes,1); %initialize
@@ -87,13 +84,10 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
                 r{i}=1:L(i);
             end
             paths=repmat(levels,dims(1),1);
-            LLtree=0;
-            entTree=0;
+            treeLL=0; treeEnt=0;
         otherwise
             error('Error. \nNo topic model type selected');
     end
-    LL=LL+LLtree;
-    ent=ent+entTree;
     treeTime=toc(treeStart);
     
     if options.collapsed==1
@@ -103,11 +97,13 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
         for i=1:modes
             dimsM(i)=length(r{i});
         end
+        
         if options.sparse==0
             cphi=zeros([dims(1),dimsM]);
         else
             cphi=zeros([dims(1),L]);
         end
+        
         cpsi=cell(modes,1);
         for i=1:modes
             cpsi{i}=zeros(dims(i+1),dimsM(i));
@@ -118,15 +114,12 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
         switch options.par
             case 1
                 [samples,p]=drawZsCollapsedPar(samples,cphi,cpsi,paths,...
-                    L,options.prior);
-                LL=LL+sum(log(p));
-                ent=ent+entropy(p);
+                    L,options.pType);
             otherwise
                 [samples,p]=drawZsCollapsed(samples,cphi,cpsi,paths,L,...
-                    options.prior);
-                LL=LL+sum(log(p));
-                ent=ent+entropy(p);
+                    options.pType);
         end
+        zLL=sum(log(p)); zEnt=entropy(p);
         zTime=toc(zStart);
         
         %new counts
@@ -134,8 +127,7 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
         [cphi,cpsi,~] = counts(samples, dims, r, paths, [1,1,0], options);
         cTime=toc(cStart);
         
-        matTime=0;
-        coreTime=0;
+        matTime=0; coreTime=0; matLL=0; coreLL=0; matEnt=0; coreEnt=0;
     else
         coreDims=coreSize(modes, dims, r);
 
@@ -152,49 +144,50 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
                 otherwise
                     error('Error. \nNo prior type selected');
             end
-            [psiT,p]=drchrnd(prior,coreDims(i),options);
+            [psiT,~]=drchrnd(prior,coreDims(i),options);
             psi{i-1}=psiT';
-            LL=LL+sum(p);
-            ent=ent+entropy(exp(p));
         end
         matTime=toc(matStart);
 
         %draw core tensor p(z|x)
         coreStart=tic;
-        [phi,p]=drawCoreUni(paths,coreDims,options);
+        [phi,~]=drawCoreUni(paths,coreDims,options);
         if ndims(phi) < 3
             phi(end, end, 2) = 0; 
         end
-        LL=LL+sum(p);
-        ent=ent+entropy(exp(p));
         coreTime=toc(coreStart);
         
         %draw latent topic z's
         zStart=tic;
+        oSamples=samples;
         switch options.sparse
             case 0
                 switch options.par
                     case 1
-                        [samples,p]=drawZscPar(samples,phi,psi,r);
+                        [samples,~]=drawZscPar(samples,phi,psi,r);
                     otherwise
-                        [samples,p]=drawZsc(samples,phi,psi,r);
+                        [samples,~]=drawZsc(samples,phi,psi,r);
                 end
             otherwise
                 switch options.par
                     case 1
-                        [samples,p] = drawZscSparsePar(samples,phi,psi,...
+                        [samples,~] = drawZscSparsePar(samples,phi,psi,...
                             paths,L);
                     otherwise
-                        [samples,p] = drawZscSparse(samples,phi,psi,...
+                        [samples,~] = drawZscSparse(samples,phi,psi,...
                             paths,L);
                 end
         end
-        LL=LL+sum(p);
-        ent=ent+entropy(exp(p));
+        p=collapsedProb(samples, oSamples, dims, r, paths, options);
+        zLL=sum(log(p)); zEnt=entropy(p);
         zTime=toc(zStart);
         
         cTime=0;
     end
+    
+    % sum LL & Entropy
+    % LL=treeLL+matLL+coreLL+zLL; ent=treeEnt+matEnt+coreEnt+zEnt;
+    LL=treeLL+zLL; ent=treeEnt+zEnt;
     
     if options.print==1
         if options.collapsed==1
@@ -203,19 +196,19 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
         LL2=logLikelihood(x, x, 1, 1/(size(x,2)*size(x,3)), psi, paths, ...
             tree, options);
         fileID = fopen('verbose.txt','w');
-        output_header=sprintf('%6s %13s %13s %10s', 'iter',...
-            'loglikelihood', 'mixture LL', 'entropy');
+        output_header=sprintf('%6s %13s %13s %10s %13s %13s',...
+            'iter', 'loglikelihood', 'mixture LL', 'entropy', 'tree LL',...
+            'z LL');
         fprintf(fileID,'%s\n',output_header);
-        fprintf(fileID,'%6i %13.2e %13.2e %10.2e\n',0,LL,LL2,ent);
+        fprintf(fileID,...
+            '%6i %13.2e %13.2e %10.2e %13.2e %13.2e\n',...
+            0,LL,LL2,ent,treeLL,zLL);
         fclose(fileID);
     end
     
     %gibbs sampler
-    cont=1;
-    nIter=0;
+    cont=1; nIter=0;
     while cont==1
-        LL=0; %reset log-likelihood
-        ent=0; %reset entropy
         
         for btIt=1:options.btReps
             if options.collapsed==1 && nIter<(options.maxIter-1)
@@ -246,64 +239,55 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
                 switch options.par
                     case 1
                         [samples,p]=drawZsCollapsedPar(samples,cphi,...
-                            cpsi,paths,L,options.prior);
-                        LL=LL+sum(log(p));
-                        ent=ent+entropy(p);
+                            cpsi,paths,L,options.pType);
                     otherwise
                         [samples,p]=drawZsCollapsed(samples,cphi,cpsi,...
-                            paths,L,options.prior);
-                        LL=LL+sum(log(p));
-                        ent=ent+entropy(p);
+                            paths,L,options.pType);
                 end
+                zLL=sum(log(p)); zEnt=entropy(p);
                 zTime=toc(zStart);
             else
                 coreDims=coreSize(modes, dims, r);
 
                 %redraw matrices p(y|z)
                 matStart=tic;
-                [psi,LLp,entp]=drawpsi(dims, modes, samples, r, options);
-                if btIt==options.btReps
-                    LL=LL+LLp;
-                    ent=ent+entp;
-                end
+                [psi,~,~]=drawpsi(dims, modes, samples, r, options);
                 matTime=matTime+toc(matStart);
 
                 %redraw core tensor p(z|x)
                 %subset to get samples with x
                 coreStart=tic;
                 %redraw core tensor p(z|x)
-                [phi,p]=drawCoreCon(samples,paths,coreDims,r,options);
-                if btIt==options.btReps
-                    LL=LL+sum(p);
-                    ent=ent+entropy(exp(p));
-                end
+                [phi,~]=drawCoreCon(samples,paths,coreDims,r,options);
                 coreTime=coreTime+toc(coreStart);
 
                 %redraw latent topic z's
                 zStart=tic;
+                oSamples=samples;
                 switch options.sparse
                     case 0
                         switch options.par
                             case 1
-                                [samples,p]=drawZscPar(samples,...
+                                [samples,~]=drawZscPar(samples,...
                                     phi,psi,r);
                             otherwise
-                                [samples,p]=drawZsc(samples,...
+                                [samples,~]=drawZsc(samples,...
                                     phi,psi,r);
                         end
                     otherwise
                         switch options.par
                             case 1
-                                [samples,p] = drawZscSparsePar(samples,...
+                                [samples,~] = drawZscSparsePar(samples,...
                                     phi,psi,paths,L);
                             otherwise
-                                [samples,p] = drawZscSparse(samples,...
+                                [samples,~] = drawZscSparse(samples,...
                                     phi,psi,paths,L);
                         end
                 end
                 if btIt==options.btReps
-                    LL=LL+sum(log(p));
-                    ent=ent+entropy(p);
+                    p=collapsedProb(samples, oSamples, dims, r, paths, options);
+                    zLL=sum(log(p));
+                    zEnt=entropy(p);
                 end
                 zTime=zTime+toc(zStart);
             end
@@ -326,22 +310,23 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
             for treeIt=1:options.treeReps
                 switch options.topicModel
                     case 'IndepTrees'
-                        [paths,tree,r,LLtree,entTree]=redrawTree(dims,...
+                        [paths,tree,r,treeLL,treeEnt]=redrawTree(dims,...
                             cpsi,ctree,paths,L,tree,r,options);
                     case 'PAM'
-                        [paths,tree,prob,LLtree,entTree]=redrawPAM(dims,...
+                        [paths,tree,prob,treeLL,treeEnt]=redrawPAM(dims,...
                             cpsi,ctree,paths,tpl,tree,L,options);
                     case 'None'
-                        LLtree=0;
-                        entTree=0;
+                        treeLL=0; treeEnt=0;
                     otherwise
                         error('Error. \nNo topic model type selected');
                 end
             end
             treeTime=treeTime+toc(treeStart);
         end
-        LL=LL+LLtree;
-        ent=ent+entTree;
+        
+        % sum LL & Entropy
+        % LL=treeLL+matLL+coreLL+zLL; ent=treeEnt+matEnt+coreEnt+zEnt;
+        LL=treeLL+zLL; ent=treeEnt+zEnt;
         
         %increment iteration counter
         nIter=nIter+1;
@@ -355,8 +340,9 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
                 LL2=logLikelihood(x, x, 1, 1/(size(x,2)*size(x,3)), ...
                     psi, paths, tree, options);
                 fileID = fopen('verbose.txt','a');
-                fprintf(fileID,'%6i %13.2e %13.2e %10.2e\n',...
-                    nIter, LL, LL2, ent);
+                fprintf(fileID,...
+                    '%6i %13.2e %13.2e %10.2e %13.2e %13.2e\n',...
+                    nIter,LL,LL2,ent,treeLL,zLL);
                 fclose(fileID);
             end
         end

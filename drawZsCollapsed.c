@@ -51,7 +51,7 @@ void drawZs(double *sampIn, double *sampOut, double *p, size_t sampCols,
         alpha[0]=1/l[0]/l[1];
         for(i=1; i<modes; i++){
             psikDims = mxGetDimensions(mxGetCell(psi,i-1));
-            alpha[i]=1/psikDims[0];
+            alpha[i]=1.0/psikDims[0];
         }
     }
     int psiDimSum=0; int psiDimPos=0;
@@ -126,18 +126,13 @@ void drawZ(int j, double *sampIn, double *sampOut, double *p,
             pdf1 += log(psik[y+ip*psikDims[0]]+a[k+1]-s);
             pdf1 -= log(psis[ip+psiSum]);
             if(pdf1 != pdf1) {
-                mexPrintf("i = %d\n", i);
-                mexPrintf("k = %f\n", k);
-                mexPrintf("ind = %f\n", ind);
-                mexPrintf("x = %d\n", x);
-                mexPrintf("lsum = %d\n", lsum);
-                mexPrintf("ip = %d\n", ip);
-                mexPrintf("j = %d\n", j);
-                mexPrintf("zo = %d\n", zo);
+                mexPrintf("i = %d\n", i); mexPrintf("k = %d\n", k);
+                mexPrintf("ind = %d\n", ind); mexPrintf("x = %d\n", x);
+                mexPrintf("lsum = %d\n", lsum); mexPrintf("ip = %d\n", ip);
+                mexPrintf("j = %d\n", j); mexPrintf("zo = %d\n", zo);
                 mexPrintf("y = %d\n", y);
                 mexPrintf("phi = %f\n", phi[x+i*phiDims[0]]);
-                mexPrintf("a = %f\n", a[k+1]);
-                mexPrintf("s = %d\n", s);
+                mexPrintf("a = %f\n", a[k+1]); mexPrintf("s = %d\n", s);
                 mexPrintf("psik = %f\n", psik[y+ip*psikDims[0]]);
                 mexPrintf("psis = %f\n", psis[ip+psiSum]);
                 mexPrintf("pdf1 = %f\n", pdf1);
@@ -147,11 +142,10 @@ void drawZ(int j, double *sampIn, double *sampOut, double *p,
         }
         pdf1 += log(phi[x+i*phiDims[0]]+a[0]-st);
         if(pdf1 != pdf1) {
-            mexPrintf("x = %d\n", x);
-            mexPrintf("i = %d\n", i);
+            mexPrintf("j = %d\n", j);
+            mexPrintf("x = %d\n", x); mexPrintf("i = %d\n", i);
             mexPrintf("phi = %f\n", phi[x+i*phiDims[0]]);
-            mexPrintf("a = %f\n", a[0]);
-            mexPrintf("st = %d\n", st);
+            mexPrintf("a = %f\n", a[0]); mexPrintf("st = %d\n", st);
             mexPrintf("pdf1 = %f\n", pdf1);
             mexErrMsgIdAndTxt("MyProg:sum:NaN", "Sum NaN.");
         }

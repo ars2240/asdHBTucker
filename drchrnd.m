@@ -4,7 +4,6 @@ function [r, p] = drchrnd(a,n,options)
     % prior = value to add to prior
     % tol = tolerance for zeros of dirichlet distribution
     
-    a = a+options.prior;
     l = length(a);
     if size(a,1)==1
         A = repmat(a,n,1);

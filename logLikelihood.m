@@ -16,12 +16,14 @@ function LL = logLikelihood(x, xTest, prior, epsilon, psi, opaths, tree, varargi
     cts=double(cts);
     cts=sum(cts, 2);
     cts=full(cts);
-    ctsS=cts(sparPat(:,1))+epsilon*prod(dims(2:end));
+    s=prod(dims(2:end));
+    ctsS=cts(sparPat(:,1))+epsilon*s;
     sparPat(:,modes+2)=sparPat(:,modes+2)./ctsS;
     tens=sptensor(sparPat(:,1:(modes+1)),sparPat(:,modes+2), si);
     
     LL=0;
     n=size(xTest,1);
+    ll=zeros(n,1);
     if ndims(xTest)>=3
         xTest=sptenmat(xTest, 1);
         xSubs=xTest.subs;
@@ -35,33 +37,40 @@ function LL = logLikelihood(x, xTest, prior, epsilon, psi, opaths, tree, varargi
         xTemp=xTemp(y);
         tTens=double(sptenmat(tens, 1));
         tTens=tTens(:,y);
-        lTens=log(full(tTens)+epsilon./(cts+epsilon));
+        lTens=log(full(tTens)+epsilon./(cts+s*epsilon));
         xP=xTemp.*lTens;
         lP=sum(xP, 2);
-        p=exp(lP);
-        m=0;
-        k=1;
-        while sum(p)==0 || isinf(sum(p))
-            % handling of underflow error
-            if sum(p)==0
-                k=k*1.5;
-            else
-                k=k/2;
-            end
+        if sum(lP)~=0
+            k=1;
             m=k*mean(lP);
             p=exp(lP-m);
-        end
-        w=p./sum(p);
-        ll=log(sum(w.*p))+m;
-        if isnan(ll)
-            display(sum(p));
-        elseif ~isfinite(ll)
-            display(sum(w.*p));
-        else
-            LL=LL+ll;
+            w=p./sum(p);
+            while sum(p)==0 || sum(w)==0 || isinf(sum(p)) || isinf(sum(w))
+                % handling of underflow error
+                if sum(p)==0 || sum(w)==0
+                    k=k*1.5;
+                else
+                    k=k/2;
+                end
+                m=k*mean(lP);
+                p=exp(lP-m);
+                w=p./sum(p);
+            end
+            ll(i)=log(sum(w.*p))+m;
+            if isnan(ll)
+                display(sum(p));
+            elseif ~isfinite(ll)
+                display(sum(w.*p));
+            else
+                LL=LL+ll(i);
+            end
         end
     end
     
-    LL=LL/n;
+    if sum(ll==0)>0
+        disp(ll);
+    else
+        LL=LL/n;
+    end
 
 end
