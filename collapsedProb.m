@@ -41,7 +41,7 @@ function p = collapsedProb(samples, oSamples, dims, r, paths, options)
         otherwise
             error('Error. \nNo prior type selected');
     end
-    lp=log(double(cphiT(samples(:,1),:))+prior-(ind==indO));
+    lp=log(double(cphiT(samples(:,1),:))+prior-(indO==1:t));
     sh=[size(lp,1),s(2:end)];
     lp=reshape(lp,sh);
     for i=1:modes
@@ -54,7 +54,7 @@ function p = collapsedProb(samples, oSamples, dims, r, paths, options)
                 error('Error. \nNo prior type selected');
         end
         lpT=log(cpsi{i}(samples(:,1+i),:)+prior-...
-            (samples(:,1+i+modes)==oSamples(:,1+i+modes)));
+            (oSamples(:,1+i+modes)==1:s(1+i)));
         sh(2:end)=1;
         sh(1+modes)=size(lpT,2);
         lp=lp+reshape(lpT,sh);
