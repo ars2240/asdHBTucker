@@ -211,7 +211,8 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
     while cont==1
         
         for btIt=1:options.btReps
-            if options.collapsed==1 && nIter<(options.maxIter-1)
+            if options.collapsed==1 && (nIter<(options.maxIter-1) ...
+                    || options.map==1)
                 for i=1:modes
                     pad=max(r{i})-size(cphi,i+1);
                     if pad>0
@@ -246,6 +247,32 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
                 end
                 zLL=sum(log(p)); zEnt=entropy(p);
                 zTime=toc(zStart);
+                
+                %MAP estimates
+                if options.map==1 && nIter==options.maxIter-1
+                    [cphi,cpsi,~] = counts(samples, dims, r, paths, ...
+                        [1,1,0], options);
+                    
+                    %compute psi
+                    psi=cell(modes,1); %initialize
+                    for i=1:modes
+                        dim=dims(i+1);
+                        switch options.pType
+                            case 0
+                                prior=repelem(1/dim,dim);
+                            case 1
+                                prior=repelem(1,dim);
+                            otherwise
+                                error('Error. \nNo prior type selected');
+                        end
+                        psiT=cpsi{i}+prior';
+                        psi{i}=psiT./sum(psiT,2);
+                    end
+                    
+                    %compute phi
+                    coreDims=coreSize(modes, dims, r);
+                    phi = drawCoreMAP(samples,paths,coreDims,r,options);
+                end
             else
                 coreDims=coreSize(modes, dims, r);
 

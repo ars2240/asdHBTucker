@@ -21,6 +21,7 @@ function [ options ] = init_options( )
 % btReps = number of iterations of Bayesian Tucker per large iteration
 % collapsed = whether or not collapsed Gibbs sampler is used
 % sparse = whether or not sparse matrices/tensors are used
+% map = whether or not MAP estimate is used
 % npats = number of articificial patients (for computing LL)
 
 options.par = 1;
@@ -42,6 +43,7 @@ options.treeReps = 1;
 options.btReps = 1;
 options.collapsed = 1;
 options.sparse = 1;
+options.map = 1;
 options.npats = 1000;
 
 end
