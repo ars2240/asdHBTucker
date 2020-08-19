@@ -127,7 +127,7 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
         [cphi,cpsi,~] = counts(samples, dims, r, paths, [1,1,0], options);
         cTime=toc(cStart);
         
-        matTime=0; coreTime=0; matLL=0; coreLL=0; matEnt=0; coreEnt=0;
+        matTime=0; coreTime=0;
     else
         coreDims=coreSize(modes, dims, r);
 
@@ -190,7 +190,9 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
     LL=treeLL+zLL; ent=treeEnt+zEnt;
     
     if options.print==1
-        if options.collapsed==1
+        if options.collapsed==1 && options.map == 1
+            psi = drawpsiMAP(samples, dims, r, paths, options);
+        elseif options.map ~= 1
             [psi,~,~]=drawpsi(dims, modes, samples, r, options);
         end
         LL2=logLikelihood(x, x, 1, 1/(size(x,2)*size(x,3)), psi, paths, ...
@@ -250,26 +252,7 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
                 
                 %MAP estimates
                 if options.map==1 && nIter==options.maxIter-1
-                    [cphi,cpsi,~] = counts(samples, dims, r, paths, ...
-                        [1,1,0], options);
-                    
-                    %compute psi
-                    psi=cell(modes,1); %initialize
-                    for i=1:modes
-                        dim=dims(i+1);
-                        switch options.pType
-                            case 0
-                                prior=repelem(1/dim,dim);
-                            case 1
-                                prior=repelem(1,dim);
-                            otherwise
-                                error('Error. \nNo prior type selected');
-                        end
-                        psiT=cpsi{i}+prior';
-                        psi{i}=psiT./sum(psiT,2);
-                    end
-                    
-                    %compute phi
+                    psi = drawpsiMAP(samples, dims, r, paths, options);
                     coreDims=coreSize(modes, dims, r);
                     phi = drawCoreMAP(samples,paths,coreDims,r,options);
                 end
@@ -361,7 +344,10 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
         %print loglikelihood & entropy
         if options.print==1
             if mod(nIter,options.freq)==0
-                if options.collapsed==1 && nIter<(options.maxIter-1)
+                if options.collapsed==1 && options.map == 1 && ...
+                        nIter<(options.maxIter-1)
+                    psi = drawpsiMAP(samples, dims, r, paths, options);
+                elseif options.map ~= 1 && nIter<(options.maxIter-1)
                     [psi,~,~]=drawpsi(dims, modes, samples, r, options);
                 end
                 LL2=logLikelihood(x, x, 1, 1/(size(x,2)*size(x,3)), ...
