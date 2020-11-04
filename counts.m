@@ -44,7 +44,7 @@ function [cphi,cpsi,ctree] = counts(samples, dims, r, varargin)
             ind{i+1}=r{i};
             cs(i+1)=length(r{i});
         end
-        cphi=cphi(tensIndex2(ind,cs));
+        cphi=cphi(tensIndex2(ind,size(cphi)));
         
         % convert to normal MatLab tensor
         if options.sparse==0

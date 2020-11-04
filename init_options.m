@@ -10,6 +10,7 @@ function [ options ] = init_options( )
 % pType = prior type
 %   0 = 1/N
 %   1 = 1
+%   2 = 2/N
 % tol = tolerance for zeros of dirichlet distribution
 % minA = all A's above this value will be drawn normally
 % topicModel = type of hierarchical tree
@@ -22,16 +23,17 @@ function [ options ] = init_options( )
 % collapsed = whether or not collapsed Gibbs sampler is used
 % sparse = whether or not sparse matrices/tensors are used
 % map = whether or not MAP estimate is used
+% keepBest = whether or not best model is kept (as opposed to last)
 % npats = number of articificial patients (for computing LL)
 
 options.par = 1;
 options.time = 1;
-options.print = 0;
+options.print = 1;
 options.maxIter = 1000;
 options.freq = 10;
 options.gam = 0.1;
 options.L = 2;
-options.pType = 0;
+options.pType = 2;
 options.tol = 0;
 options.minA = 0.1;
 options.topicModel = 'IndepTrees';
@@ -44,6 +46,7 @@ options.btReps = 1;
 options.collapsed = 1;
 options.sparse = 1;
 options.map = 1;
+options.keepBest = 0;
 options.npats = 1000;
 
 end

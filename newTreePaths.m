@@ -9,7 +9,7 @@ function nPaths = newTreePaths(asdTens,ocpsi,ctree,paths,tree,ind,options)
         L=repelem(L,modes);
     end
 
-    nPaths=ones(length(ind),sum(L));
+    nPaths=ones(sum(ind),sum(L));
     
     for j=1:modes
         
@@ -32,6 +32,8 @@ function nPaths = newTreePaths(asdTens,ocpsi,ctree,paths,tree,ind,options)
                prior=1/dims(1+j);
            case 1
                prior=1;
+           case 2
+               prior=2/dims(1+j);
            otherwise
                error('Error. \nNo prior type selected');
        end

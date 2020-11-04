@@ -2,13 +2,15 @@ function sparse = generatePatients(x, prior, psi, opaths, tree, varargin)
     %generates new patients given trained parameters and information about
     %   the hierarchical structure of the model
     
-    varargin=varargin{1};
     if length(varargin)==1
-        if iscell(varargin)
-            options=varargin{1};
-        else
-            options=varargin;
-        end
+        varargin=varargin{1};
+    end
+    
+    if length(varargin)==1 && iscell(varargin)
+        options=varargin{1};
+    elseif length(varargin)==2
+        samples=varargin{1};
+        options=varargin{2};
     elseif length(varargin)==3
         prob=varargin{1};
         samples=varargin{2};
@@ -17,13 +19,30 @@ function sparse = generatePatients(x, prior, psi, opaths, tree, varargin)
         error("Error. \nIncorrect number of inputs.");
     end
     
-    rng('shuffle'); %seed RNG
+    %rng('shuffle'); %seed RNG
+    rng(123);
     
     L=options.L;
     npats=options.npats;
     
+    % store original tensor
+    odims=size(x); %dimensions of tensor
+    modes=length(size(x))-1;  %number of dependent modes
+    
+    cts=collapse(x,[2,3]);
+    zind=cts==0;
+    if sum(zind)>0
+        ind=cell(modes+1,1);
+        for i=1:modes
+            ind{1+i}=1:odims(1+i);
+        end
+        ind{1}=find(cts>0)';
+        x=x(tensIndex2(ind,odims));
+        x=reshape(x,[length(ind{1}),odims(2:end)]);
+        x=sptensor(x);
+    end
+    
     dims=size(x); %dimensions of tensor
-    modes=length(dims)-1;   %number of dependent modes
     
     %adjustment if using constant L across dims
     if length(L)==1
@@ -102,10 +121,23 @@ function sparse = generatePatients(x, prior, psi, opaths, tree, varargin)
     if length(prior)==L(1) && strcmp(options.topicType,'Cartesian')
         prior=repmat(prior,1,prod(L(2:modes)));
     end
+    
+    if exist('samples','var') == 1
+        r=cell(2,1);
+        r{1}=unique(opaths(:,1:L(1)))';
+        r{2}=unique(opaths(:,(L(1)+1):(sum(L))))';
+        si=[dims,ones(1,modes)];
+        for i=1:modes
+            si(1+modes+i)=max(max(r{i}),max(samples(:,1+modes+i)));
+        end
+        cts=sptensor(samples,1,si);
+        cphi=collapse(cts,1:(modes+1),@sum);
+    end
         
     res=cell(modes,1);
     zr=cell(modes,1);
     y=zeros(1,modes);
+    %zv = [];
     
     for i=1:npats
         
@@ -114,7 +146,12 @@ function sparse = generatePatients(x, prior, psi, opaths, tree, varargin)
             res{j}=paths(i,1+sum(L(1:(j-1))):sum(L(1:j)));
             % res{1}=ismember(r{1},res{1});
         end
-        [vals,~]=drchrnd(prior,1,options);
+        if exist('samples','var') == 1
+            alpha = prior + cphi(tensIndex2(res,size(cphi)))';
+        else
+            alpha = prior;
+        end
+        [vals,~]=drchrnd(alpha,1,options);
         
         gvs=zeros(dims(2:end));
         
@@ -122,6 +159,7 @@ function sparse = generatePatients(x, prior, psi, opaths, tree, varargin)
         for j=1:n(i)
             % draw z
             z=multi(vals);
+            %zv=[zv z];
             
             switch options.topicType
                 case 'Cartesian'
@@ -150,10 +188,15 @@ function sparse = generatePatients(x, prior, psi, opaths, tree, varargin)
         gvs=sptensor(gvs);
         y2=gvs.subs;
         v=gvs.vals;
+        if sum(gvs.vals) ~= n(i)
+            disp(i);
+        end
         
         t=[i*ones(size(y2,1),1),y2,v];
         
         sparse=[sparse; t];
         
     end
+    
+    %tabulate(zv);
 end

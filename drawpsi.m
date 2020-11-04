@@ -25,6 +25,8 @@ function [psi,LL,ent] = drawpsi(dims, modes, samples, r, options)
                     prior=repelem(1/dim,dim);
                 case 1
                     prior=repelem(1,dim);
+                case 2
+                    prior=repelem(2/dim,dim);
                 otherwise
                     error('Error. \nNo prior type selected');
             end

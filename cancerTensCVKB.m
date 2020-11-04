@@ -12,26 +12,27 @@
     asd=asd(find(ind),:,:);
 
     nFolds=10; %set number of folds
+    nBest=10;
     nTrain=sum(ind); %size of training set
     cvInd=crossvalind('Kfold',nTrain,nFolds); %split data into k folds
-    save('cancerCVInd','cvInd');
 
     options=init_options();
     % mex drawZscPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
     % tpl=10; % topics per level
-    options.gam = 1;
-    options.L = 10;
-    options.topicModel = 'None';
+    options.gam = .1;
+    options.L = 3;
+	% options.topicModel = 'None';
     options.par = 0;
-    options.maxIter = 1000;
+    options.maxIter = 100;
+    options.pType = 0;
+    % options.treeReps = 5;
+    % options.btReps = 5;
     % options.topicsPerLevel{1}=tpl;
     % options.topicsPerLevel{2}=tpl;
     % options.collapsed = 0;
-    options.print = 1;
+    options.time = 0;
+    options.print = 0;
     % options.sparse = 0;
-%     options.init.psi=cell(2,1);
-%     options.init.psi{1}=csvread('data/cancer_tensorlyCP_nonNeg_400_1000_10_1.csv');
-%     options.init.psi{2}=csvread('data/cancer_tensorlyCP_nonNeg_400_1000_10_2.csv');
     
     disp(options); %print options
     
@@ -61,16 +62,28 @@
         b=cvInd==f; %logical indices of test fold
         ind=find(~b);
         fprintf('Fold # %6i\n',f);
-        [phi, psi, tree, samples, paths, ~,~] = ...
-            asdHBTucker3(asd(ind,:,:),options);
+        KB.ll=-inf;
+        for k=1:nBest
+            [phi, psi, tree, samples, paths, ll,~] = ...
+                asdHBTucker3(asd(ind,:,:),options);
+            fprintf('%13.6e\n',ll);
+            if ll>KB.ll
+                KB.phi=phi; KB.psi=psi; KB.tree=tree; KB.samples=samples;
+                KB.paths=paths; KB.ll=ll;
+            end
+        end
+        fprintf('Best LL: %13.6e\n',KB.ll);
+        phi=KB.phi; psi=KB.psi; tree=KB.tree; samples=KB.samples;
+        paths=KB.paths; ll=KB.ll;
         testPhi = asdHBTuckerNew(asd, psi, samples, paths, tree, ...
             b, options);
         
         %save data
-        save(['data/cancerBTuckerCVNDRGMAPKB_L', int2str(options.L), '_tpl', ...
-            num2str(options.gam), '_', int2str(f), '_', ...
-            options.topicType, '_', options.topicModel, '.mat'],'phi', ...
-            'testPhi', 'psi', 'tree', 'samples', 'paths', 'options');
+        save(['data/cancerBTuckerCVKB', int2str(nBest), '_L',...
+            int2str(options.L), '_tpl', num2str(options.gam), '_', ...
+            int2str(f), '_', options.topicType, '_', ...
+            options.topicModel, '.mat'],'phi', 'testPhi', 'psi', ...
+            'tree', 'samples', 'paths', 'options');
     
         r=cell(2,1);
         r{1}=unique(paths(:,1:L(1)));

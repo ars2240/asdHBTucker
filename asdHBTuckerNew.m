@@ -73,27 +73,15 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
         case 'IndepTrees'
             [paths,r] = newTreePathsInit(oPaths,tree,b,L);
             
-            %old counts
-            cStart=tic;
-            [~,ocpsi,~] = counts(oSamples, ...
-                [max(oSamples(:,1)), dims(2:end)], r, paths, [0,1,0], options);
-            cTime=toc(cStart);
         case 'PAM'
             [tpl, r]=initPAM(dims,options);
             paths=ones(dims(1),sum(L));
-            
-            %old counts
-            cStart=tic;
-            [~,ocpsi,~] = counts(oSamples, ...
-                [max(oSamples(:,1)), dims(2:end)], r, paths, [0,1,0], options);
-            cTime=toc(cStart);
             
             ctree=cell(modes,1);
             for i=1:modes
                 ctree{i}=zeros(dims(1),dims(i+1),length(r{i}));
             end
             
-            [paths,~,~]=newPAM(dims,ocpsi,ctree,paths,tpl,prob,options);
         case 'None'
             r=cell(modes,1); %initialize
             path=zeros(1,sum(L));
@@ -104,16 +92,19 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
             paths=repmat(path,dims(1),1);
             tree=cell(modes,1); %initialize
             
-            %old counts
-            cStart=tic;
-            [~,ocpsi,~] = counts(oSamples, ...
-                [max(oSamples(:,1)), dims(2:3)], r, paths, [0,1,0], options);
-            cTime=toc(cStart);
-            
         otherwise
             error('Error. \nNo topic model type selected');
     end
+    %old counts
+    cStart=tic;
+    [~,ocpsi,~] = counts(oSamples, [max(oSamples(:,1)), dims(2:3)], ...
+        r, oPaths, [0,1,0], options);
+    cTime=toc(cStart);
+    if strcmp(options.topicModel, 'PAM')
+        [paths,~,~]=newPAM(dims,ocpsi,ctree,paths,tpl,prob,options);
+    end
     treeTime=toc(treeStart);
+    
 
     %calculate dimensions of core
     coreDims=zeros(1,1+modes);
@@ -210,13 +201,16 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
         ent=0; %reset entropy
         
         for btIt=1:options.btReps
-            if options.collapsed==1 && nIter<(options.maxIter/10-1)
+            if options.collapsed==1 && (nIter<(options.maxIter/10-1) ...
+                    || options.map==1)
+                
+                [cphi,cpsi,~] = counts(samples, dims, r, paths, [1,1,0], options);
                 
                 tcpsi=cpsi;
                 for i=1:modes
                     tcpsi{i}=cpsi{i}+ocpsi{i};
                 end
-
+                
                 %draw latent topic z's
                 zStart=tic;
                 switch options.par
@@ -226,12 +220,20 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
                         LL=LL+sum(log(p));
                         ent=ent+entropy(p);
                     otherwise
+                        ts = samples;
                         [samples,p]=drawZsCollapsed(samples,cphi,tcpsi,...
                             paths,L,options.pType);
                         LL=LL+sum(log(p));
                         ent=ent+entropy(p);
                 end
                 zTime=toc(zStart);
+                
+                %MAP estimates
+                if options.map==1 && nIter>=options.maxIter/10-1
+                    psi = drawpsiMAP(samples, dims, r, paths, options);
+                    coreDims=coreSize(modes, dims, r);
+                    phi = drawCoreMAP(samples,paths,coreDims,r,options);
+                end
             else
                 %redraw core tensor p(z|x)
                 %subset to get samples with x

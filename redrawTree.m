@@ -41,6 +41,8 @@ function [paths,tree,r,LL,ent] = redrawTree(dims,cpsi,ctree,paths,L,tree,r,optio
                prior=1/dims(1+j);
            case 1
                prior=1;
+           case 2
+               prior=2/dims(1+j);
            otherwise
                error('Error. \nNo prior type selected');
        end
@@ -71,7 +73,9 @@ function [paths,tree,r,LL,ent] = redrawTree(dims,cpsi,ctree,paths,L,tree,r,optio
                    [rList, order]=sort(rList);
 
                    %compute CRP part of pdf
-                   pdf=histc(paths(:,col+k)',rList);
+                   c=histc(paths(:,col+k)',rList);
+                   b = c>0 | rList == newRes;
+                   rList=rList(b); c=c(b); order=order(b);
 
                    %get counts
                    if options.sparse==1
@@ -93,14 +97,26 @@ function [paths,tree,r,LL,ent] = redrawTree(dims,cpsi,ctree,paths,L,tree,r,optio
 
                    %compute contribution to pdf
                    [~,l]=max(order);
-                   pdf(l)=gam(j);
-                   pdf=log(pdf); %take log to prevent overflow
+                   c(l)=gam(j);
+                   pdf=log(c); %take log to prevent overflow
                    pdf=pdf+gammaln(sum(cts1,1)+1);
                    pdf=pdf-sum(gammaln(cts1+prior),1); %test
                    pdf=pdf+sum(gcts2,1);
                    pdf=pdf-gammaln(sum(cts2,1)+1);
-                   pdf=exp(pdf);
-                   pdf=pdf/sum(pdf); %normalize
+                   lP=pdf; t=1;
+                   m=t*mean(lP);
+                   p=exp(lP-m);
+                   while sum(p)==0 || isinf(sum(p))
+                        % handling of underflow error
+                        if sum(p)==0
+                            t=t*1.5;
+                        else
+                            t=t/2;
+                        end
+                        m=t*mean(lP);
+                        p=exp(lP-m);
+                   end
+                   pdf=p/sum(p); %normalize
 
                    %pick new table
                    next=multi(pdf);

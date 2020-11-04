@@ -43,6 +43,8 @@ function [paths,prob,varargout] = redrawPAM(dims,cpsi,ctree,paths,tpl,prob,L,opt
                     prior=1/len*ones(len,parents);
                 case 1
                     prior=ones(len,parents);
+                case 2
+                    prior=2/len*ones(len,parents);
                 otherwise
                     error('Error. \nNo prior type selected');
             end

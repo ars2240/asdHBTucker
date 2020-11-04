@@ -46,6 +46,8 @@ function [phi,p] = drawCoreUni(paths,coreDims,varargin)
             prior=repelem(1/len,len);
         case 1
             prior=repelem(1,len);
+        case 2
+            prior=repelem(2/len,len);
         otherwise
             error('Error. \nNo prior type selected');
     end
