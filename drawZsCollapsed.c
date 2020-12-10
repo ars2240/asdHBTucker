@@ -23,11 +23,11 @@
 // forward declarations
 void drawZs(double *sampIn, double *sampOut, double *p, size_t sampCols,
         size_t sampRows, double *phi, const mxArray *psi,
-        double *pth, double *l, const mwSize *phiDims, int pri);
+        double *pth, double *l, const mwSize *phiDims, int pri, double *cut);
 void drawZ(int j, double *sampIn, double *sampOut, double *p,
         size_t sampCols, size_t sampRows, double *phi, const mxArray *psi,
         double *psis, double *pth, double *l, const mwSize *phiDims,
-        double *a);
+        double *a, double *cut);
 int indices(long long int x, int m, const mwSize *dims);
 void normalize(double *pdf, double sum, int size);
 long long int multi(double *pdf, int size);
@@ -36,7 +36,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 
 void drawZs(double *sampIn, double *sampOut, double *p, size_t sampCols,
         size_t sampRows, double *phi, const mxArray *psi,
-        double *pth, double *l, const mwSize *phiDims, int pri)
+        double *pth, double *l, const mwSize *phiDims, int pri, double *cut)
 {
     int j, i, k;
     
@@ -76,14 +76,14 @@ void drawZs(double *sampIn, double *sampOut, double *p, size_t sampCols,
 
     for(j=0; j<sampRows; j++){
         drawZ(j,sampIn,sampOut,p,sampCols,sampRows,phi,psi,psiSum,pth,l,
-                phiDims,alpha);  
+                phiDims,alpha,cut);  
     }
 }
 
 void drawZ(int j, double *sampIn, double *sampOut, double *p,
         size_t sampCols, size_t sampRows, double *phi, const mxArray *psi,
         double *psis, double *pth, double *l, const mwSize *phiDims,
-        double *a)
+        double *a, double *cut)
 {
     int x = sampIn[0*sampRows+j]-1; //get evidence variable
     int y; //response variable
@@ -125,7 +125,7 @@ void drawZ(int j, double *sampIn, double *sampOut, double *p,
             psik = mxGetPr(mxGetCell(psi,k));
             psikDims = mxGetDimensions(mxGetCell(psi,k));
             pdf1 += log(psik[y+ip*psikDims[0]]+a[k+1]-s);
-            pdf1 -= log(psis[ip+psiSum]);
+            pdf1 -= log(psis[ip+psiSum]-s);
             if(pdf1 != pdf1) {
                 mexPrintf("i = %d\n", i); mexPrintf("k = %d\n", k);
                 mexPrintf("ind = %d\n", ind); mexPrintf("x = %d\n", x);
@@ -142,6 +142,8 @@ void drawZ(int j, double *sampIn, double *sampOut, double *p,
             psiSum += psikDims[1];
         }
         pdf1 += log(phi[x+i*phiDims[0]]+a[0]-st);
+        //mexPrintf("phi = %f\n", phi[x+i*phiDims[0]]);
+        //mexPrintf("a = %f\n", a[0]); mexPrintf("st = %d\n", st);
         if(pdf1 != pdf1) {
             mexPrintf("j = %d\n", j);
             mexPrintf("x = %d\n", x); mexPrintf("i = %d\n", i);
@@ -168,7 +170,9 @@ void drawZ(int j, double *sampIn, double *sampOut, double *p,
             mexErrMsgIdAndTxt("MyProg:sum:NaN", "Sum NaN.");
         }
         pdf[i] = exp(pdf1);
+        pdf[i] = pdf[i] > *cut ? pdf[i] : 0.0;
         sum = sum + pdf[i];
+        //mexPrintf("pdf[%d] = %f\n", i, pdf[i]);
         if(sum >= DBL_MAX) {
             mexPrintf("pdf1 = %f\n", pdf1);
             mexPrintf("pdf[%d] = %f\n", i, pdf[i]);
@@ -230,6 +234,7 @@ void normalize(double *pdf, double sum, int size){
             mexErrMsgIdAndTxt("MyProg:badSum:badSum", "Bad Sum.");
         }
         pdf[i] = pdf[i]/sum;
+        //mexPrintf("pdf[%d] = %f\n", i, pdf[i]);
     }
 }
 
@@ -283,11 +288,12 @@ void mexFunction(int nlhs, mxArray *plhs[],
     int prior; // prior
     size_t ncols, nrows, res2Size; // number of columns of sample
     const mwSize *coreDims;
+    double *cutoff; // zero out values < cutoff
     
     /* Check number of inputs and outputs */
-    if(nrhs != 6) {
+    if(nrhs != 7) {
         mexErrMsgIdAndTxt("MyToolbox:arrayProduct:nrhs",
-                          "Six inputs required.");
+                          "Seven inputs required.");
     }
     if(nlhs != 2) {
         mexErrMsgIdAndTxt("MyToolbox:arrayProduct:nlhs",
@@ -303,6 +309,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
     path = mxGetPr(prhs[3]);
     L = mxGetPr(prhs[4]);
     prior = floor(*mxGetPr(prhs[5]));
+    cutoff = mxGetPr(prhs[6]);
     
     /* create the output matrix */
     plhs[0] = mxCreateDoubleMatrix((mwSize)nrows,(mwSize)ncols,mxREAL);
@@ -313,5 +320,5 @@ void mexFunction(int nlhs, mxArray *plhs[],
     prob = mxGetPr(plhs[1]);
     
     /* call the computational routine */
-    drawZs(sIn,sOut,prob,ncols,nrows,core,aux,path,L,coreDims,prior);
+    drawZs(sIn,sOut,prob,ncols,nrows,core,aux,path,L,coreDims,prior,cutoff);
 }

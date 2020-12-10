@@ -87,6 +87,7 @@ function phi = drawCoreMAP(samples,paths,coreDims,r,options)
         end
 
         %set values using MAP estimate
+        prior(prior<=options.cutoff)=0;
         vals=prior./sum(prior);
         
         %set values

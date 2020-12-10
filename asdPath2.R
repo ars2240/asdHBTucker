@@ -1,5 +1,5 @@
 geneRef <- read.csv("~/Documents/Northwestern/Research/Code/geneRef2.csv", row.names = 1, header= T, check.names=F, stringsAsFactors = F); #import from csv
-genePath <- read.csv("~/Documents/Northwestern/Research/Code/genePath2.csv", row.names = 1, header= T, check.names=F, stringsAsFactors = F); #import from csv
+genePath <- read.csv("~/Documents/Northwestern/Research/Code/genePathND4.csv", row.names = 1, header= T, check.names=F, stringsAsFactors = F); #import from csv
 asd <- read.csv("~/Documents/Northwestern/Research/Code/asd.csv", row.names = 1, header= T, check.names=F); #import from csv
 
 #subset to get only variants, genes, and pathways in all 3 tables
@@ -47,7 +47,7 @@ for(i in 1:indices[2]){
     }
   }
 }
-write.csv(sparse, "/Users/adamsandler/Documents/Northwestern/Research/Code/asdSparse.csv") #export to csv
+write.csv(sparse, "/Users/adamsandler/Documents/Northwestern/Research/Code/asdSparseND.csv") #export to csv
 #sparse <- read.csv("~/Documents/Northwestern/Research/Code/asdSparse.csv", header= T, check.names=F, stringsAsFactors = F); #import from csv
 
 #asdTens=sptensor(as.matrix(t(sparse[1:1000,1:3])),as.numeric(sparse[1:1000,4]),indices)

@@ -14,20 +14,26 @@
     nFolds=10; %set number of folds
     nTrain=sum(ind); %size of training set
     cvInd=crossvalind('Kfold',nTrain,nFolds); %split data into k folds
-    save('cancerCVInd','cvInd');
+    ind=double(ind); ind(ind>0)=cvInd;
+    save('cancerCVInd','ind');
 
     options=init_options();
     % mex drawZscPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
     % tpl=10; % topics per level
-    options.gam = 1;
-    options.L = 10;
-    options.topicModel = 'None';
+    options.gam = .1;
+    options.L = 2;
+	% options.topicModel = 'None';
     options.par = 0;
-    options.maxIter = 1000;
+    options.maxIter = 100;
+    options.pType = 0;
+    % options.treeReps = 5;
+    % options.btReps = 5;
     % options.topicsPerLevel{1}=tpl;
     % options.topicsPerLevel{2}=tpl;
     % options.collapsed = 0;
-    options.print = 1;
+    options.keepBest = 1;
+    options.time = 0;
+    options.print = 0;
     % options.sparse = 0;
 %     options.init.psi=cell(2,1);
 %     options.init.psi{1}=csvread('data/cancer_tensorlyCP_nonNeg_400_1000_10_1.csv');
@@ -67,7 +73,7 @@
             b, options);
         
         %save data
-        save(['data/cancerBTuckerCVNDRGMAPKB_L', int2str(options.L), '_tpl', ...
+        save(['data/cancerHBT2_L', int2str(options.L), '_tpl', ...
             num2str(options.gam), '_', int2str(f), '_', ...
             options.topicType, '_', options.topicModel, '.mat'],'phi', ...
             'testPhi', 'psi', 'tree', 'samples', 'paths', 'options');

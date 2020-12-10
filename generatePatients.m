@@ -100,6 +100,10 @@ function sparse = generatePatients(x, prior, psi, opaths, tree, varargin)
                 ctree{i}=zeros(npats,dims(i+1),length(r{i}));
             end
             
+            if ~exist('prob','var')
+                prob=tree;
+            end
+            
             [paths,~,~] = newPAM(dims,ocpsi,ctree,paths,tpl,prob,options);
         case 'None'
             r=cell(modes,1); %initialize
@@ -124,8 +128,21 @@ function sparse = generatePatients(x, prior, psi, opaths, tree, varargin)
     
     if exist('samples','var') == 1
         r=cell(2,1);
-        r{1}=unique(opaths(:,1:L(1)))';
-        r{2}=unique(opaths(:,(L(1)+1):(sum(L))))';
+        switch options.topicModel
+            case 'IndepTrees'
+                r{1}=unique(opaths(:,1:L(1)))';
+                r{2}=unique(opaths(:,(L(1)+1):(sum(L))))';
+            case 'PAM'
+                for i=1:length(L)
+                    r{i}=1:(sum(tpl{i}));
+                end
+            case 'None'
+                for i=1:length(L)
+                    r{i}=1:L(i);
+                end
+            otherwise
+                error('Error. \nNo topic model type selected');
+        end
         si=[dims,ones(1,modes)];
         for i=1:modes
             si(1+modes+i)=max(max(r{i}),max(samples(:,1+modes+i)));
@@ -142,12 +159,18 @@ function sparse = generatePatients(x, prior, psi, opaths, tree, varargin)
     for i=1:npats
         
         %draw core tensor
+        ind = zeros(L(1),modes);
         for j=1:modes
             res{j}=paths(i,1+sum(L(1:(j-1))):sum(L(1:j)));
+            ind(:,j)=res{j};
             % res{1}=ismember(r{1},res{1});
         end
         if exist('samples','var') == 1
-            alpha = prior + cphi(tensIndex2(res,size(cphi)))';
+            if strcmp(options.topicType,'Level')
+                alpha = prior + cphi(tensIndex2(ind,size(cphi)))';
+            else
+                alpha = prior + cphi(tensIndex2(res,size(cphi)))';
+            end
         else
             alpha = prior;
         end

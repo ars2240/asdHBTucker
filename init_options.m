@@ -25,6 +25,7 @@ function [ options ] = init_options( )
 % map = whether or not MAP estimate is used
 % keepBest = whether or not best model is kept (as opposed to last)
 % npats = number of articificial patients (for computing LL)
+% cutoff = zeros out small values
 
 options.par = 1;
 options.time = 1;
@@ -33,7 +34,7 @@ options.maxIter = 1000;
 options.freq = 10;
 options.gam = 0.1;
 options.L = 2;
-options.pType = 2;
+options.pType = 0;
 options.tol = 0;
 options.minA = 0.1;
 options.topicModel = 'IndepTrees';
@@ -48,5 +49,6 @@ options.sparse = 1;
 options.map = 1;
 options.keepBest = 0;
 options.npats = 1000;
+options.cutoff = 0;
 
 end

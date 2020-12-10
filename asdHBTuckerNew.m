@@ -28,7 +28,7 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
     
     rng('shuffle'); %seed RNG
     
-    modes=length(tree); %number of dependent modes
+    modes=size(tree,1); %number of dependent modes
     dims=size(asdTens); %dimensions of tensor
     cts=collapse(asdTens,[2,3]);
     bo = b;
@@ -95,12 +95,16 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
         otherwise
             error('Error. \nNo topic model type selected');
     end
+    
     %old counts
     cStart=tic;
     [~,ocpsi,~] = counts(oSamples, [max(oSamples(:,1)), dims(2:3)], ...
         r, oPaths, [0,1,0], options);
     cTime=toc(cStart);
     if strcmp(options.topicModel, 'PAM')
+        if ~exist('prob','var')
+            prob=tree;
+        end
         [paths,~,~]=newPAM(dims,ocpsi,ctree,paths,tpl,prob,options);
     end
     treeTime=toc(treeStart);
@@ -133,17 +137,11 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
                 ent=ent+entropy(p);
             otherwise
                 [samples,p]=drawZsCollapsed(samples,cphi,ocpsi,paths,...
-                    L,options.pType);
+                    L,options.pType,options.cutoff);
                 LL=LL+sum(log(p));
                 ent=ent+entropy(p);
         end
         zTime=toc(zStart);
-        
-        %new counts
-        cStart=tic;
-        [cphi,cpsi,~] = counts(samples, dims, r, paths, [1,1,0], options);
-        cTime=cTime+toc(cStart);
-        
         coreTime=0;
         
     else
@@ -180,8 +178,6 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
                 end
         end
         zTime=toc(zStart);
-        
-        cTime=0;
     end
     
     if options.print==1
@@ -200,11 +196,35 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
         LL=0; %reset log-likelihood
         ent=0; %reset entropy
         
+        %new counts
+        cStart=tic;
+        [~,~,ctree] = counts(samples, dims, r, paths, [0,0,1], options);
+        cTime=cTime+toc(cStart);
+        
+        %redraw tree
+        treeStart=tic;
+        for treeIt=1:options.treeReps
+            switch options.topicModel
+                case 'IndepTrees'
+                    paths=newTreePaths(asdTens,ocpsi,ctree,oPaths,...
+                        tree,b,options);
+                case 'PAM'
+                    [paths,~,~]=newPAM(dims,ocpsi,ctree,paths,tpl,prob,...
+                        options);
+                case 'None'
+                otherwise
+                    error('Error. \nNo topic model type selected');
+            end
+        end
+        treeTime=treeTime+toc(treeStart);
+        
         for btIt=1:options.btReps
             if options.collapsed==1 && (nIter<(options.maxIter/10-1) ...
                     || options.map==1)
                 
+                cStart=tic;
                 [cphi,cpsi,~] = counts(samples, dims, r, paths, [1,1,0], options);
+                cTime=cTime+toc(cStart);
                 
                 tcpsi=cpsi;
                 for i=1:modes
@@ -222,7 +242,7 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
                     otherwise
                         ts = samples;
                         [samples,p]=drawZsCollapsed(samples,cphi,tcpsi,...
-                            paths,L,options.pType);
+                            paths,L,options.pType,options.cutoff);
                         LL=LL+sum(log(p));
                         ent=ent+entropy(p);
                 end
@@ -278,33 +298,6 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
                 zTime=zTime+toc(zStart);
             end
         end
-        
-        %new counts
-        cStart=tic;
-        switch options.collapsed
-            case 1
-                [cphi,cpsi,ctree] = counts(samples, dims, r, paths, options);
-            otherwise
-                [~,~,ctree] = counts(samples, dims, r, paths, [0,0,1], options);
-        end
-        cTime=cTime+toc(cStart);
-        
-        %redraw tree
-        treeStart=tic;
-        for treeIt=1:options.treeReps
-            switch options.topicModel
-                case 'IndepTrees'
-                    paths=newTreePaths(asdTens,ocpsi,ctree,oPaths,...
-                        tree,b,options);
-                case 'PAM'
-                    [paths,~,~]=newPAM(dims,ocpsi,ctree,paths,tpl,prob,...
-                        options);
-                case 'None'
-                otherwise
-                    error('Error. \nNo topic model type selected');
-            end
-        end
-        treeTime=treeTime+toc(treeStart);
         
         %increment iteration counter
         nIter=nIter+1;

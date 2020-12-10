@@ -18,20 +18,23 @@
 
     options=init_options();
     % mex drawZscPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
-    % tpl=10; % topics per level
+    tpl=10; % topics per level
     options.gam = .1;
-    options.L = 3;
-	% options.topicModel = 'None';
+    options.L = 5;
+    %options.topicType = 'Level';
+	%options.topicModel = 'PAM';
     options.par = 0;
     options.maxIter = 100;
     options.pType = 0;
     % options.treeReps = 5;
     % options.btReps = 5;
-    % options.topicsPerLevel{1}=tpl;
-    % options.topicsPerLevel{2}=tpl;
+    options.topicsPerLevel{1}=tpl;
+    options.topicsPerLevel{2}=tpl;
     % options.collapsed = 0;
+    options.keepBest = 1;
     options.time = 0;
     options.print = 0;
+    % options.cutoff = 0.1;
     % options.sparse = 0;
     
     disp(options); %print options
@@ -48,7 +51,8 @@
     % remove bad genes
     asdG=collapse(asd,3,@max);
     asdGC=collapse(asdG>0,1);
-    gG=find(asdGC>400 & asdGC<1000);
+    %asdGC=collapse(asdG,1);
+    gG=find(asdGC>200 & asdGC<2000);
     asd=asd(:,gG,:);
     % remove zero pathways
     asdP=collapse(asd,[1,2]);
@@ -57,6 +61,9 @@
     asdGP=collapse(asd,1);
     [~,gP,~]=unique(double(asdGP)', 'rows');
     asd=asd(:,:,gP);
+    
+    % multiply by factor
+    %asd=asd*10;
 
     for f=1:nFolds
         b=cvInd==f; %logical indices of test fold
@@ -67,7 +74,7 @@
             [phi, psi, tree, samples, paths, ll,~] = ...
                 asdHBTucker3(asd(ind,:,:),options);
             fprintf('%13.6e\n',ll);
-            if ll>KB.ll
+            if ll>KB.ll && ll~=0
                 KB.phi=phi; KB.psi=psi; KB.tree=tree; KB.samples=samples;
                 KB.paths=paths; KB.ll=ll;
             end
@@ -79,7 +86,7 @@
             b, options);
         
         %save data
-        save(['data/cancerBTuckerCVKB', int2str(nBest), '_L',...
+        save(['data/cancerHBTCV2KB', int2str(nBest), '_L',...
             int2str(options.L), '_tpl', num2str(options.gam), '_', ...
             int2str(f), '_', options.topicType, '_', ...
             options.topicModel, '.mat'],'phi', 'testPhi', 'psi', ...
@@ -91,7 +98,8 @@
 
         %compute LL
         LL(f)=logLikelihood(asd(find(~b),:,:), asd(find(b),:,:), ...
-            1, 1/(size(asd,2)*size(asd,3)), psi, paths, tree, options);
+            1, 1/(size(asd,2)*size(asd,3)), psi, paths, tree, samples, ...
+            options);
     end
 
     % print LL info

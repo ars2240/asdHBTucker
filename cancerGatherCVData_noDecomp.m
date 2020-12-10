@@ -1,4 +1,4 @@
-asdSparse=csvread('cancerSparseGenes.csv',1,1);
+asdSparse=csvread('cancerSparseGenesND4.csv',1,1);
 asdTens=sptensor(asdSparse(:,1:2),asdSparse(:,3));
 asdTens=double(asdTens);
 
@@ -14,6 +14,11 @@ trainASD=asd(ind~=0);
 cvInd=ind(ind~=0);
 
 nFolds=10; %set number of folds
+
+% remove genes based on frequency
+asdGC=sum(asdTens>0,1);
+gG=find(asdGC>200 & asdGC<2000);
+asdTens=asdTens(:,gG);
 
 phi=cell(nFolds,1);
 testPhi=cell(nFolds,1);
@@ -31,4 +36,4 @@ for i=1:nFolds
     cvTrainASD{i}=trainASD(~b,:);
     
 end
-save('cancerHBTuckerCVData_noDecomp.mat','phi', 'testPhi', 'cvTestASD','cvTrainASD');
+save('data/cancerHBTuckerCVData_noDecomp2.mat','phi', 'testPhi', 'cvTestASD','cvTrainASD');

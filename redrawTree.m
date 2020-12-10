@@ -64,7 +64,7 @@ function [paths,tree,r,LL,ent] = redrawTree(dims,cpsi,ctree,paths,L,tree,r,optio
                    %gcts=padarray(gcts,[0 1],glp,'post');
                    cts(:,newRes,:)=0;
                    ctsA(:,newRes)=0;
-                   gcts(:,newRes)=0;
+                   gcts(:,newRes)=gammaln(prior);
                end
 
                if ~isempty(tree{j}{curRes})
@@ -73,7 +73,8 @@ function [paths,tree,r,LL,ent] = redrawTree(dims,cpsi,ctree,paths,L,tree,r,optio
                    [rList, order]=sort(rList);
 
                    %compute CRP part of pdf
-                   c=histc(paths(:,col+k)',rList);
+                   c=histc([paths(1:(i-1),col+k); ...
+                       paths((i+1):end,col+k)]',rList);
                    b = c>0 | rList == newRes;
                    rList=rList(b); c=c(b); order=order(b);
 
@@ -99,10 +100,11 @@ function [paths,tree,r,LL,ent] = redrawTree(dims,cpsi,ctree,paths,L,tree,r,optio
                    [~,l]=max(order);
                    c(l)=gam(j);
                    pdf=log(c); %take log to prevent overflow
-                   pdf=pdf+gammaln(sum(cts1,1)+1);
+                   w=prior*length(rList);
+                   pdf=pdf+gammaln(sum(cts1,1)+w);
                    pdf=pdf-sum(gammaln(cts1+prior),1); %test
                    pdf=pdf+sum(gcts2,1);
-                   pdf=pdf-gammaln(sum(cts2,1)+1);
+                   pdf=pdf-gammaln(sum(cts2,1)+w);
                    lP=pdf; t=1;
                    m=t*mean(lP);
                    p=exp(lP-m);

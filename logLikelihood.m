@@ -67,7 +67,7 @@ function LL = logLikelihood(x, xTest, prior, epsilon, psi, opaths, tree, varargi
         end
     end
     
-    if sum(ll==0)>0
+    if sum(ll==0)/length(ll)>0.5
         disp(ll);
     else
         LL=LL/n;

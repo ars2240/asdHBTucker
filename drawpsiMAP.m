@@ -19,6 +19,9 @@ function psi = drawpsiMAP(samples, dims, r, paths, options)
                 error('Error. \nNo prior type selected');
         end
         psiT=cpsi{i}+prior';
+        if psiT<=options.cutoff
+            psiT=0;
+        end
         psi{i}=psiT./sum(psiT);
     end
     
