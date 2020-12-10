@@ -42,11 +42,13 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
     %adjustment if using constant gam across dims
     if length(gam)==1
         gam=repelem(gam,modes);
+        options.gam=gam;
     end
     
     %adjustment if using constant L across dims
     if length(L)==1
         L=repelem(L,modes);
+        options.L=L;
     end
     
     %calculate L1 norm of tensor
@@ -74,7 +76,7 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
             end
             [paths,tree,r,treeLL,treeEnt]=initializeTree(L,dims,gam);
         case 'PAM'
-            [paths,tpl,tree,r,treeLL,treeEnt]=initializePAM(dims,options);
+            [paths,tpl,prob,r,treeLL,treeEnt]=initializePAM(dims,options);
         case 'None'
             levels=ones(1,sum(L));
             r=cell(modes,1); %initialize
@@ -130,15 +132,10 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
                     L,options.pType);
             otherwise
                 [samples,p]=drawZsCollapsed(samples,cphi,cpsi,paths,L,...
-                    options.pType);
+                    options.pType, options.cutoff);
         end
         zLL=sum(log(p)); zEnt=entropy(p);
         zTime=toc(zStart);
-        
-        %new counts
-        cStart=tic;
-        [cphi,cpsi,~] = counts(samples, dims, r, paths, [1,1,0], options);
-        cTime=toc(cStart);
         
         matTime=0; coreTime=0;
     else
@@ -204,9 +201,8 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
         p=collapsedProb(samples, oSamples, dims, r, paths, options);
         zLL=sum(log(p)); zEnt=entropy(p);
         zTime=toc(zStart);
-        
-        cTime=0;
     end
+    cTime=0;
     
     % sum LL & Entropy
     % LL=treeLL+matLL+coreLL+zLL; ent=treeEnt+matEnt+coreEnt+zEnt;
@@ -218,10 +214,26 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
         elseif options.collapsed==1
             [psi,~,~]=drawpsi(dims, modes, samples, r, options);
         end
-        LL2=logLikelihood(x, x, 1, 1/(size(x,2)*size(x,3)), psi, paths, ...
-            tree, samples, options);
+        if strcmp(options.topicModel,'PAM')
+            LL2=logLikelihood(x, x, 1, 1/(size(x,2)*size(x,3)), psi, ...
+                paths, {}, prob, samples, options);
+        else
+            LL2=logLikelihood(x, x, 1, 1/(size(x,2)*size(x,3)), psi, ...
+                paths, tree, samples, options);
+        end
         if options.keepBest == 1
-            options.best.LL = LL;
+            if options.map == 1
+                coreDims=coreSize(modes, dims, r);
+                phi = drawCoreMAP(samples,paths,coreDims,r,options);
+            end
+            options.best.LL = LL; options.best.phi = phi;
+            options.best.psi = psi; options.best.samples = samples;
+            options.best.paths = paths; options.best.r = r;
+            if strcmp(options.topicModel,'PAM')
+                options.best.prob = prob;
+            else
+                options.best.tree = tree;
+            end
         end
         if options.print
             fileID = fopen('verbose.txt','w');
@@ -240,17 +252,12 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
     cont=1; nIter=0;
     while cont==1
         
-        %redraw tree
         %new counts
         cStart=tic;
-        switch options.collapsed
-            case 1
-                [cphi,cpsi,ctree] = counts(samples, dims, r, paths, options);
-            otherwise
-                [~,cpsi,ctree] = counts(samples, dims, r, paths, [0,1,1], options);
-        end
+        [~,cpsi,ctree] = counts(samples, dims, r, paths, [0,1,1], options);
         cTime=cTime+toc(cStart);
 
+        %redraw tree
         treeStart=tic;
         for treeIt=1:options.treeReps
             switch options.topicModel
@@ -258,8 +265,8 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
                     [paths,tree,r,treeLL,treeEnt]=redrawTree(dims,...
                         cpsi,ctree,paths,L,tree,r,options);
                 case 'PAM'
-                    [paths,tree,prob,treeLL,treeEnt]=redrawPAM(dims,...
-                        cpsi,ctree,paths,tpl,tree,L,options);
+                    [paths,prob,treeLL,treeEnt]=redrawPAM(dims,...
+                        cpsi,ctree,paths,tpl,prob,L,options);
                 case 'None'
                     treeLL=0; treeEnt=0;
                 otherwise
@@ -273,7 +280,9 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
             if options.collapsed==1 && (nIter<(options.maxIter-1) ...
                     || options.map==1)
                 
+                cStart=tic;
                 [cphi,cpsi,~] = counts(samples, dims, r, paths, [1,1,0], options);
+                cTime=cTime+toc(cStart);
                 
                 for i=1:modes
                     pad=max(r{i})-size(cphi,i+1);
@@ -306,7 +315,7 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
                             cpsi,paths,L,options.pType);
                     otherwise
                         [samples,p]=drawZsCollapsed(samples,cphi,cpsi,...
-                            paths,L,options.pType);
+                            paths,L,options.pType,options.cutoff);
                 end
                 zLL=sum(log(p)); zEnt=entropy(p);
                 zTime=toc(zStart);
@@ -370,6 +379,8 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
         
         %increment iteration counter
         nIter=nIter+1;
+        %display(samples);
+        %disp([LL, treeLL, zLL]);
         
         %print loglikelihood & entropy
         if (options.print==1 || options.keepBest == 1) && mod(nIter,options.freq)==0
@@ -378,27 +389,39 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
             elseif options.collapsed==1 && nIter<(options.maxIter-1)
                 [psi,~,~]=drawpsi(dims, modes, samples, r, options);
             end
-            LL2=logLikelihood(x, x, 1, 1/(size(x,2)*size(x,3)), ...
-                psi, paths, tree, samples, options);
-            if options.keepBest == 1 && options.best.LL < LL
-                if options.map == 1
-                    coreDims=coreSize(modes, dims, r);
-                    phi = drawCoreMAP(samples,paths,coreDims,r,options);
-                end
+            if options.map == 1
+                coreDims=coreSize(modes, dims, r);
+                phi = drawCoreMAP(samples,paths,coreDims,r,options);
+            end
+            if strcmp(options.topicModel,'PAM')
+                LL2=logLikelihood(x, x, 1, 1/(size(x,2)*size(x,3)), psi, ...
+                    paths, {}, prob, samples, options);
+            else
+                LL2=logLikelihood(x, x, 1, 1/(size(x,2)*size(x,3)), psi, ...
+                    paths, tree, samples, options);
+                phiS = sparsePhi(phi, coreDims, paths, options);
+                [LL, zLL, treeLL]=modelLL(phiS, psi, samples, paths, r, ...
+                    options);
+            end
+            %display(samples);
+        	%disp([LL, treeLL, zLL]);
+            if options.keepBest == 1 && options.best.LL < LL && LL~=0
                 options.best.LL = LL; options.best.phi = phi;
-                options.best.psi = psi; options.best.tree = tree;
-                options.best.samples = samples; options.best.paths = paths;
-                options.best.r = r;
+                options.best.psi = psi; options.best.samples = samples;
+                options.best.paths = paths; options.best.r = r;
                 if strcmp(options.topicModel,'PAM')
                     options.best.prob = prob;
+                else
+                    options.best.tree = tree;
                 end
             elseif options.keepBest == 1
                 LL = options.best.LL; phi = options.best.phi;
-                psi = options.best.psi; tree = options.best.tree;
-                samples = options.best.samples; paths = options.best.paths;
-                r = options.best.r;
+                psi = options.best.psi; samples = options.best.samples;
+                paths = options.best.paths; r = options.best.r;
                 if strcmp(options.topicModel,'PAM')
                     prob = options.best.prob;
+                else
+                    tree = options.best.tree;
                 end
             end
             if options.print == 1
@@ -419,10 +442,13 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
     
     if options.keepBest == 1
         LL = options.best.LL; phi = options.best.phi;
-        psi = options.best.psi; tree = options.best.tree;
-        samples = options.best.samples; paths = options.best.paths;
+        psi = options.best.psi; samples = options.best.samples;
+        paths = options.best.paths; r = options.best.r;
         if strcmp(options.topicModel,'PAM')
             prob = options.best.prob;
+            tree = prob;
+        else
+            tree = options.best.tree;
         end
         coreDims=coreSize(modes, dims, r);
     end
@@ -453,31 +479,7 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
     
     %reformat phi
     if options.sparse~=0
-        phiT=sptensor([],[],coreDims);
-        for i=1:coreDims(1)
-            res=cell(modes,1);
-            for j=1:modes
-                res{j}=paths(i,(1+sum(L(1:(j-1)))):sum(L(1:j)));
-            end
-            switch options.topicType
-                case 'Cartesian'
-                    len = prod(L);
-                    subs=[repmat(i,[len,1]),tensIndex(res)];
-                    vals=reshape(phi(i,:),[len,1]);
-                case 'Level'
-                    subs=zeros(L(1),1+modes);
-                    subs(:,1)=i;
-                    for j=1:modes
-                        subs(:,j+1)=res{j};
-                    end
-                    vals=squeeze(phi(i,:));
-                    vals=vals(vals>0)';
-                otherwise
-                    error('Error. \nNo topic type selected');
-            end   
-            phiT=phiT+sptensor(subs,vals,coreDims);
-        end
-        phi=phiT;
+        phi = sparsePhi(phi, coreDims, paths, options);
     end
     
     % add zeros
