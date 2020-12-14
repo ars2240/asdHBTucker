@@ -19,8 +19,8 @@
     options=init_options();
     % mex drawZscPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
     tpl=10; % topics per level
-    options.gam = .1;
-    options.L = 5;
+    gam0 = 1;
+    options.L = 2;
     %options.topicType = 'Level';
 	%options.topicModel = 'PAM';
     options.par = 0;
@@ -33,9 +33,10 @@
     % options.collapsed = 0;
     options.keepBest = 1;
     options.time = 0;
-    options.print = 0;
+    options.print = 1;
     % options.cutoff = 0.1;
     % options.sparse = 0;
+    options.topicsgoal = 200;
     
     disp(options); %print options
     
@@ -69,25 +70,25 @@
         b=cvInd==f; %logical indices of test fold
         ind=find(~b);
         fprintf('Fold # %6i\n',f);
-        KB.ll=-inf;
+        KB.LL=-inf;
+        options.gam=gam0;
         for k=1:nBest
-            [phi, psi, tree, samples, paths, ll,~] = ...
+            [~, ~, ~, ~, ~, options, ll,~] = ...
                 asdHBTucker3(asd(ind,:,:),options);
-            fprintf('%13.6e\n',ll);
-            if ll>KB.ll && ll~=0
-                KB.phi=phi; KB.psi=psi; KB.tree=tree; KB.samples=samples;
-                KB.paths=paths; KB.ll=ll;
+            fprintf('%13.6e, %13.6e\n',ll, options.gam);
+            if ll>KB.LL && ll~=0
+                KB = options.best;
             end
         end
         fprintf('Best LL: %13.6e\n',KB.ll);
         phi=KB.phi; psi=KB.psi; tree=KB.tree; samples=KB.samples;
-        paths=KB.paths; ll=KB.ll;
+        paths=KB.paths; options.gam=KB.gamma;
         testPhi = asdHBTuckerNew(asd, psi, samples, paths, tree, ...
             b, options);
         
         %save data
-        save(['data/cancerHBTCV2KB', int2str(nBest), '_L',...
-            int2str(options.L), '_tpl', num2str(options.gam), '_', ...
+        save(['data/cancerHBTCV3KB', int2str(nBest), '_L',...
+            int2str(options.L), '_gamVar_', ...
             int2str(f), '_', options.topicType, '_', ...
             options.topicModel, '.mat'],'phi', 'testPhi', 'psi', ...
             'tree', 'samples', 'paths', 'options');

@@ -26,7 +26,10 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
     
     tStart=tic;
     
-    rng('shuffle'); %seed RNG
+    if isnumeric(options.rng)
+        options.rng=options.rng+1;
+    end
+    rng(options.rng); %seed RNG
     
     modes=size(tree,1); %number of dependent modes
     dims=size(asdTens); %dimensions of tensor
@@ -54,7 +57,7 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
     
     %adjustment if using constant L across dims
     if length(L)==1
-        L=repelem(L,modes);
+        L=repelem(L,modes); options.L=L;
     end
     
     %initialize sample matrix
@@ -180,13 +183,41 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
         zTime=toc(zStart);
     end
     
-    if options.print==1
-        fileID = fopen('verbose.txt','a');
-        output_header=sprintf('%6s %13s %10s','iter','loglikelihood', ...
-            'entropy');
-        fprintf(fileID,'%s\n',output_header);
-        fprintf(fileID,'%6i %13.2e %10.2e\n',0,LL,ent);
-        fclose(fileID);
+    if options.print==1 || options.keepBest == 1
+        if options.map == 1
+            phi = drawCoreMAP(samples,paths,coreDims,r,options);
+        end
+        phiS = sparsePhi(phi, coreDims, paths, options);
+        if strcmp(options.topicModel,'PAM')
+            LL2=logLikelihood(x, x, 1, 1/(size(x,2)*size(x,3)), psi, ...
+                paths, {}, prob, samples, options);
+            [LL, zLL, treeLL]=modelLL(phiS, psi, samples, paths, r, ...
+                prob,options);
+        else
+            LL2=logLikelihood(x, x, 1, 1/(size(x,2)*size(x,3)), psi, ...
+                paths, tree, samples, options);
+            [LL, zLL, treeLL]=modelLL(phiS, psi, samples, paths, r, ...
+                options);
+        end
+        if options.keepBest == 1
+            if options.map == 1
+                phi = drawCoreMAP(samples,paths,coreDims,r,options);
+            end
+            options.best.LL = LL; options.best.phi = phi;
+            options.best.samples = samples;
+            options.best.paths = paths;
+        end
+        if options.print
+            fileID = fopen('verbose.txt','a');
+            output_header=sprintf('%6s %13s %13s %10s %13s %13s',...
+                'iter', 'loglikelihood', 'mixture LL', 'entropy',...
+                'tree LL','z LL');
+            fprintf(fileID,'%s\n',output_header);
+            fprintf(fileID,...
+                '%6i %13.2e %13.2e %10.2e %13.2e %13.2e\n',...
+                0,LL,LL2,ent,treeLL,zLL);
+            fclose(fileID);
+        end
     end
     
     %gibbs sampler
@@ -303,11 +334,38 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
         nIter=nIter+1;
         
         %print loglikelihood & entropy
-        if options.print==1
-            if mod(nIter,options.freq)==0
+        if (options.print==1 || options.keepBest == 1) && mod(nIter,options.freq)==0
+            if options.map == 1
+                phi = drawCoreMAP(samples,paths,coreDims,r,options);
+            end
+            phiS = sparsePhi(phi, coreDims, paths, options);
+            if strcmp(options.topicModel,'PAM')
+                LL2=logLikelihood(x, x, 1, 1/(size(x,2)*size(x,3)), psi, ...
+                    paths, {}, prob, samples, options);
+                [LL, zLL, treeLL]=modelLL(phiS, psi, samples, paths, r, ...
+                    prob,options);
+            else
+                LL2=logLikelihood(x, x, 1, 1/(size(x,2)*size(x,3)), psi, ...
+                    paths, tree, samples, options);
+                [LL, zLL, treeLL]=modelLL(phiS, psi, samples, paths, r, ...
+                    options);
+            end
+            %display(samples);
+        	%disp([LL, treeLL, zLL]);
+            if options.keepBest == 1 && options.best.LL < LL && LL~=0
+                options.best.LL = LL; options.best.phi = phi;
+                options.best.samples = samples;
+                options.best.paths = paths;
+            elseif options.keepBest == 1
+                LL = options.best.LL; phi = options.best.phi;
+                samples = options.best.samples;
+                paths = options.best.paths;
+            end
+            if options.print == 1
                 fileID = fopen('verbose.txt','a');
-                fprintf(fileID,'%6i %13.2e %10.2e\n',...
-                    nIter, LL, ent);
+                fprintf(fileID,...
+                    '%6i %13.2e %13.2e %10.2e %13.2e %13.2e\n',...
+                    nIter,LL,LL2,ent,treeLL,zLL);
                 fclose(fileID);
             end
         end
@@ -319,33 +377,13 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
     end
     tTime=toc(tStart);
     
-    res=cell(modes,1);
+    if options.keepBest == 1
+        phi = options.best.phi; paths = options.best.paths;
+    end
+    
     %reformat phi
     if options.sparse~=0
-        phiT=sptensor([],[],coreDims);
-        for i=1:coreDims(1)
-            for j=1:modes
-                res{j}=paths(i,(1+sum(L(1:(j-1))):sum(L(1:j))));
-            end
-            switch options.topicType
-                case 'Cartesian'
-                    len = prod(L);
-                    subs=[repmat(i,[len,1]),tensIndex(res)];
-                    vals=reshape(phi(i,:),[len,1]);
-                case 'Level'
-                    subs=zeros(L(1),1+modes);
-                    subs(:,1)=i;
-                    for j=1:modes
-                        subs(:,j+1)=res{j};
-                    end
-                    vals=squeeze(phi(i,:));
-                    vals=vals(vals>0)';
-                otherwise
-                    error('Error. \nNo topic type selected');
-            end   
-            phiT=phiT+sptensor(subs,vals,coreDims);
-        end
-        phi=phiT;
+        phi = sparsePhi(phi, coreDims, paths, options);
     end
 
     % add zeros

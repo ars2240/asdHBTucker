@@ -6,8 +6,12 @@ function sparse = generatePatients(x, prior, psi, opaths, tree, varargin)
         varargin=varargin{1};
     end
     
-    if length(varargin)==1 && iscell(varargin)
-        options=varargin{1};
+    if length(varargin)==1
+        if iscell(varargin)
+            options=varargin{1};
+        else
+            options=varargin;
+        end
     elseif length(varargin)==2
         samples=varargin{1};
         options=varargin{2};

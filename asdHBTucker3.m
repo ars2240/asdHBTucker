@@ -15,7 +15,7 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
     
     tStart=tic;
     
-    rng('shuffle'); %seed RNG
+    rng(options.rng); %seed RNG
     
     % store original tensor
     odims=size(x); %dimensions of tensor
@@ -71,9 +71,6 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
     treeStart=tic;
     switch options.topicModel
         case 'IndepTrees'
-            if nargout==8
-                error('Incorrect number of outputs for this topic model.');
-            end
             [paths,tree,r,treeLL,treeEnt]=initializeTree(L,dims,gam);
         case 'PAM'
             [paths,tpl,prob,r,treeLL,treeEnt]=initializePAM(dims,options);
@@ -214,12 +211,21 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
         elseif options.collapsed==1
             [psi,~,~]=drawpsi(dims, modes, samples, r, options);
         end
+        if options.map == 1
+            coreDims=coreSize(modes, dims, r);
+            phi = drawCoreMAP(samples,paths,coreDims,r,options);
+        end
+        phiS = sparsePhi(phi, coreDims, paths, options);
         if strcmp(options.topicModel,'PAM')
             LL2=logLikelihood(x, x, 1, 1/(size(x,2)*size(x,3)), psi, ...
                 paths, {}, prob, samples, options);
+            [LL, zLL, treeLL]=modelLL(phiS, psi, samples, paths, r, ...
+                prob,options);
         else
             LL2=logLikelihood(x, x, 1, 1/(size(x,2)*size(x,3)), psi, ...
                 paths, tree, samples, options);
+            [LL, zLL, treeLL]=modelLL(phiS, psi, samples, paths, r, ...
+                options);
         end
         if options.keepBest == 1
             if options.map == 1
@@ -229,21 +235,32 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
             options.best.LL = LL; options.best.phi = phi;
             options.best.psi = psi; options.best.samples = samples;
             options.best.paths = paths; options.best.r = r;
+            options.best.gamma = options.gam;
             if strcmp(options.topicModel,'PAM')
                 options.best.prob = prob;
             else
                 options.best.tree = tree;
             end
         end
-        if options.print
+        if options.print == 1 && options.topicsgoal == 0
             fileID = fopen('verbose.txt','w');
-            output_header=sprintf('%6s %13s %13s %10s %13s %13s',...
+            output_header=sprintf('%6s %13s %13s %13s %13s %13s',...
                 'iter', 'loglikelihood', 'mixture LL', 'entropy',...
                 'tree LL','z LL');
             fprintf(fileID,'%s\n',output_header);
             fprintf(fileID,...
                 '%6i %13.2e %13.2e %10.2e %13.2e %13.2e\n',...
                 0,LL,LL2,ent,treeLL,zLL);
+            fclose(fileID);
+        elseif options.print == 1
+            fileID = fopen('verbose.txt','w');
+            output_header=sprintf('%6s %13s %13s %13s %13s %13s %6s %13s %13s %13s',...
+                'iter', 'loglikelihood', 'mixture LL', 'entropy',...
+                'tree LL','z LL', 'ntop', 'gamma', 'div1', 'div2');
+            fprintf(fileID,'%s\n',output_header);
+            fprintf(fileID,...
+                '%6i %13.2e %13.2e %10.2e %13.2e %13.2e %6i %13.2e %13.2e %13.2e\n',...
+                0,LL,LL2,ent,treeLL,zLL,nt,options.gam,div(1),div(2));
             fclose(fileID);
         end
     end
@@ -382,6 +399,13 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
         %display(samples);
         %disp([LL, treeLL, zLL]);
         
+        if options.topicsgoal>0
+            coreDims=coreSize(modes, dims, r);
+            nt=prod(coreDims(2:end));
+            ng=max(min((options.topicsgoal/nt)^(1/modes),2),0.5);
+            options.gam=ng*options.gam;
+        end
+        
         %print loglikelihood & entropy
         if (options.print==1 || options.keepBest == 1) && mod(nIter,options.freq)==0
             if options.map == 1
@@ -393,13 +417,15 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
                 coreDims=coreSize(modes, dims, r);
                 phi = drawCoreMAP(samples,paths,coreDims,r,options);
             end
+            phiS = sparsePhi(phi, coreDims, paths, options);
             if strcmp(options.topicModel,'PAM')
                 LL2=logLikelihood(x, x, 1, 1/(size(x,2)*size(x,3)), psi, ...
                     paths, {}, prob, samples, options);
+                [LL, zLL, treeLL]=modelLL(phiS, psi, samples, paths, r, ...
+                    prob,options);
             else
                 LL2=logLikelihood(x, x, 1, 1/(size(x,2)*size(x,3)), psi, ...
                     paths, tree, samples, options);
-                phiS = sparsePhi(phi, coreDims, paths, options);
                 [LL, zLL, treeLL]=modelLL(phiS, psi, samples, paths, r, ...
                     options);
             end
@@ -409,6 +435,7 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
                 options.best.LL = LL; options.best.phi = phi;
                 options.best.psi = psi; options.best.samples = samples;
                 options.best.paths = paths; options.best.r = r;
+                options.best.gamma = options.gam;
                 if strcmp(options.topicModel,'PAM')
                     options.best.prob = prob;
                 else
@@ -418,17 +445,24 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
                 LL = options.best.LL; phi = options.best.phi;
                 psi = options.best.psi; samples = options.best.samples;
                 paths = options.best.paths; r = options.best.r;
+                options.gam = options.best.gamma;
                 if strcmp(options.topicModel,'PAM')
                     prob = options.best.prob;
                 else
                     tree = options.best.tree;
                 end
             end
-            if options.print == 1
+            if options.print == 1 && options.topicsgoal == 0
                 fileID = fopen('verbose.txt','a');
                 fprintf(fileID,...
                     '%6i %13.2e %13.2e %10.2e %13.2e %13.2e\n',...
                     nIter,LL,LL2,ent,treeLL,zLL);
+                fclose(fileID);
+            elseif options.print == 1
+                fileID = fopen('verbose.txt','a');
+                fprintf(fileID,...
+                    '%6i %13.2e %13.2e %10.2e %13.2e %13.2e %6i %13.2e %13.2e %13.2e\n',...
+                    nIter,LL,LL2,ent,treeLL,zLL,nt,options.gam,div(1),div(2));
                 fclose(fileID);
             end
         end
@@ -444,6 +478,7 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
         LL = options.best.LL; phi = options.best.phi;
         psi = options.best.psi; samples = options.best.samples;
         paths = options.best.paths; r = options.best.r;
+        options.gam = options.best.gamma;
         if strcmp(options.topicModel,'PAM')
             prob = options.best.prob;
             tree = prob;
@@ -489,12 +524,16 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
     phi(~zind,:,:)=phio;
     
     if nargout==7
-        varargout{1}=LL;
-        varargout{2}=ms;
+        varargout{1}=LL; varargout{2}=ms;
     elseif nargout==8
-        varargout{1}=prob;
-        varargout{2}=LL;
-        varargout{3}=ms;
+        if strcmp(options.topicModel,'PAM')
+            varargout{1}=prob; varargout{2}=LL; varargout{3}=ms;
+        else
+            varargout{1}=options; varargout{2}=LL; varargout{3}=ms;
+        end
+    elseif nargout==9
+        varargout{1}=options; varargout{2}=prob; varargout{3}=LL;
+        varargout{4}=ms;
     else
         error("Error. \nIncorrect number of outputs.");
     end

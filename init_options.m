@@ -26,6 +26,8 @@ function [ options ] = init_options( )
 % keepBest = whether or not best model is kept (as opposed to last)
 % npats = number of articificial patients (for computing LL)
 % cutoff = zeros out small values
+% rng = RNG seed
+% topicsgoal = ideal number of topics (0 to disable)
 
 options.par = 1;
 options.time = 1;
@@ -50,5 +52,7 @@ options.map = 1;
 options.keepBest = 0;
 options.npats = 1000;
 options.cutoff = 0;
+options.rng = 'shuffle';
+options.topicsgoal = 0;
 
 end
