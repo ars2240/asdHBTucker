@@ -35,9 +35,9 @@ long long int multi(double *pdf, int size);
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
         const mxArray *prhs[]);
 
-void drawZs(double *sampIn, double *sampOut, double *p, size_t sampCols,
+void drawZsPar(double *sampIn, double *sampOut, double *p, size_t sampCols,
         size_t sampRows, double *phi, const mxArray *psi,
-        double *pth, double *l, const mwSize *phiDims, int pri)
+        double *pth, double *l, const mwSize *phiDims, int pri, double *cut)
 {
     int j, i, k;
     
@@ -80,7 +80,7 @@ void drawZs(double *sampIn, double *sampOut, double *p, size_t sampCols,
         #pragma omp for
         for(j=0; j<sampRows; j++){
             drawZ(j,sampIn,sampOut,p,sampCols,sampRows,phi,psi,psiSum,pth,
-                    l,phiDims,alpha);  
+                    l,phiDims,alpha,cut);  
         }
     }
 }

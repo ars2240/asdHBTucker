@@ -129,7 +129,7 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
                     L,options.pType);
             otherwise
                 [samples,p]=drawZsCollapsed(samples,cphi,cpsi,paths,L,...
-                    options.pType, options.cutoff);
+                    options);
         end
         zLL=sum(log(p)); zEnt=entropy(p);
         zTime=toc(zStart);
@@ -206,9 +206,13 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
     LL=treeLL+zLL; ent=treeEnt+zEnt;
     
     if options.print==1 || options.keepBest == 1
+        if options.topicsgoal>0
+            coreDims=coreSize(modes, dims, r);
+            nt=prod(coreDims(2:end));
+        end
         if options.collapsed==1 && options.map == 1
             psi = drawpsiMAP(samples, dims, r, paths, options);
-        elseif options.collapsed==1
+        elseif options.collapsed==1 || options.topicsgoal>0
             [psi,~,~]=drawpsi(dims, modes, samples, r, options);
         end
         if options.map == 1
@@ -249,18 +253,19 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
                 'tree LL','z LL');
             fprintf(fileID,'%s\n',output_header);
             fprintf(fileID,...
-                '%6i %13.2e %13.2e %10.2e %13.2e %13.2e\n',...
+                '%6i %13.2e %13.2e %13.2e %13.2e %13.2e\n',...
                 0,LL,LL2,ent,treeLL,zLL);
             fclose(fileID);
         elseif options.print == 1
+            div = diversity(psi);
             fileID = fopen('verbose.txt','w');
             output_header=sprintf('%6s %13s %13s %13s %13s %13s %6s %13s %13s %13s',...
                 'iter', 'loglikelihood', 'mixture LL', 'entropy',...
                 'tree LL','z LL', 'ntop', 'gamma', 'div1', 'div2');
             fprintf(fileID,'%s\n',output_header);
             fprintf(fileID,...
-                '%6i %13.2e %13.2e %10.2e %13.2e %13.2e %6i %13.2e %13.2e %13.2e\n',...
-                0,LL,LL2,ent,treeLL,zLL,nt,options.gam,div(1),div(2));
+                '%6i %13.2e %13.2e %13.2e %13.2e %13.2e %6i %13.2e %13.2e %13.2e\n',...
+                0,LL,LL2,ent,treeLL,zLL,nt,options.gam(1),div(1),div(2));
             fclose(fileID);
         end
     end
@@ -332,7 +337,7 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
                             cpsi,paths,L,options.pType);
                     otherwise
                         [samples,p]=drawZsCollapsed(samples,cphi,cpsi,...
-                            paths,L,options.pType,options.cutoff);
+                            paths,L,options);
                 end
                 zLL=sum(log(p)); zEnt=entropy(p);
                 zTime=toc(zStart);
@@ -402,15 +407,13 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
         if options.topicsgoal>0
             coreDims=coreSize(modes, dims, r);
             nt=prod(coreDims(2:end));
-            ng=max(min((options.topicsgoal/nt)^(1/modes),2),0.5);
-            options.gam=ng*options.gam;
         end
         
         %print loglikelihood & entropy
         if (options.print==1 || options.keepBest == 1) && mod(nIter,options.freq)==0
             if options.map == 1
                 psi = drawpsiMAP(samples, dims, r, paths, options);
-            elseif options.collapsed==1 && nIter<(options.maxIter-1)
+            elseif (options.collapsed==1 || options.topicsgoal>0) && nIter<(options.maxIter-1)
                 [psi,~,~]=drawpsi(dims, modes, samples, r, options);
             end
             if options.map == 1
@@ -455,14 +458,15 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
             if options.print == 1 && options.topicsgoal == 0
                 fileID = fopen('verbose.txt','a');
                 fprintf(fileID,...
-                    '%6i %13.2e %13.2e %10.2e %13.2e %13.2e\n',...
+                    '%6i %13.2e %13.2e %13.2e %13.2e %13.2e\n',...
                     nIter,LL,LL2,ent,treeLL,zLL);
                 fclose(fileID);
             elseif options.print == 1
+                div = diversity(psi);
                 fileID = fopen('verbose.txt','a');
                 fprintf(fileID,...
-                    '%6i %13.2e %13.2e %10.2e %13.2e %13.2e %6i %13.2e %13.2e %13.2e\n',...
-                    nIter,LL,LL2,ent,treeLL,zLL,nt,options.gam,div(1),div(2));
+                    '%6i %13.2e %13.2e %13.2e %13.2e %13.2e %6i %13.2e %13.2e %13.2e\n',...
+                    nIter,LL,LL2,ent,treeLL,zLL,nt,options.gam(1),div(1),div(2));
                 fclose(fileID);
             end
         end
@@ -470,6 +474,9 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
         %check if to continue
         if nIter>=options.maxIter
             cont=0;
+        elseif options.topicsgoal>0
+            ng=max(min((options.topicsgoal/nt)^(1/modes),2),0.5);
+            options.gam=ng*options.gam;
         end
     end
     tTime=toc(tStart);
@@ -522,6 +529,10 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
     sph=size(phio);
     phi=zeros([odims(1),sph(2:end)]);
     phi(~zind,:,:)=phio;
+    
+    if options.keepBest == 1
+        options.best.phi = phi;
+    end
     
     if nargout==7
         varargout{1}=LL; varargout{2}=ms;

@@ -19,8 +19,8 @@
     options=init_options();
     % mex drawZscPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
     tpl=10; % topics per level
-    gam0 = 1;
-    options.L = 2;
+    gam0 = 0.5;
+    options.L = 3;
     %options.topicType = 'Level';
 	%options.topicModel = 'PAM';
     options.par = 0;
@@ -36,7 +36,7 @@
     options.print = 1;
     % options.cutoff = 0.1;
     % options.sparse = 0;
-    options.topicsgoal = 200;
+    options.topicsgoal = 500;
     
     disp(options); %print options
     
@@ -66,21 +66,21 @@
     % multiply by factor
     %asd=asd*10;
 
-    for f=1:nFolds
+    for f=4:nFolds
         b=cvInd==f; %logical indices of test fold
         ind=find(~b);
         fprintf('Fold # %6i\n',f);
         KB.LL=-inf;
-        options.gam=gam0;
         for k=1:nBest
+            options.gam=gam0;
             [~, ~, ~, ~, ~, options, ll,~] = ...
                 asdHBTucker3(asd(ind,:,:),options);
-            fprintf('%13.6e, %13.6e\n',ll, options.gam);
+            fprintf('%13.6e, %13.6e\n',ll, options.gam(1));
             if ll>KB.LL && ll~=0
                 KB = options.best;
             end
         end
-        fprintf('Best LL: %13.6e\n',KB.ll);
+        fprintf('Best LL: %13.6e\n',KB.LL);
         phi=KB.phi; psi=KB.psi; tree=KB.tree; samples=KB.samples;
         paths=KB.paths; options.gam=KB.gamma;
         testPhi = asdHBTuckerNew(asd, psi, samples, paths, tree, ...
@@ -88,7 +88,7 @@
         
         %save data
         save(['data/cancerHBTCV3KB', int2str(nBest), '_L',...
-            int2str(options.L), '_gamVar_', ...
+            int2str(options.L(1)), '_tGoal', int2str(options.topicsgoal),'_', ...
             int2str(f), '_', options.topicType, '_', ...
             options.topicModel, '.mat'],'phi', 'testPhi', 'psi', ...
             'tree', 'samples', 'paths', 'options');
