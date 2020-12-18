@@ -71,26 +71,7 @@ function nPaths = newTreePaths(asdTens,ocpsi,ctree,paths,tree,ind,options)
                gcts2=gcts(:,rList);
 
                %compute contribution to pdf
-               pdf=log(pdf); %take log to prevent overflow
-               w=prior*length(rList);
-               pdf=pdf+gammaln(sum(cts1,1)+w);
-               pdf=pdf-sum(gammaln(cts1+prior),1); %test
-               pdf=pdf+sum(gcts2,1);
-               pdf=pdf-gammaln(sum(cts2,1)+w);
-               lP=pdf; t=1;
-               m=t*mean(lP);
-               p=exp(lP-m);
-               while sum(p)==0 || isinf(sum(p))
-                    % handling of underflow error
-                    if sum(p)==0
-                        t=t*1.5;
-                    else
-                        t=t/2;
-                    end
-                    m=t*mean(lP);
-                    p=exp(lP-m);
-               end
-               pdf=pdf/sum(pdf); %normalize
+               pdf = getPDF(pdf, rList, cts1, cts2, gcts2, prior);
 
                %pick new table
                next=multi(pdf);

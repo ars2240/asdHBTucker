@@ -273,7 +273,7 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
                     otherwise
                         ts = samples;
                         [samples,p]=drawZsCollapsed(samples,cphi,tcpsi,...
-                            paths,L,options.pType,options.cutoff);
+                            paths,L,options);
                         LL=LL+sum(log(p));
                         ent=ent+entropy(p);
                 end

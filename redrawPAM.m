@@ -8,9 +8,9 @@ function [paths,prob,varargout] = redrawPAM(dims,cpsi,ctree,paths,tpl,prob,L,opt
 
     LL=0; %initialize log-likelihood
     ent=0; %initialize entropy
-    
+
     modes=length(L); %number of dependent modes
-    
+
     if options.collapsed==1
         %i=1:(modes-1);
         for i=1:(modes-1)
@@ -22,6 +22,8 @@ function [paths,prob,varargout] = redrawPAM(dims,cpsi,ctree,paths,tpl,prob,L,opt
                         prior=1/len*ones(len,parents);
                     case 1
                         prior=ones(len,parents);
+                    case 2
+                        prior=2/len*ones(len,parents);
                     otherwise
                         error('Error. \nNo prior type selected');
                 end
@@ -54,7 +56,7 @@ function [paths,prob,varargout] = redrawPAM(dims,cpsi,ctree,paths,tpl,prob,L,opt
                 (size(cts,2)-len+1):size(cts,2));
             prob{2,j}=prior+cts;
         end
-        
+
     else
         %i=1:(modes-1);
         for i=1:(modes-1)
@@ -66,6 +68,8 @@ function [paths,prob,varargout] = redrawPAM(dims,cpsi,ctree,paths,tpl,prob,L,opt
                         prior=1/len*ones(parents,len);
                     case 1
                         prior=ones(parents,len);
+                    case 2
+                        prior=2/len*ones(parents,len);
                     otherwise
                         error('Error. \nNo prior type selected');
                 end
@@ -89,6 +93,8 @@ function [paths,prob,varargout] = redrawPAM(dims,cpsi,ctree,paths,tpl,prob,L,opt
                     prior=1/len*ones(len,parents);
                 case 1
                     prior=ones(len,parents);
+                case 2
+                    prior=2/len*ones(len,parents);
                 otherwise
                     error('Error. \nNo prior type selected');
             end
@@ -100,39 +106,51 @@ function [paths,prob,varargout] = redrawPAM(dims,cpsi,ctree,paths,tpl,prob,L,opt
             LL=LL+sum(log(p));
             ent=ent+entropy(p);
         end
-    
+
     end
-    
-    cts=cell(modes,1);
-    ctsA=cell(modes,1);
-    subs=cell(modes,1);
-    vals=cell(modes,1);
-    start=cell(modes,1);
+
+    cts=cell(modes,1); ctsA=cell(modes,1);
+    gcts=cell(modes,1); subs=cell(modes,1);
+    vals=cell(modes,1); start=cell(modes,1); prior=cell(modes,1);
     for j=1:modes
-       %get counts
-       cts{j}=ctree{j};
-       if options.sparse==1
+        %get counts
+        cts{j}=ctree{j};
+        if options.sparse==1
            subs{j}=cts{j}.subs;
            vals{j}=cts{j}.vals;
            [~,start{j},~]=unique(subs{j}(:,1));
            start{j}=[start{j}; nnz(cts{j})+1];
-       else
+        else
            cts{j}=permute(cts{j},[2:(modes+1),1]);
-       end
-       ctsA{j}=cpsi{j};
+        end
+        ctsA{j}=cpsi{j};
+
+        switch options.pType
+            case 0
+               prior{j}=1/dims(1+j);
+            case 1
+               prior{j}=1;
+            case 2
+               prior{j}=2/dims(1+j);
+            otherwise
+               error('Error. \nNo prior type selected');
+        end
+
+        gcts{j} = gammaln(ctsA{j}+prior{j});
     end
-    
+
     for p=1:dims(1)
         res=1;
-        
+
         %modes 2:modes, level 1
         j=1;
         for i=2:modes
+            
             %get restaurant list
             rStart=sum(tpl{i}(1:(j-1)))+1;
             rList=rStart:sum(tpl{i}(1:j));
             pdf=prob{mod(i-2,modes)+1,j-(i==1)}(res,:);
-            
+
             %get counts
             if options.sparse==1
                 cts1=ctsA{i}(:,rList);
@@ -149,15 +167,10 @@ function [paths,prob,varargout] = redrawPAM(dims,cpsi,ctree,paths,tpl,prob,L,opt
                 cts1=ctsA{i}(:,rList)-cts{i}(:,rList,p);
             end
             cts2=ctsA{i}(:,rList);
+            gcts2=gcts{i}(:,rList);
 
             %compute contribution to pdf
-            pdf=log(pdf); %take log to prevent overflow
-            pdf=pdf+gammaln(sum(cts1,1)+1);
-            pdf=pdf-sum(gammaln(cts1+1/dims(1+i)),1);
-            pdf=pdf+sum(gammaln(cts2+1/dims(1+i)),1);
-            pdf=pdf-gammaln(sum(cts2,1)+1);
-            pdf=exp(pdf);
-            pdf=pdf/sum(pdf); %normalize
+            pdf = getPDF(pdf, rList, cts1, cts2, gcts2, prior{i});
 
             %pick new table
             res=multi(pdf);
@@ -166,15 +179,16 @@ function [paths,prob,varargout] = redrawPAM(dims,cpsi,ctree,paths,tpl,prob,L,opt
             LL=LL+log(pdf(res));
             ent=ent+entropy(pdf(res));
         end
-        
-        
+
+
         for j=2:L(1)
             for i=1:modes
+                
                 %get restaurant list
                 rStart=sum(tpl{i}(1:(j-1)))+1;
                 rList=rStart:sum(tpl{i}(1:j));
                 pdf=prob{mod(i-2,modes)+1,j-(i==1)}(res,:);
-                
+
                 %get counts
                 if options.sparse==1
                     cts1=ctsA{i}(:,rList);
@@ -191,16 +205,11 @@ function [paths,prob,varargout] = redrawPAM(dims,cpsi,ctree,paths,tpl,prob,L,opt
                     cts1=ctsA{i}(:,rList)-cts{i}(:,rList,p);
                 end
                 cts2=ctsA{i}(:,rList);
-                
+                gcts2=gcts{i}(:,rList);
+
                 %compute contribution to pdf
-                pdf=log(pdf); %take log to prevent overflow
-                pdf=pdf+gammaln(sum(cts1,1)+1);
-                pdf=pdf-sum(gammaln(cts1+1/dims(1+i)),1);
-                pdf=pdf+sum(gammaln(cts2+1/dims(1+i)),1);
-                pdf=pdf-gammaln(sum(cts2,1)+1);
-                pdf=exp(pdf);
-                pdf=pdf/sum(pdf); %normalize
-                
+                pdf = getPDF(pdf, rList, cts1, cts2, gcts2, prior{i});
+
                 %pick new table
                 res=multi(pdf);
                 top=res+rStart-1;
@@ -210,7 +219,7 @@ function [paths,prob,varargout] = redrawPAM(dims,cpsi,ctree,paths,tpl,prob,L,opt
             end
         end
     end
-    
+
     if nargout==4
         varargout{1}=LL;
         varargout{2}=ent;

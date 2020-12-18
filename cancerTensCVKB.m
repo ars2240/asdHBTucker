@@ -66,7 +66,7 @@
     % multiply by factor
     %asd=asd*10;
 
-    for f=4:nFolds
+    for f=1:nFolds
         b=cvInd==f; %logical indices of test fold
         ind=find(~b);
         fprintf('Fold # %6i\n',f);
@@ -74,7 +74,7 @@
         for k=1:nBest
             options.gam=gam0;
             [~, ~, ~, ~, ~, options, ll,~] = ...
-                asdHBTucker3(asd(ind,:,:),options);
+                asdHBTucker3(asd,options);
             fprintf('%13.6e, %13.6e\n',ll, options.gam(1));
             if ll>KB.LL && ll~=0
                 KB = options.best;
@@ -83,24 +83,22 @@
         fprintf('Best LL: %13.6e\n',KB.LL);
         phi=KB.phi; psi=KB.psi; tree=KB.tree; samples=KB.samples;
         paths=KB.paths; options.gam=KB.gamma;
-        testPhi = asdHBTuckerNew(asd, psi, samples, paths, tree, ...
-            b, options);
+        %testPhi = asdHBTuckerNew(asd, psi, samples, paths, tree, ...
+        %    b, options);
+        testPhi=phi(find(b),:,:);
+        phi=phi(ind,:,:);
         
         %save data
-        save(['data/cancerHBTCV3KB', int2str(nBest), '_L',...
+        save(['data/cancerHBTCVCheatKB', int2str(nBest), '_L',...
             int2str(options.L(1)), '_tGoal', int2str(options.topicsgoal),'_', ...
             int2str(f), '_', options.topicType, '_', ...
             options.topicModel, '.mat'],'phi', 'testPhi', 'psi', ...
             'tree', 'samples', 'paths', 'options');
-    
-        r=cell(2,1);
-        r{1}=unique(paths(:,1:L(1)));
-        r{2}=unique(paths(:,(L(1)+1):(sum(L))));
 
         %compute LL
-        LL(f)=logLikelihood(asd(find(~b),:,:), asd(find(b),:,:), ...
-            1, 1/(size(asd,2)*size(asd,3)), psi, paths, tree, samples, ...
-            options);
+        %LL(f)=logLikelihood(asd(find(~b),:,:), asd(find(b),:,:), ...
+        %    1, 1/(size(asd,2)*size(asd,3)), psi, paths, tree, samples, ...
+        %    options);
     end
 
     % print LL info

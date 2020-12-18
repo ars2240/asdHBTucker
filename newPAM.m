@@ -17,11 +17,9 @@ function [paths,LL,ent] = newPAM(dims,ocpsi,ctree,paths,tpl,prob,options)
         L=repelem(L,modes);
     end
     
-    cts=cell(modes,1);
-    ctsA=cell(modes,1);
-    subs=cell(modes,1);
-    vals=cell(modes,1);
-    start=cell(modes,1);
+    cts=cell(modes,1); ctsA=cell(modes,1);
+    gcts=cell(modes,1); subs=cell(modes,1);
+    vals=cell(modes,1); start=cell(modes,1); prior=cell(modes,1);
     for j=1:modes
        %get counts
        cts{j}=ctree{j};
@@ -37,6 +35,19 @@ function [paths,LL,ent] = newPAM(dims,ocpsi,ctree,paths,tpl,prob,options)
            start{j}=[start{j}; nnz(cts{j})+1];
        end
        ctsA{j}=ocpsi{j};
+       
+       switch options.pType
+            case 0
+               prior{j}=1/dims(1+j);
+            case 1
+               prior{j}=1;
+            case 2
+               prior{j}=2/dims(1+j);
+            otherwise
+               error('Error. \nNo prior type selected');
+        end
+
+        gcts{j} = gammaln(ctsA{j}+prior{j});
     end
     
     for p=1:dims(1)
@@ -69,14 +80,10 @@ function [paths,LL,ent] = newPAM(dims,ocpsi,ctree,paths,tpl,prob,options)
                 end
             end
 
+            gcts2=gcts{i}(:,rList);
+
             %compute contribution to pdf
-            pdf=log(pdf); %take log to prevent overflow
-            pdf=pdf+gammaln(sum(cts1,1)+1);
-            pdf=pdf-sum(gammaln(cts1+1/dims(1+i)),1);
-            pdf=pdf+sum(gammaln(cts2+1/dims(1+i)),1);
-            pdf=pdf-gammaln(sum(cts2,1)+1);
-            pdf=exp(pdf);
-            pdf=pdf/sum(pdf); %normalize
+            pdf = getPDF(pdf, rList, cts1, cts2, gcts2, prior{i});
 
             %pick new table
             res=multi(pdf);
@@ -111,15 +118,10 @@ function [paths,LL,ent] = newPAM(dims,ocpsi,ctree,paths,tpl,prob,options)
                         end
                     end
                 end
-                
+                gcts2=gcts{i}(:,rList);
+
                 %compute contribution to pdf
-                pdf=log(pdf); %take log to prevent overflow
-                pdf=pdf+gammaln(sum(cts1,1)+1);
-                pdf=pdf-sum(gammaln(cts1+1/dims(1+i)),1);
-                pdf=pdf+sum(gammaln(cts2+1/dims(1+i)),1);
-                pdf=pdf-gammaln(sum(cts2,1)+1);
-                pdf=exp(pdf);
-                pdf=pdf/sum(pdf); %normalize
+                pdf = getPDF(pdf, rList, cts1, cts2, gcts2, prior{i});
                 
                 %pick new table
                 res=multi(pdf);
