@@ -25,13 +25,15 @@ options.time = 0;
 options.print = 1;
 % options.cutoff = 0.1;
 % options.sparse = 0;
-    
+
+asdC=collapse(asd,[2,3]);
+
 for i=1:n
     [~, ~, ~, ~, ~, o, ~, ~] = asdHBTucker3(asd,options);
     KB = o.best; display(KB.iter);
     phi=KB.phi; psi=KB.psi; samples=KB.samples;
     paths=KB.paths;% options.gam=KB.gamma;
-    phi=phi.*asd;
+    phi=phi.*asdC;
     x= ttm(tensor(phi), psi, [2,3]);
     disp(norm(asd-x));
     display(samples);
