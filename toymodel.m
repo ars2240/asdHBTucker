@@ -31,7 +31,7 @@ for i=1:n
     KB = o.best; display(KB.iter);
     phi=KB.phi; psi=KB.psi; samples=KB.samples;
     paths=KB.paths;% options.gam=KB.gamma;
-    phi=phi.*asd(~b);
+    phi=phi.*asd;
     x= ttm(tensor(phi), psi, [2,3]);
     disp(norm(asd-x));
     display(samples);
