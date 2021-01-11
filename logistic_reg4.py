@@ -17,7 +17,7 @@
 from acc_cv2 import acc
 from sklearn.linear_model import LogisticRegression
 
-fname = 'data/cancer_tensorlyCP_nonNeg_RG_25_0'
+fname = 'data/cancerRubik_K5'
 indF = 'cancerCVInd'
 labelF = 'cancerLabel'
 
@@ -34,7 +34,7 @@ for lam in lam_v:
     classifier = LogisticRegression(C=1 / lam)
 
     mean_acc, std_acc, p_val, mean_acc_tr, std_acc_tr, p_val_tr = acc(classifier, fname, labelF, indF, fselect='min',
-                                                                      header=False, hmap=True)
+                                                                      header=False)
 
     print('%6s\t %6.3e\t %0.4f\t %0.4f\t %0.4f' % ('valid', lam, mean_acc, std_acc, p_val))
     print('%6s\t %6.3e\t %0.4f\t %0.4f\t %0.4f' % ('train', lam, mean_acc_tr, std_acc_tr, p_val_tr))

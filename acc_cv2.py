@@ -21,11 +21,16 @@ from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import SelectFpr
 from sklearn.feature_selection import f_classif
 from sklearn.decomposition import PCA
+from sklearn.exceptions import ConvergenceWarning
 from hmap import heatmap
+from warnings import filterwarnings
 
 
-def acc(classifier, fname, labelF, indF, splits=10, fselect='None', nfeat=100, featmin=3, a=.05, header=True, hmap=False):
+def acc(classifier, fname, labelF, indF, splits=10, fselect='None', nfeat=100, featmin=3, a=.05, header=True,
+        hmap=False, f=True):
 
+    if f:
+        filterwarnings("ignore", category=ConvergenceWarning)
     acc = []
     acc_tr = []
 

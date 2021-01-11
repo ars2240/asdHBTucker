@@ -24,12 +24,23 @@ from sklearn.feature_selection import mutual_info_classif
 from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import SelectFpr
 from sklearn.feature_selection import f_classif
+from sklearn.metrics import confusion_matrix
 from sklearn.preprocessing import StandardScaler
 import torch
 
 
+def accuracy(X, y, model, pcounts=False, cmat=False):
+    y_hat = model.predict(X)
+    if pcounts:
+        unique, counts = np.unique(y_hat, return_counts=True)
+        print(dict(zip(unique, counts)))
+    if cmat:
+        print(confusion_matrix(y, y_hat))
+    return sum(y_hat == y) / len(y)
+
+
 def acc(classifier, fname, yfname=None, splits=10, fselect='min', root='./data/', nfeat=100, fmin=0, fmax=1000, a=.05,
-        thresh=0, hmap=False):
+        thresh=0, hmap=False, pcounts=False, cmat=False):
 
     acc = []
     acc_tr = []
@@ -160,12 +171,10 @@ def acc(classifier, fname, yfname=None, splits=10, fselect='min', root='./data/'
         """
 
         # Compute accuracy for validation set
-        y_hat = model.predict(X_test)
-        acc.append(sum(y_hat == y_test)/len(y_test))
+        acc.append(accuracy(X_test, y_test, model, pcounts, cmat))
 
         # Compute accuracy for training set
-        y_hat = model.predict(X)
-        acc_tr.append(sum(y_hat == y) / len(y))
+        acc_tr.append(accuracy(X, y, model, pcounts, cmat))
 
         # pd.DataFrame(model.coef_).to_csv('data/cancer_coef_' + str(i) + '.csv')
 

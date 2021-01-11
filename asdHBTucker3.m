@@ -205,7 +205,7 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
     % LL=treeLL+matLL+coreLL+zLL; ent=treeEnt+matEnt+coreEnt+zEnt;
     LL=treeLL+zLL; ent=treeEnt+zEnt;
     
-    if options.print==1 || options.keepBest == 1
+    if options.print==1 || options.keepBest > 0
         if options.topicsgoal>0
             coreDims=coreSize(modes, dims, r);
             nt=prod(coreDims(2:end));
@@ -231,7 +231,7 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
             [LL, zLL, treeLL]=modelLL(phiS, psi, samples, paths, r, ...
                 options);
         end
-        if options.keepBest == 1
+        if options.keepBest > 0
             if options.map == 1
                 coreDims=coreSize(modes, dims, r);
                 phi = drawCoreMAP(samples,paths,coreDims,r,options);
@@ -239,7 +239,7 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
             options.best.LL = LL; options.best.phi = phi;
             options.best.psi = psi; options.best.samples = samples;
             options.best.paths = paths; options.best.r = r;
-            options.best.gamma = options.gam;
+            options.best.gamma = options.gam; options.best.iter = 0;
             if strcmp(options.topicModel,'PAM')
                 options.best.prob = prob;
             else
@@ -410,7 +410,7 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
         end
         
         %print loglikelihood & entropy
-        if (options.print==1 || options.keepBest == 1) && mod(nIter,options.freq)==0
+        if (options.print==1 || options.keepBest > 0) && mod(nIter,options.freq)==0
             if options.map == 1
                 psi = drawpsiMAP(samples, dims, r, paths, options);
             elseif (options.collapsed==1 || options.topicsgoal>0) && nIter<(options.maxIter-1)
@@ -434,11 +434,12 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
             end
             %display(samples);
         	%disp([LL, treeLL, zLL]);
-            if options.keepBest == 1 && options.best.LL < LL && LL~=0
+            if options.keepBest > 0 && options.best.LL < LL && LL~=0
                 options.best.LL = LL; options.best.phi = phi;
                 options.best.psi = psi; options.best.samples = samples;
                 options.best.paths = paths; options.best.r = r;
                 options.best.gamma = options.gam;
+                options.best.iter = nIter;
                 if strcmp(options.topicModel,'PAM')
                     options.best.prob = prob;
                 else
@@ -474,14 +475,16 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
         %check if to continue
         if nIter>=options.maxIter
             cont=0;
-        elseif options.topicsgoal>0
-            ng=max(min((options.topicsgoal/nt)^(1/modes),2),0.5);
+        elseif options.topicsgoal>0 && strcmp(options.topicModel,'IndepTrees')
+            d=(modes*max(prod(L-1),1));
+            ng=(options.topicsgoal/nt)^(1/d);
+            ng=max(min(ng,2),0.5);
             options.gam=ng*options.gam;
         end
     end
     tTime=toc(tStart);
     
-    if options.keepBest == 1
+    if options.keepBest > 0
         LL = options.best.LL; phi = options.best.phi;
         psi = options.best.psi; samples = options.best.samples;
         paths = options.best.paths; r = options.best.r;
@@ -530,7 +533,7 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
     phi=zeros([odims(1),sph(2:end)]);
     phi(~zind,:,:)=phio;
     
-    if options.keepBest == 1
+    if options.keepBest > 0
         options.best.phi = phi;
     end
     
@@ -543,7 +546,7 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
             varargout{1}=options; varargout{2}=LL; varargout{3}=ms;
         end
     elseif nargout==9
-        varargout{1}=options; varargout{2}=prob; varargout{3}=LL;
+        varargout{1}=prob; varargout{2}=options; varargout{3}=LL;
         varargout{4}=ms;
     else
         error("Error. \nIncorrect number of outputs.");

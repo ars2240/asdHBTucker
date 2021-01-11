@@ -10,7 +10,9 @@
 #   Packages: numpy, scipy, tensorly
 
 import numpy as np
+import os
 import pandas as pd
+import scipy.io
 import scipy.stats as stats
 import sparse
 import time
@@ -24,54 +26,78 @@ def impose(x, sp):
         return x
 
 
-def ten_dec(fname='cancerSparse', indF='cancerCVInd', rank=5, fselect='min dupe', fmin=0, fmax=1000, thresh=0,
-            head='./data/cancer_tensorlyCP_nonNeg_RG', sp=True, decomp=True, norm=True, ll=1000):
+# check if folder exists; if not, create it
+def check_folder(path):
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+
+# gets csv file from path
+def get_csv(file):
+    if os.path.exists(file):
+        return pd.read_csv(file, header=None).to_numpy()
+    else:
+        raise Exception('Cannot find file: ' + file)
+
+
+def ten_dec(fname='cancerSparseND4', indF='cancerCVInd', rank=5, fselect='min dupe', fmin=0, fmax=1000, thresh=0,
+            head='toy_tensorlyCP_nonNeg_{fmin}_{fmax}', sp=True, decomp=True, norm=True, ll=1000,
+            hist=False, train_split=True):
+
+    check_folder('./data')
+
+    # change head for variables
+    dic = locals()
+    for var in dic.keys():
+        head = head.replace('{' + var + '}', str(dic[var]))
+
     if '.pik' in fname:
         import pickle
         with open(fname, "rb") as f:
             cts = pickle.load(f)[0]
+    elif '.mat' in fname:
+        mdict = scipy.io.loadmat(fname)  # import dataset from matlab
+        cts = mdict.get('sparse')
     else:
         cts = np.array(pd.read_csv(fname + '.csv', header=0, index_col=0, dtype={0: str}))
 
     if sp:
         import tensorly.contrib.sparse as tl
-        from tensorly.contrib.sparse.decomposition import parafac
+        from tensorly.contrib.sparse.decomposition import non_negative_parafac
 
         s = np.max(cts[:, :-1], axis=0)
-        p = sparse.COO(np.transpose(cts[:, :-1] - 1), cts[:, -1], shape=tuple(s))
+        X = sparse.COO(np.transpose(cts[:, :-1] - 1), cts[:, -1], shape=tuple(s))
     else:
         import tensorly as tl
-        from tensorly.decomposition import parafac
+        from tensorly.decomposition import non_negative_parafac
 
-        p = cts
+        X = cts
 
-    print(p.shape)
-    # cts = pd.read_csv(fname + '.csv', header=None, index_col=None)
-    ind = pd.read_csv(indF + '.csv', header=None)
+    print(X.shape)
+    if train_split:
+        # cts = pd.read_csv(fname + '.csv', header=None, index_col=None)
+        ind = pd.read_csv(indF + '.csv', header=None)
 
-    # training set
-    indT, _ = np.where(ind > 0)
-    indT = indT[indT < p.shape[0]]
-    X = p[indT]
+        # training set
+        indT, _ = np.where(ind > 0)
+        indT = indT[indT < X.shape[0]]
+        X = X[indT]
 
     if 'min' in fselect:
         # remove slices with min or fewer occurances
-        cols = (X.astype(bool).max(axis=2).sum(axis=0) > fmin)
-        cols = impose(cols, sp)
+        cols = impose(X.astype(bool).max(axis=2).sum(axis=0) > fmin, sp)
         # print(np.where((X.astype(bool).sum(axis=(0, 2)) <= fmin).todense())[0])
         X = X[:, cols, :]
-        cols = (X.astype(bool).max(axis=1).sum(axis=0) > 0)
-        cols = impose(cols, sp)
-        X = X[:, :, cols]
     if 'max' in fselect:
         # remove slices with max or more occurances
-        cols = (X.astype(bool).max(axis=2).sum(axis=0) < fmax)
-        cols = impose(cols, sp)
+        cols = impose(X.astype(bool).max(axis=2).sum(axis=0) < fmax, sp)
         # print((X.astype(bool).sum(axis=(0, 2)) >= fmin).todense())
         X = X[:, cols, :]
-        cols = (X.astype(bool).max(axis=1).sum(axis=0) > 0)
-        cols = impose(cols, sp)
-        X = X[:, :, cols]
+    # clean up pathways
+    cols = impose(X.astype(bool).max(axis=1).sum(axis=0) > 0, sp)
+    X = X[:, :, cols]
+    _, cols = np.unique(impose(X.astype(bool).max(axis=1), sp), axis=1, return_index=True)
+    X = X[:, :, cols]
     if 'thresh' in fselect:
         # change elements below threashold to zero
         X[X < thresh] = 0
@@ -153,25 +179,37 @@ def ten_dec(fname='cancerSparse', indF='cancerCVInd', rank=5, fselect='min dupe'
     cols = (X.astype(bool).max(axis=2).sum(axis=1) > 0)
     cols = impose(cols, sp)
     X = X[cols, :, :]
-    print(X.shape)
     """
+    print(X.shape)
+    print('Sparsity: {0}'.format(X.astype(bool).sum()/np.prod(X.shape)))
+    if hist:
+        check_folder('./plots')
+        import matplotlib.pyplot as plt
+        bins = X.max()
+        if sp:
+            plt.hist(X.data, bins=bins)
+        else:
+            plt(X, bins=bins)
+        plt.savefig('./plots/{0}_hist.png'.format(head))
 
     Xsp = np.c_[X.coords.T, X.data.T]
     np.savetxt('Xsp.csv', Xsp, delimiter=',')
 
     phiT = tl.tensor(X, dtype=tl.float32)
     if decomp:
-        weights, factors = parafac(phiT, rank=rank, init='random', non_negative=True)
-        np.savetxt('{0}_{1}_weights.csv'.format(head, rank), impose(weights, sp), delimiter=',')
+        weights, factors = non_negative_parafac(phiT, rank=rank, init='random')
+        np.savetxt('./data/{0}_{1}_weights.csv'.format(head, rank), impose(weights, sp), delimiter=',')
         for i, f in enumerate(factors):
-            np.savetxt('{0}_{1}_{2}.csv'.format(head, rank, i), impose(f, sp), delimiter=',')
+            np.savetxt('./data/{0}_{1}_{2}.csv'.format(head, rank, i), impose(f, sp), delimiter=',')
     else:
-        weights = np.squeeze(pd.read_csv('{0}_{1}_weights.csv'.format(head, rank), header=None).to_numpy())
+        file = './data/{0}_{1}_weights.csv'.format(head, rank)
+        weights = get_csv(file)
         if sp:
             weights = sparse.COO(weights)
         factors = []
         for i in range(3):
-            factors.append(pd.read_csv('{0}_{1}_{2}.csv'.format(head, rank, i), header=None).to_numpy())
+            file = './data/{0}_{1}_{2}.csv'.format(head, rank, i)
+            factors.append(get_csv(file))
             if sp:
                 factors[i] = sparse.COO(factors[i])
 
@@ -181,21 +219,24 @@ def ten_dec(fname='cancerSparse', indF='cancerCVInd', rank=5, fselect='min dupe'
             weights = weights.todense()
             for i in range(3):
                 factors[i] = factors[i].todense()
-        splits = np.max(np.array(ind))
+        splits = np.max(np.array(ind)) if train_split else 1
 
     # norm of difference between decomposed tensor and original
     if norm:
         factors_t = list(factors)
         # training set
         psq = 0
-        for j in range(len(indT)):
+        for j in range(X.shape[0]):
             x = X[j]
             factors_t[0] = np.expand_dims(factors[0][j, :], axis=0)
             temp = tl.kruskal_to_tensor((weights, factors_t))[0]
             psq += np.power(x - temp, 2).sum()
 
-        print('Train Norm: {0}'.format(np.sqrt(psq*(splits-1)/splits)))
-        print('Valid Norm: {0}'.format(np.sqrt(psq/splits)))
+        if splits>1:
+            print('Train Norm: {0}'.format(np.sqrt(psq * (splits - 1) / splits)))
+            print('Valid Norm: {0}'.format(np.sqrt(psq / splits)))
+        else:
+            print('Norm: {0}'.format(np.sqrt(psq)))
 
     # log-likelihood
     if ll > 0:
@@ -220,7 +261,7 @@ def ten_dec(fname='cancerSparse', indF='cancerCVInd', rank=5, fselect='min dupe'
 
         eps = 1/X.shape[1]*X.shape[2]
         l = 0
-        for j in range(len(indT)):
+        for j in range(X.shape[0]):
             start_time = time.time()
             x = impose(X[j], sp)
             indF = np.where(x > 0)
@@ -234,23 +275,27 @@ def ten_dec(fname='cancerSparse', indF='cancerCVInd', rank=5, fselect='min dupe'
             p = np.exp(lP)
             m = 0
             k = 1
+            m = k * np.mean(lP)
+            p = np.exp(lP - m)
+            w = p/np.sum(p)
             # handling of underflow/overflow error
-            while np.sum(p) == 0 or np.sum(p * p) == 0 or np.isinf(np.sum(p)) or np.isinf(np.sum(p * p)):
-                if np.sum(p) == 0 or np.sum(p * p) == 0:
+            while np.sum(p) == 0 or np.sum(w) == 0 or np.isinf(np.sum(p)) or np.isinf(np.sum(w)):
+                if np.sum(p) == 0 or np.sum(w) == 0:
                     k = k * 1.5
                 else:
                     k = k / 2
                 m = k * np.mean(lP)
                 p = np.exp(lP - m)
-            l += np.log(np.sum(p * p)) - np.log(np.sum(p)) + m
+                w = p / np.sum(p)
+            l += np.log(np.sum(w * p)) + m
             if np.isinf(l):
-                print(np.log(np.sum(p * p)))
+                print(np.log(np.sum(w * p)))
                 print(np.log(np.sum(p)))
                 print(m)
                 print(p)
                 break
-            #print("{0}, {1}, {2}".format(j, l, time.time() - start_time))
-        print('Log-likelihood: {0}'.format(l/len(indT)))
+            # print("{0}, {1}, {2}".format(j, l, time.time() - start_time))
+        print('Log-likelihood: {0}'.format(l/X.shape[0]))
 
 
-ten_dec(fname='cancerSparseND4', rank=25, fselect='min', fmin=400, fmax=1000, decomp=False)
+ten_dec(fname='toy.mat', rank=3, fselect='', train_split=False)

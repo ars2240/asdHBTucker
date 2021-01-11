@@ -163,10 +163,14 @@ function sparse = generatePatients(x, prior, psi, opaths, tree, varargin)
     for i=1:npats
         
         %draw core tensor
-        ind = zeros(L(1),modes);
+        if strcmp(options.topicType,'Level')
+            ind = zeros(L(1),modes);
+        end
         for j=1:modes
             res{j}=paths(i,1+sum(L(1:(j-1))):sum(L(1:j)));
-            ind(:,j)=res{j};
+            if strcmp(options.topicType,'Level')
+                ind(:,j)=res{j};
+            end
             % res{1}=ismember(r{1},res{1});
         end
         if exist('samples','var') == 1

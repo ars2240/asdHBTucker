@@ -183,7 +183,7 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
         zTime=toc(zStart);
     end
     
-    if options.print==1 || options.keepBest == 1
+    if options.print==1 || options.keepBest > 0
         if options.map == 1
             phi = drawCoreMAP(samples,paths,coreDims,r,options);
         end
@@ -199,7 +199,7 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
             [LL, zLL, treeLL]=modelLL(phiS, psi, samples, paths, r, ...
                 options);
         end
-        if options.keepBest == 1
+        if options.keepBest > 0
             if options.map == 1
                 phi = drawCoreMAP(samples,paths,coreDims,r,options);
             end
@@ -334,7 +334,7 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
         nIter=nIter+1;
         
         %print loglikelihood & entropy
-        if (options.print==1 || options.keepBest == 1) && mod(nIter,options.freq)==0
+        if (options.print==1 || options.keepBest > 0) && mod(nIter,options.freq)==0
             if options.map == 1
                 phi = drawCoreMAP(samples,paths,coreDims,r,options);
             end
@@ -352,7 +352,7 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
             end
             %display(samples);
         	%disp([LL, treeLL, zLL]);
-            if options.keepBest == 1 && options.best.LL < LL && LL~=0
+            if options.keepBest > 0 && options.best.LL < LL && LL~=0
                 options.best.LL = LL; options.best.phi = phi;
                 options.best.samples = samples;
                 options.best.paths = paths;
@@ -377,7 +377,7 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
     end
     tTime=toc(tStart);
     
-    if options.keepBest == 1
+    if options.keepBest > 0
         phi = options.best.phi; paths = options.best.paths;
     end
     

@@ -1,14 +1,18 @@
-asd=sptensor([3 3 3]);
-asd(1,1,1)=2; asd(2,2,2)=1; asd(3,3,3)=1;
+asd=sptensor([5 5 5]);
+asd(1,1,1)=2; asd(2,2,2)=1; asd(3,3,3)=1; asd(4,4,4)=1; asd(5,5,5)=1;
+sparse=[asd.subs, asd.vals];
+save('toy.mat', 'sparse');
+
+n=12; % different iterates
 
 options=init_options();
 % mex drawZscPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
 options.gam = 1;
 options.L = 2;
 %options.topicType = 'Level';
-options.topicModel = 'PAM';
+%options.topicModel = 'PAM';
 options.par = 0;
-options.maxIter = 1000;
+options.maxIter = 100;
 options.pType = 0;
 % options.treeReps = 5;
 % options.btReps = 5;
@@ -22,6 +26,13 @@ options.print = 1;
 % options.cutoff = 0.1;
 % options.sparse = 0;
     
-[phi, psi, tree, samples, paths, ll,~] = asdHBTucker3(asd,options);
-x= ttm(tensor(phi), psi, [2,3]);
-display(samples);
+for i=1:n
+    [~, ~, ~, ~, ~, o, ~, ~] = asdHBTucker3(asd,options);
+    KB = o.best; display(KB.iter);
+    phi=KB.phi; psi=KB.psi; samples=KB.samples;
+    paths=KB.paths;% options.gam=KB.gamma;
+    phi=phi.*asd(~b);
+    x= ttm(tensor(phi), psi, [2,3]);
+    disp(norm(asd-x));
+    display(samples);
+end

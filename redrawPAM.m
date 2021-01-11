@@ -33,6 +33,7 @@ function [paths,prob,varargout] = redrawPAM(dims,cpsi,ctree,paths,tpl,prob,L,opt
                 cts=cts((size(cts,1)-parents+1):size(cts,1),...
                     (size(cts,2)-len+1):size(cts,2));
                 prob{i,j}=prior+cts;
+                prob{i,j}=prob{i,j}./sum(prob{i,j},2);
             end
         end
 
@@ -54,7 +55,8 @@ function [paths,prob,varargout] = redrawPAM(dims,cpsi,ctree,paths,tpl,prob,L,opt
             cts=accumarray(paths(:,[sum(L(1:(modes-1)))+j,j+1]),1,si);
             cts=cts((size(cts,1)-parents+1):size(cts,1),...
                 (size(cts,2)-len+1):size(cts,2));
-            prob{2,j}=prior+cts;
+            prob{modes,j}=prior+cts;
+            prob{modes,j}=prob{modes,j}./sum(prob{modes,j},2);
         end
 
     else
@@ -79,6 +81,7 @@ function [paths,prob,varargout] = redrawPAM(dims,cpsi,ctree,paths,tpl,prob,L,opt
                 cts=cts((size(cts,1)-parents+1):size(cts,1),...
                     (size(cts,2)-len+1):size(cts,2));
                 [prob{i,j},p]=drchrnd(prior+cts,parents,options);
+                prob{i,j}=prob{i,j}./sum(prob{i,j},2);
                 LL=LL+sum(log(p));
                 ent=ent+entropy(p);
             end
@@ -103,6 +106,7 @@ function [paths,prob,varargout] = redrawPAM(dims,cpsi,ctree,paths,tpl,prob,L,opt
             cts=cts((size(cts,1)-parents+1):size(cts,1),...
                 (size(cts,2)-len+1):size(cts,2));
             [prob{modes,j},p]=drchrnd(prior+cts,parents,options);
+            prob{modes,j}=prob{modes,j}./sum(prob{modes,j},2);
             LL=LL+sum(log(p));
             ent=ent+entropy(p);
         end

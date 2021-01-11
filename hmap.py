@@ -33,8 +33,8 @@ def heatmap(x, y, tail=''):
         fig, ax = plt.subplots()
         plt.imshow(x2, cmap='gray', aspect='auto')
         # We want to show all ticks...
-        ax.set_xticks(np.arange(x2.shape[1]))
-        ax.set_xticklabels(['%.2e' % j for j in np.mean(x2, axis=1)], fontsize=3)
+        #ax.set_xticks(np.arange(x2.shape[0]))
+        #ax.set_xticklabels(['%.2e' % j for j in np.mean(x2, axis=1)], fontsize=3)
         ax.set_title('Class {0}, {1} Patients, {2} Topics'.format(i, x2.shape[0], x2.shape[1]))
         fig.tight_layout()
         plt.savefig(os.path.join('plots', 'heatmap{0}_{1}.pdf'.format(tail, i)), dpi=300)

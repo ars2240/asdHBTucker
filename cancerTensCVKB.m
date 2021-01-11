@@ -20,9 +20,9 @@
     % mex drawZscPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
     tpl=10; % topics per level
     gam0 = 0.5;
-    options.L = 3;
-    %options.topicType = 'Level';
-	%options.topicModel = 'PAM';
+    options.L = 2;
+    % options.topicType = 'Level';
+	% options.topicModel = 'None';
     options.par = 0;
     options.maxIter = 100;
     options.pType = 0;
@@ -41,13 +41,6 @@
     disp(options); %print options
     
     LL=zeros(nFolds,1); %initialize log-likelihood
-
-    L=options.L;
-
-    %adjustment if using constant L across dims
-    if length(L)==1
-        L=repelem(L,2);
-    end
     
     % remove bad genes
     asdG=collapse(asd,3,@max);
@@ -63,19 +56,22 @@
     [~,gP,~]=unique(double(asdGP)', 'rows');
     asd=asd(:,:,gP);
     
+    asd=permute(asd,[1 3 2]);
+    
     % multiply by factor
     %asd=asd*10;
 
-    for f=1:nFolds
+    for f=1%:nFolds
         b=cvInd==f; %logical indices of test fold
         ind=find(~b);
         fprintf('Fold # %6i\n',f);
         KB.LL=-inf;
         for k=1:nBest
             options.gam=gam0;
-            [~, ~, ~, ~, ~, options, ll,~] = ...
-                asdHBTucker3(asd,options);
-            fprintf('%13.6e, %13.6e\n',ll, options.gam(1));
+            [~, ~, ~, ~, ~, options, ll, ~] = ...
+                asdHBTucker3(asd(ind,:,:),options);
+            %fprintf('%13.6e, %13.6e\n',ll, options.gam(1));
+            fprintf('%13.6e %2i\n',ll, options.best.iter);
             if ll>KB.LL && ll~=0
                 KB = options.best;
             end
@@ -83,14 +79,12 @@
         fprintf('Best LL: %13.6e\n',KB.LL);
         phi=KB.phi; psi=KB.psi; tree=KB.tree; samples=KB.samples;
         paths=KB.paths; options.gam=KB.gamma;
-        %testPhi = asdHBTuckerNew(asd, psi, samples, paths, tree, ...
-        %    b, options);
-        testPhi=phi(find(b),:,:);
-        phi=phi(ind,:,:);
+        testPhi = asdHBTuckerNew(asd, psi, samples, paths, tree, ...
+            b, options);
         
         %save data
-        save(['data/cancerHBTCVCheatKB', int2str(nBest), '_L',...
-            int2str(options.L(1)), '_tGoal', int2str(options.topicsgoal),'_', ...
+        save(['data/cancerHBTCV3KB', int2str(nBest), '_L',...
+            int2str(options.L(1)), '_tpl', int2str(tpl),'_', ...
             int2str(f), '_', options.topicType, '_', ...
             options.topicModel, '.mat'],'phi', 'testPhi', 'psi', ...
             'tree', 'samples', 'paths', 'options');
@@ -102,9 +96,9 @@
     end
 
     % print LL info
-    output_header=sprintf('%13s %13s','mean','stDev');
-    fprintf('%s\n',output_header);
-    fprintf('%13.6e %13.6e\n', mean(LL), std(LL));
+    %output_header=sprintf('%13s %13s','mean','stDev');
+    %fprintf('%s\n',output_header);
+    %fprintf('%13.6e %13.6e\n', mean(LL), std(LL));
 % catch e
 %     display(e.identifier);
 %     display(e.message);
