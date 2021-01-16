@@ -150,8 +150,7 @@ void drawZ(int j, double *sampIn, double *sampOut, double *p,
     int ind, ip, s, st, lsum, psiSum; float t;
     double *psik; const mwSize *psikDims;
     for(i=0; i<size; i++){
-        t = pow(i+1,1/(float)modes);
-        if (topic == 0 || round(t) == t){
+        if (topic == 0 || indices(i,0,&phiDims[1]) == indices(i,1,&phiDims[1])){
             pdf1=0; st=1; lsum=0; psiSum=0;
             for(k=0; k<modes; k++){
                 ind = indices(i,k,&phiDims[1]);

@@ -74,6 +74,7 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
             [paths,tree,r,treeLL,treeEnt]=initializeTree(L,dims,gam);
         case 'PAM'
             [paths,tpl,prob,r,treeLL,treeEnt]=initializePAM(dims,options);
+            options.topicsPerLevel = tpl;
         case 'None'
             levels=ones(1,sum(L));
             r=cell(modes,1); %initialize

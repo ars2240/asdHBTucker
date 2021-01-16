@@ -8,9 +8,9 @@ n=12; % different iterates
 options=init_options();
 % mex drawZscPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
 options.gam = 1;
-options.L = 2;
-%options.topicType = 'Level';
-%options.topicModel = 'PAM';
+options.L = 3;
+options.topicType = 'Level';
+options.topicModel = 'PAM';
 options.par = 0;
 options.maxIter = 100;
 options.pType = 0;
@@ -29,8 +29,12 @@ options.print = 1;
 asdC=collapse(asd,[2,3]);
 
 for i=1:n
-    [~, ~, ~, ~, ~, o, ~, ~] = asdHBTucker3(asd,options);
-    KB = o.best; display(KB.iter);
+    if strcmp(options.topicModel,'PAM')
+        [~, ~, ~, ~, ~, ~, o, ~, ~] = asdHBTucker3(asd,options);
+    else
+        [~, ~, ~, ~, ~, o, ~, ~] = asdHBTucker3(asd,options);
+    end
+    KB = o.best; %display(KB.iter);
     phi=KB.phi; psi=KB.psi; samples=KB.samples;
     paths=KB.paths;% options.gam=KB.gamma;
     phi=phi.*asdC;

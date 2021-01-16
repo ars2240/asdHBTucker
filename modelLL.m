@@ -34,12 +34,15 @@ function [LL, zLL, treeLL] = modelLL(phi, psi, samples, paths, r, varargin)
                     +gammaln(1+g)-gammaln(sum(t)+g);
             end
         case 'PAM'
+            tpl = options.topicsPerLevel;
             for i=1:size(prob,1)
                 for j=1:size(prob,2)
                     if i~=size(prob,1) && j~=size(prob,2)
+                        in = paths(:,j+(i-1)*L(1))-sum(tpl{i}(1:(j-1)));
+                        out = paths(:,j+(i==2)+mod(i,2)*L(1))...
+                            -sum(tpl{mod(i,2)+1}(1:(j-(i~=2))));
                         treeLL=treeLL+sum(log(prob{i,j}(sub2ind(...
-                            size(prob{i,j}), paths(:,j+(i-1)*L(1)),...
-                            paths(:,j+(i==2)+mod(i,2)*L(1))))));
+                            size(prob{i,j}), in, out))));
                     end
                 end
             end
