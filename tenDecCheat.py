@@ -298,4 +298,5 @@ def ten_dec(fname='cancerSparseND4', indF='cancerCVInd', rank=5, fselect='min du
         print('Log-likelihood: {0}'.format(l/X.shape[0]))
 
 
-ten_dec(fname='toy.mat', rank=3, fselect='', train_split=False)
+for i in range(12):
+    ten_dec(fname='toy.mat', rank=5, fselect='', train_split=False)
