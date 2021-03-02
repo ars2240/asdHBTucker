@@ -31,13 +31,10 @@ function [phi,p] = drawCoreUni(paths,coreDims,varargin)
     end
     
     % size of topic space
-    switch options.topicType
-        case 'Cartesian'
-            len = prod(L);
-        case 'Level'
-            len = L(1);
-        otherwise
-            error('Error. \nNo topic type selected');
+    if strcmp(options.topicType,'Cartesian')
+        len = prod(L);
+    else
+        len = L(1);
     end
     
     %draw values from dirichlet distribution with uniform prior
@@ -69,22 +66,19 @@ function [phi,p] = drawCoreUni(paths,coreDims,varargin)
                 res{j}=1:L(j);
             end
         end
-        switch options.topicType
-            case 'Cartesian'
-                ind=tensIndex(res);
-                len=size(ind,1);
-                ind2=tensIndex2([repmat(i,[len,1]),ind],size(phi));
-                phi(ind2)=reshape(vals(i,:),L);
-            case 'Level'
-                ind = zeros(L(1),modes);
-                for j=1:modes
-                    ind(:,j)=res{j};
-                end
-                len=L(1);
-                ind2=tensIndex2([repmat(i,[len,1]),ind],size(phi));
-                phi(ind2)=vals(i,:);
-            otherwise
-                error('Error. \nNo topic type selected');
+        if strcmp(options.topicType,'Cartesian')
+            ind=tensIndex(res);
+            len=size(ind,1);
+            ind2=tensIndex2([repmat(i,[len,1]),ind],size(phi));
+            phi(ind2)=reshape(vals(i,:),L);
+        else
+            ind = zeros(L(1),modes);
+            for j=1:modes
+                ind(:,j)=res{j};
+            end
+            len=L(1);
+            ind2=tensIndex2([repmat(i,[len,1]),ind],size(phi));
+            phi(ind2)=vals(i,:);
         end
     end
     

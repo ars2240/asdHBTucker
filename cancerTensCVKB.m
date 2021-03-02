@@ -20,11 +20,11 @@
     % mex drawZscPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
     tpl=10; % topics per level
     gam0 = 0.5;
-    options.L = 2;
+    options.L = [2, 1];
     % options.topicType = 'Level';
 	% options.topicModel = 'None';
     options.par = 0;
-    options.maxIter = 100;
+    options.maxIter = 20;
     options.pType = 0;
     % options.treeReps = 5;
     % options.btReps = 5;
@@ -37,6 +37,7 @@
     % options.cutoff = 0.1;
     % options.sparse = 0;
     options.topicsgoal = 500;
+    dom = 'Genes';
     
     disp(options); %print options
     
@@ -56,12 +57,16 @@
     [~,gP,~]=unique(double(asdGP)', 'rows');
     asd=asd(:,:,gP);
     
-    asd=permute(asd,[1 3 2]);
+    if strcmp(dom,'Pthwy')
+        asd=permute(asd,[1 3 2]);
+    end
+    asd=collapse(asd,3,@max);
+    asd = sptensor([asd.subs,ones(size(asd.subs,1),1)], asd.vals, [asd.size, 1]);
     
     % multiply by factor
     %asd=asd*10;
 
-    for f=1%:nFolds
+    for f=10:nFolds
         b=cvInd==f; %logical indices of test fold
         ind=find(~b);
         fprintf('Fold # %6i\n',f);
@@ -85,8 +90,7 @@
         %save data
         save(['data/cancerHBTCV3KB', int2str(nBest), '_L',...
             int2str(options.L(1)), '_tpl', int2str(tpl),'_', ...
-            int2str(f), '_', options.topicType, '_', ...
-            options.topicModel, '.mat'],'phi', 'testPhi', 'psi', ...
+            int2str(f), '_hLDA.mat'],'phi', 'testPhi', 'psi', ...
             'tree', 'samples', 'paths', 'options');
 
         %compute LL

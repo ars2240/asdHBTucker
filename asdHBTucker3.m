@@ -31,10 +31,14 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
         end
         ind{1}=find(cts>0)';
         x=x(tensIndex2(ind,odims));
-        x=reshape(x,[length(ind{1}),odims(2:end)]);
+        s=[length(ind{1}),odims(2:end)];
+        x=reshape(x,s);
         x=sptensor(x);
+        if ndims(x)<3
+            x=sptensor([x.subs,ones(size(x.subs,1),1)],x.vals,s);
+        end
     end
-    
+
     dims=size(x); %dimensions of tensor
     
     gam=options.gam; L=options.L;
@@ -71,7 +75,7 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
     treeStart=tic;
     switch options.topicModel
         case 'IndepTrees'
-            [paths,tree,r,treeLL,treeEnt]=initializeTree(L,dims,gam);
+            [paths,tree,r,treeLL,treeEnt]=initializeTree(dims, options);
         case 'PAM'
             [paths,tpl,prob,r,treeLL,treeEnt]=initializePAM(dims,options);
             options.topicsPerLevel = tpl;
@@ -169,9 +173,6 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
             %draw core tensor p(z|x)
             coreStart=tic;
             [phi,~]=drawCoreUni(paths,coreDims,options);
-            if ndims(phi) < 3
-                phi(end, end, 2) = 0; 
-            end
             coreTime=toc(coreStart);
         end
         
@@ -221,6 +222,7 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
             phi = drawCoreMAP(samples,paths,coreDims,r,options);
         end
         phiS = sparsePhi(phi, coreDims, paths, options);
+        n = norm(x-ttm(tensor(phiS), psi, [2,3]));
         if strcmp(options.topicModel,'PAM')
             LL2=logLikelihood(x, x, 1, 1/(size(x,2)*size(x,3)), psi, ...
                 paths, {}, prob, samples, options);
@@ -249,24 +251,24 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
         end
         if options.print == 1 && options.topicsgoal == 0
             fileID = fopen('verbose.txt','w');
-            output_header=sprintf('%6s %13s %13s %13s %13s %13s',...
+            output_header=sprintf('%6s %13s %13s %13s %13s %13s %13s',...
                 'iter', 'loglikelihood', 'mixture LL', 'entropy',...
-                'tree LL','z LL');
+                'tree LL','z LL', 'norm');
             fprintf(fileID,'%s\n',output_header);
             fprintf(fileID,...
-                '%6i %13.2e %13.2e %13.2e %13.2e %13.2e\n',...
-                0,LL,LL2,ent,treeLL,zLL);
+                '%6i %13.2e %13.2e %13.2e %13.2e %13.2e %13.2e\n',...
+                0,LL,LL2,ent,treeLL,zLL,n);
             fclose(fileID);
         elseif options.print == 1
             div = diversity(psi);
             fileID = fopen('verbose.txt','w');
-            output_header=sprintf('%6s %13s %13s %13s %13s %13s %6s %13s %13s %13s',...
+            output_header=sprintf('%6s %13s %13s %13s %13s %13s %6s %13s %13s %13s %13s',...
                 'iter', 'loglikelihood', 'mixture LL', 'entropy',...
-                'tree LL','z LL', 'ntop', 'gamma', 'div1', 'div2');
+                'tree LL','z LL', 'ntop', 'gamma', 'div1', 'div2', 'norm');
             fprintf(fileID,'%s\n',output_header);
             fprintf(fileID,...
-                '%6i %13.2e %13.2e %13.2e %13.2e %13.2e %6i %13.2e %13.2e %13.2e\n',...
-                0,LL,LL2,ent,treeLL,zLL,nt,options.gam(1),div(1),div(2));
+                '%6i %13.2e %13.2e %13.2e %13.2e %13.2e %6i %13.2e %13.2e %13.2e %13.2e\n',...
+                0,LL,LL2,ent,treeLL,zLL,nt,options.gam(1),div(1),div(2),n);
             fclose(fileID);
         end
     end
@@ -286,7 +288,7 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
             switch options.topicModel
                 case 'IndepTrees'
                     [paths,tree,r,treeLL,treeEnt]=redrawTree(dims,...
-                        cpsi,ctree,paths,L,tree,r,options);
+                        cpsi,ctree,paths,tree,r,options);
                 case 'PAM'
                     [paths,prob,treeLL,treeEnt]=redrawPAM(dims,...
                         cpsi,ctree,paths,tpl,prob,L,options);
@@ -422,6 +424,7 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
                 phi = drawCoreMAP(samples,paths,coreDims,r,options);
             end
             phiS = sparsePhi(phi, coreDims, paths, options);
+            n = norm(x-ttm(tensor(phiS), psi, [2,3]));
             if strcmp(options.topicModel,'PAM')
                 LL2=logLikelihood(x, x, 1, 1/(size(x,2)*size(x,3)), psi, ...
                     paths, {}, prob, samples, options);
@@ -460,15 +463,15 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
             if options.print == 1 && options.topicsgoal == 0
                 fileID = fopen('verbose.txt','a');
                 fprintf(fileID,...
-                    '%6i %13.2e %13.2e %13.2e %13.2e %13.2e\n',...
-                    nIter,LL,LL2,ent,treeLL,zLL);
+                    '%6i %13.2e %13.2e %13.2e %13.2e %13.2e %13.2e\n',...
+                    nIter,LL,LL2,ent,treeLL,zLL,n);
                 fclose(fileID);
             elseif options.print == 1
                 div = diversity(psi);
                 fileID = fopen('verbose.txt','a');
                 fprintf(fileID,...
-                    '%6i %13.2e %13.2e %13.2e %13.2e %13.2e %6i %13.2e %13.2e %13.2e\n',...
-                    nIter,LL,LL2,ent,treeLL,zLL,nt,options.gam(1),div(1),div(2));
+                    '%6i %13.2e %13.2e %13.2e %13.2e %13.2e %6i %13.2e %13.2e %13.2e %13.2e\n',...
+                    nIter,LL,LL2,ent,treeLL,zLL,nt,options.gam(1),div(1),div(2),n);
                 fclose(fileID);
             end
         end

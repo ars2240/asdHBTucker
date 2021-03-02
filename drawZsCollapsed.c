@@ -135,7 +135,9 @@ void drawZ(int j, double *sampIn, double *sampOut, double *p,
     
     // check dims
     for(k=0; k<modes; k++){
-        if(phiDims[k+1]!=l[k]){
+        if(phiDims[k+1]!=l[k] && phiDims[k+1]!=0 && round(l[k])!=1){
+            mexPrintf("phiDims[%d] = %d\n", k+1, phiDims[k+1]);
+            mexPrintf("l[%d] = %f\n", k, l[k]);
             mexErrMsgIdAndTxt("MyProg:dims:mismatch",
                 "Dims of phi don't match number of levels.");
         }
@@ -257,10 +259,10 @@ void drawZ(int j, double *sampIn, double *sampOut, double *p,
 int indices(long long int x, int m, const mwSize *dims){
     int t=1; int i, o;
     for(i=0; i<=m; i++){
-        t *= dims[i];
+        t *= dims[i] == 0 ? 1 : dims[i];
     }
     o = x % t;
-    t /= dims[m];
+    t /= dims[m] == 0 ? 1 : dims[m];
     o = floor(o/t);
     return o;
 }

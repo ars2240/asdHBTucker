@@ -40,13 +40,10 @@ function phi = drawCoreMAP(samples,paths,coreDims,r,options)
     cts=cts(tensIndex2(ind,cs));
     
     % size of topic space
-    switch options.topicType
-        case 'Cartesian'
-            len = prod(L);
-        case 'Level'
-            len = L(1);
-        otherwise
-            error('Error. \nNo topic type selected');
+    if strcmp(options.topicType,'Cartesian')
+        len = prod(L);
+    else
+        len = L(1);
     end
     
     p = zeros(1,coreDims(1)); %initialize probability matrix
@@ -65,25 +62,22 @@ function phi = drawCoreMAP(samples,paths,coreDims,r,options)
                 error('Error. \nNo prior type selected');
         end
         
-        switch options.topicType
-            case 'Cartesian'
-                ind=cell(modes+1,1);
-                %get restaurants for patient
-                for j=1:modes
-                    ind{j}=paths(i,(1+sum(L(1:(j-1)))):sum(L(1:j)));
-                end
-                ind{modes+1}=i;
-                prior=prior+reshape(cts(tensIndex2(ind,cs)),[1,len]);
-            case 'Level'
-                ind = zeros(L(1),modes+1);
-                %get restaurants for patient
-                for j=1:modes
-                    ind(:,j)=paths(i,(1+sum(L(1:(j-1)))):sum(L(1:j)));
-                end
-                ind(:,modes+1)=i;
-                prior=prior+reshape(cts(tensIndex2(ind,cs)),[1,len]);
-            otherwise
-                error('Error. \nNo topic type selected');
+        if strcmp(options.topicType,'Cartesian')
+            ind=cell(modes+1,1);
+            %get restaurants for patient
+            for j=1:modes
+                ind{j}=paths(i,(1+sum(L(1:(j-1)))):sum(L(1:j)));
+            end
+            ind{modes+1}=i;
+            prior=prior+reshape(cts(tensIndex2(ind,cs)),[1,len]);
+        else
+            ind = zeros(L(1),modes+1);
+            %get restaurants for patient
+            for j=1:modes
+                ind(:,j)=paths(i,(1+sum(L(1:(j-1)))):sum(L(1:j)));
+            end
+            ind(:,modes+1)=i;
+            prior=prior+reshape(cts(tensIndex2(ind,cs)),[1,len]);
         end
 
         %set values using MAP estimate
@@ -91,30 +85,22 @@ function phi = drawCoreMAP(samples,paths,coreDims,r,options)
         vals=prior./sum(prior);
         
         %set values
-        switch options.topicType
-            case 'Cartesian'
-                ind=cell(modes+1,1);
-                %get restaurants for patient
-                ind{1}=i;
-                for j=1:modes
-                    ind{j+1}=1:L(j);
-                end
-                phi(tensIndex2(ind,size(phi)))=reshape(vals,L);
-            case 'Level'
-                ind = zeros(L(1),modes+1);
-                ind(:,1)=i;
-                %get restaurants for patient
-                for j=1:modes
-                    ind(:,j+1)=1:L(1);
-                end
-                phi(tensIndex2(ind,size(phi)))=vals;
-            otherwise
-                error('Error. \nNo topic type selected');
+        if strcmp(options.topicType,'Cartesian')
+            ind=cell(modes+1,1);
+            %get restaurants for patient
+            ind{1}=i;
+            for j=1:modes
+                ind{j+1}=1:L(j);
+            end
+            phi(tensIndex2(ind,size(phi)))=reshape(vals,L);
+        else
+            ind = zeros(L(1),modes+1);
+            ind(:,1)=i;
+            %get restaurants for patient
+            for j=1:modes
+                ind(:,j+1)=1:L(1);
+            end
+            phi(tensIndex2(ind,size(phi)))=vals;
         end
     end
-    
-    if ndims(phi) < 3
-        phi(end, end, 2) = 0; 
-    end
-    
 end

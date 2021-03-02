@@ -74,7 +74,7 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
     treeStart=tic;
     switch options.topicModel
         case 'IndepTrees'
-            [paths,r] = newTreePathsInit(oPaths,tree,b,L);
+            [paths,r] = newTreePathsInit(oPaths,tree,b,options);
             
         case 'PAM'
             [tpl, r]=initPAM(dims,options);

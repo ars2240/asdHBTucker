@@ -8,19 +8,19 @@ n=12; % different iterates
 options=init_options();
 % mex drawZscPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
 options.gam = 1;
-options.L = 3;
-options.topicType = 'Level';
-options.topicModel = 'PAM';
+options.L = 2;
+%options.topicType = 'Level';
+%options.topicModel = 'None';
 options.par = 0;
 options.maxIter = 100;
-options.pType = 0;
+options.pType = 1;
 % options.treeReps = 5;
 % options.btReps = 5;
-tpl=2;
+tpl=4;
 options.topicsPerLevel{1}=tpl;
 options.topicsPerLevel{2}=tpl;
 % options.collapsed = 0;
-options.keepBest = 1;
+options.keepBest = 2;
 options.time = 0;
 options.print = 1;
 % options.cutoff = 0.1;
@@ -28,6 +28,7 @@ options.print = 1;
 
 asdC=collapse(asd,[2,3]);
 
+correct = 0;
 for i=1:n
     if strcmp(options.topicModel,'PAM')
         [~, ~, ~, ~, ~, ~, o, ~, ~] = asdHBTucker3(asd,options);
@@ -40,5 +41,13 @@ for i=1:n
     phi=phi.*asdC;
     x= ttm(tensor(phi), psi, [2,3]);
     disp(norm(asd-x));
-    display(samples);
+    correct=correct+int8(optimal(samples));
+end
+disp(correct);
+
+function b=optimal(samples)
+    n = size(samples,1)-1;
+    b = samples(1,4) == samples(2,4) && samples(1,5) == samples(2,5) ...
+        && length(unique(samples(2:end,4))) == n ...
+        && length(unique(samples(2:end,5))) == n;
 end
