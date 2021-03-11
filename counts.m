@@ -23,10 +23,14 @@ function [cphi,cpsi,ctree] = counts(samples, dims, r, varargin)
             error("Error. \nIncorrect number of inputs.");
     end
     
-    modes=length(r); %number of dependent modes
+    modes=length(dims)-1;
     si=[dims,ones(1,modes)];
     for i=1:modes
-        si(1+modes+i)=max(max(r{i}),max(samples(:,1+modes+i)));
+        if iscell(r)
+            si(1+modes+i)=max(max(r{i}),max(samples(:,1+modes+i)));
+        else
+            si(1+modes+i)=max(max(r),max(samples(:,1+modes+i)));
+        end
     end
     % count of entire sample tensor
     cts=sptensor(samples,1,si);
@@ -41,8 +45,13 @@ function [cphi,cpsi,ctree] = counts(samples, dims, r, varargin)
         ind{1}=1:size(cphi,1);
         cs=size(cphi);
         for i=1:modes
-            ind{i+1}=r{i};
-            cs(i+1)=length(r{i});
+            if iscell(r)
+                ind{i+1}=r{i};
+                cs(i+1)=length(r{i});
+            else
+                ind{i+1}=r;
+                cs(i+1)=length(r);
+            end
         end
         cphi=cphi(tensIndex2(ind,size(cphi)));
         
@@ -63,8 +72,13 @@ function [cphi,cpsi,ctree] = counts(samples, dims, r, varargin)
                 ind2=ind;
                 %get restaurants for patient
                 for j=1:modes
-                    [~,ind{j+1}]=ismember(paths(i,...
-                        (1+sum(L(1:(j-1)))):sum(L(1:j))),r{j});
+                    if iscell(r)
+                        [~,ind{j+1}]=ismember(paths(i,...
+                            (1+sum(L(1:(j-1)))):sum(L(1:j))),r{j});
+                    else
+                        [~,ind{j+1}]=ismember(paths(i,...
+                            (1+sum(L(1:(j-1)))):sum(L(1:j))),r);
+                    end
                     ind2{j+1}=1:L(j);
                 end
                 cphiS(tensIndex2(ind2,[dims(1),L]))=cphi(tensIndex2(ind,cs));

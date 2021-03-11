@@ -24,7 +24,11 @@ function phi = drawCoreMAP(samples,paths,coreDims,r,options)
     %get counts
     cts=accumarray(samples(:,[(2+modes):(1+2*modes),1]),1);
     for i=1:modes
-    	pad=max(r{i})-size(cts,i);
+        if iscell(r)
+            pad=max(r{i})-size(cts,i);
+        else
+            pad=max(r)-size(cts,i);
+        end
         if pad>0
             padding=zeros(1,modes+1);
             padding(i)=pad;
@@ -33,7 +37,11 @@ function phi = drawCoreMAP(samples,paths,coreDims,r,options)
     end
     ind=cell(modes+1,1);
     for i=1:modes
-        ind{i}=r{i};
+        if iscell(r)
+            ind{i}=r{i};
+        else
+            ind{i}=r;
+        end
     end
     ind{modes+1}=1:size(cts,modes+1);
     cs=[coreDims(2:end),coreDims(1)];

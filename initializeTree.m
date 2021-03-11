@@ -16,7 +16,7 @@ function [paths,tree,r,LL,ent]= initializeTree(dims, options)
     ent=0; %initialize entropy
     modes=length(L); %number of dependent modes
     
-    paths=zeros(dims(1),sum(L));
+    paths=ones(dims(1),sum(L));
     if strcmp(options.topicType,'CP')
         tree{1}=[];
         r=1;
@@ -64,9 +64,6 @@ function [paths,tree,r,LL,ent]= initializeTree(dims, options)
         end
         paths=repmat(paths(:,1:L(1)),1,modes);
     else
-        for i=1:modes
-            paths(:,1+sum(L(1:(i-1))))=1; %sit at root table
-        end
         tree=cell(modes,1); %initialize
         r=cell(modes,1); %initialize
         for i=1:modes

@@ -101,9 +101,13 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
             cphi = options.init.phi.*t(:,2);
         else
             %initialize zero counts
-            dimsM=zeros(modes,1);
-            for i=1:modes
-                dimsM(i)=length(r{i});
+            if strcmp(options.topicType,'CP')
+                dimsM=length(r)*ones(modes,1);
+            else
+                dimsM=zeros(modes,1);
+                for i=1:modes
+                    dimsM(i)=length(r{i});
+                end
             end
 
             if options.sparse==0
@@ -310,7 +314,11 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
                 cTime=cTime+toc(cStart);
                 
                 for i=1:modes
-                    pad=max(r{i})-size(cphi,i+1);
+                    if strcmp(options.topicType,'CP')
+                        pad=max(r)-size(cphi,i+1);
+                    else
+                        pad=max(r{i})-size(cphi,i+1);
+                    end
                     if pad>0
                        if options.sparse==0
                            z=zeros(1,modes+1);
@@ -323,13 +331,21 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
                 if options.sparse==0
                    ind=cell(length(r)+1,1);
                    for i=1:modes
-                     ind{1+i}=r{i};
+                        if strcmp(options.topicType,'CP')
+                            ind{1+i}=r;
+                        else
+                            ind{1+i}=r{i};
+                        end
                    end
                    ind{1}=1:size(cphi,1);
                    cphi=cphi(tensIndex2(ind,size(cphi)));
                 end
                 for i=1:modes
-                    cpsi{i}=cpsi{i}(:,r{i});
+                    if strcmp(options.topicType,'CP')
+                        cpsi{i}=cpsi{i}(:,r);
+                    else
+                        cpsi{i}=cpsi{i}(:,r{i});
+                    end
                 end
                 %draw latent topic z's
                 zStart=tic;

@@ -20,13 +20,13 @@ function [tpl, r]=initPAM(dims, options)
         end
         if length(tpl{1})==1
             tpl{1}=[1,repelem(tpl{1}(1),L(1)-1)];
-        elseif length(tpl{1})~=(L(1)-1)
+        elseif length(tpl{1})~=L(1)
             error("Error. \nInvalid length of topics per level");
         end
         for i=2:modes
             if length(tpl{i})==1
                 tpl{i}=repelem(tpl{i}(1),L(i));
-            elseif length(tpl{i})~=(L(i)-1)
+            elseif length(tpl{i})~=L(i)
                 error("Error. \nInvalid length of topics per level");
             end
         end

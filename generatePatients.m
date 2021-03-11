@@ -75,7 +75,11 @@ function sparse = generatePatients(x, prior, psi, opaths, tree, varargin)
                     curRes=1; %set current restaurant as root
                     for k=2:L(j)
                         %get restaurant list
-                        rList=tree{j}{curRes};
+                        if strcmp(options.topicType,'CP')
+                            rList=tree{curRes};
+                        else
+                            rList=tree{j}{curRes};
+                        end
                         rList=sort(rList);
 
                         %compute CRP part of pdf
@@ -163,21 +167,21 @@ function sparse = generatePatients(x, prior, psi, opaths, tree, varargin)
     for i=1:npats
         
         %draw core tensor
-        if strcmp(options.topicType,'Level')
+        if ~strcmp(options.topicType,'Cartesian')
             ind = zeros(L(1),modes);
         end
         for j=1:modes
             res{j}=paths(i,1+sum(L(1:(j-1))):sum(L(1:j)));
-            if strcmp(options.topicType,'Level')
+            if ~strcmp(options.topicType,'Cartesian')
                 ind(:,j)=res{j};
             end
             % res{1}=ismember(r{1},res{1});
         end
         if exist('samples','var') == 1
-            if strcmp(options.topicType,'Level')
-                alpha = prior + cphi(tensIndex2(ind,size(cphi)))';
-            else
+            if strcmp(options.topicType,'Cartesian')
                 alpha = prior + cphi(tensIndex2(res,size(cphi)))';
+            else
+                alpha = prior + cphi(tensIndex2(ind,size(cphi)))';
             end
         else
             alpha = prior;
@@ -192,19 +196,16 @@ function sparse = generatePatients(x, prior, psi, opaths, tree, varargin)
             z=multi(vals);
             %zv=[zv z];
             
-            switch options.topicType
-                case 'Cartesian'
-                    for k=1:modes
-                        zt=mod(z-1,prod(L(1:k)));
-                        zt=floor(zt/prod(L(1:(k-1))))+1;
-                        zr{k}=res{k}(zt);
-                    end
-                case 'Level'
-                    for k=1:modes
-                        zr{k}=res{k}(z);
-                    end
-                otherwise
-                    error('Error. \nNo topic type selected');
+            if strcmp(options.topicType, 'Cartesian')
+                for k=1:modes
+                    zt=mod(z-1,prod(L(1:k)));
+                    zt=floor(zt/prod(L(1:(k-1))))+1;
+                    zr{k}=res{k}(zt);
+                end
+            else
+                for k=1:modes
+                    zr{k}=res{k}(z);
+                end
             end
             
             %draw y

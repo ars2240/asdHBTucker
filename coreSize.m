@@ -4,6 +4,10 @@ function [coreDims] = coreSize(modes,dims,r)
     coreDims(1)=dims(1);
     for i=1:modes
        %set core dimensions to the number of topics in each mode
-       coreDims(i+1)=length(r{i});
+        if iscell(r)
+            coreDims(i+1)=length(r{i});
+        else
+            coreDims(i+1)=length(r);
+        end
     end
 end

@@ -19,12 +19,12 @@
     options=init_options();
     % mex drawZscPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
     tpl=10; % topics per level
-    gam0 = 0.5;
-    options.L = [2, 1];
-    % options.topicType = 'Level';
-	% options.topicModel = 'None';
+    gam0 = 0.1;
+    options.L = 2;
+    options.topicType = 'CP';
+	%options.topicModel = 'PAM';
     options.par = 0;
-    options.maxIter = 20;
+    options.maxIter = 100;
     options.pType = 0;
     % options.treeReps = 5;
     % options.btReps = 5;
@@ -57,41 +57,61 @@
     [~,gP,~]=unique(double(asdGP)', 'rows');
     asd=asd(:,:,gP);
     
-    if strcmp(dom,'Pthwy')
+    if strcmp(dom,'Pwy')
         asd=permute(asd,[1 3 2]);
     end
-    asd=collapse(asd,3,@max);
-    asd = sptensor([asd.subs,ones(size(asd.subs,1),1)], asd.vals, [asd.size, 1]);
+    %asd=collapse(asd,3,@max);
+    %asd=sptensor([asd.subs,ones(size(asd.subs,1),1)], asd.vals, [asd.size, 1]);
     
     % multiply by factor
     %asd=asd*10;
 
-    for f=10:nFolds
+    for f=1:nFolds
         b=cvInd==f; %logical indices of test fold
         ind=find(~b);
         fprintf('Fold # %6i\n',f);
         KB.LL=-inf;
         for k=1:nBest
             options.gam=gam0;
-            [~, ~, ~, ~, ~, options, ll, ~] = ...
+            if strcmp(options.topicModel,'PAM')
+                [~, ~, ~, ~, ~, prob, options, ll, ~] = ...
                 asdHBTucker3(asd(ind,:,:),options);
+            else
+                [~, ~, ~, ~, ~, options, ll, ~] = ...
+                asdHBTucker3(asd(ind,:,:),options);
+            end
             %fprintf('%13.6e, %13.6e\n',ll, options.gam(1));
             fprintf('%13.6e %2i\n',ll, options.best.iter);
             if ll>KB.LL && ll~=0
                 KB = options.best;
+                if strcmp(options.topicModel,'PAM')
+                    KB.prob = prob;
+                end
             end
         end
         fprintf('Best LL: %13.6e\n',KB.LL);
-        phi=KB.phi; psi=KB.psi; tree=KB.tree; samples=KB.samples;
+        phi=KB.phi; psi=KB.psi; samples=KB.samples;
         paths=KB.paths; options.gam=KB.gamma;
-        testPhi = asdHBTuckerNew(asd, psi, samples, paths, tree, ...
-            b, options);
-        
-        %save data
-        save(['data/cancerHBTCV3KB', int2str(nBest), '_L',...
-            int2str(options.L(1)), '_tpl', int2str(tpl),'_', ...
-            int2str(f), '_hLDA.mat'],'phi', 'testPhi', 'psi', ...
-            'tree', 'samples', 'paths', 'options');
+        if strcmp(options.topicModel,'PAM')
+            prob=KB.prob;
+            testPhi = asdHBTuckerNew(asd, psi, samples, paths, prob, ...
+                b, options);
+            save(['data/cancerHBTCV3KB', int2str(nBest), '_L',...
+                int2str(options.L(1)), '_tpl', int2str(tpl), '_', ...
+                int2str(f), '_', options.topicModel, '_', ...
+                options.topicType, '_', dom, '.mat'],'phi', 'testPhi', ...
+                'psi', 'prob', 'samples', 'paths', 'options');
+        else
+            tree=KB.tree;
+            testPhi = asdHBTuckerNew(asd, psi, samples, paths, tree, ...
+                b, options);
+            %save data
+            save(['data/cancerHBTCV3KB', int2str(nBest), '_L',...
+                int2str(options.L(1)), '_tpl', int2str(tpl), '_', ...
+                int2str(f), '_', options.topicModel, '_', ...
+                options.topicType, '_', dom, '.mat'],'phi', 'testPhi', ...
+                'psi', 'tree', 'samples', 'paths', 'options');
+        end
 
         %compute LL
         %LL(f)=logLikelihood(asd(find(~b),:,:), asd(find(b),:,:), ...

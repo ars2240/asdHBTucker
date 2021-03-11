@@ -52,8 +52,13 @@ function [LL, zLL, treeLL] = modelLL(phi, psi, samples, paths, r, varargin)
             error('Error. \nNo topic model type selected');
     end
     
-    [~,samples(:,4)]=ismember(samples(:,4),r{1});
-    [~,samples(:,5)]=ismember(samples(:,5),r{2});
+    if iscell(r)
+        [~,samples(:,4)]=ismember(samples(:,4),r{1});
+        [~,samples(:,5)]=ismember(samples(:,5),r{2});
+    else
+        [~,samples(:,4)]=ismember(samples(:,4),r);
+        [~,samples(:,5)]=ismember(samples(:,5),r);
+    end
     zLL=sum(log(phi(sub2ind(size(phi), samples(:,1), samples(:,4), samples(:,5)))))...
         +sum(log(psi{1}(sub2ind(size(psi{1}), samples(:,2), samples(:,4)))))...
         +sum(log(psi{2}(sub2ind(size(psi{2}), samples(:,3), samples(:,5)))));

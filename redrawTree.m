@@ -20,14 +20,15 @@ function [paths,tree,r,LL,ent] = redrawTree(dims,cpsi,ctree,paths,tree,r,options
     ent=0; %initialize entropy
     
     if strcmp(options.topicType,'CP')
-        cts=cell(modes,1);
+        cts=cell(modes,1); start=cell(modes,1);
+        subs=cell(modes,1); vals=cell(modes,1);
         for j=1:modes
            cts{j}=ctree{j};
            if options.sparse==1
-               subs=cts{j}.subs;
-               vals=cts{j}.vals;
-               [s,start,~]=unique(subs(:,1));
-               start=[start; nnz(cts{j})+1];
+               subs{j}=cts{j}.subs;
+               vals{j}=cts{j}.vals;
+               [s,start{j},~]=unique(subs{j}(:,1));
+               start{j}=[start{j}; nnz(cts{j})+1];
            else
                cts{j}=permute(cts{j},[2:(modes+1),1]);
            end
@@ -43,8 +44,6 @@ function [paths,tree,r,LL,ent] = redrawTree(dims,cpsi,ctree,paths,tree,r,options
                 newRes=find(~ismember(1:max(r+1),r),1);
 
                 if ~isempty(tree{curRes})
-                    lp = 0;
-                    
                     %add new restaurant to list
                     rList=[tree{curRes} newRes];
                     [rList, order]=sort(rList);
@@ -53,6 +52,9 @@ function [paths,tree,r,LL,ent] = redrawTree(dims,cpsi,ctree,paths,tree,r,options
                     c=histc([paths(1:(i-1),k); paths((i+1):end,k)]',rList);
                     b = c>0 | rList == newRes;
                     rList=rList(b); c=c(b); order=order(b);
+                    [~,l]=max(order);
+                    c(l)=gam(j);
+                    lp=log(c);
                     
                     for j=1:modes
                         %get counts
@@ -80,8 +82,8 @@ function [paths,tree,r,LL,ent] = redrawTree(dims,cpsi,ctree,paths,tree,r,options
                         %get counts
                         if options.sparse==1
                            cts1=ctsA(:,rList);
-                           tsubs=subs(start(i):(start(i+1)-1),:);
-                           tvals=vals(start(i):(start(i+1)-1));
+                           tsubs=subs{j}(start{j}(i):(start{j}(i+1)-1),:);
+                           tvals=vals{j}(start{j}(i):(start{j}(i+1)-1));
                            [incl,tsubs(:,3)]=ismember(tsubs(:,3),rList);
                            if sum(incl)>0
                                tsubs=tsubs(incl,:);
@@ -96,14 +98,11 @@ function [paths,tree,r,LL,ent] = redrawTree(dims,cpsi,ctree,paths,tree,r,options
                         gcts2=gcts(:,rList);
 
                         %compute contribution to pdf
-                        [~,l]=max(order);
-                        c(l)=gam(j);
-                        pdf = getPDF(c, rList, cts1, cts2, gcts2, prior);
-                        lp = log(pdf) + lp;
+                        lp = logPDF(lp, rList, cts1, cts2, gcts2, prior);
                     end
                     
                     %pick new table
-                    pdf = exp(lp);
+                    pdf=adjPDF(lp);
                     next=multi(pdf);
                     nextRes=rList(next);
                     p=pdf(next);
@@ -136,7 +135,7 @@ function [paths,tree,r,LL,ent] = redrawTree(dims,cpsi,ctree,paths,tree,r,options
         end
 
         %handle abandoned tables
-        rList=reshape(paths(:,(1):(L(1))),[],1);
+        rList=reshape(paths(:,1:L(1)),[],1);
         in=ismember(r,rList);
         r=r(in);
         r=sort(r);
@@ -149,14 +148,12 @@ function [paths,tree,r,LL,ent] = redrawTree(dims,cpsi,ctree,paths,tree,r,options
 
         r=unique(paths(:,1:L(1)))';
         l=length(r);
-        r=1:l;
         tN=cell(l,1);
         for j=1:l
-            tN{j}=arrayfun(@(x)find(r{i}==x,1),tree{r(j)});
+            tN{j}=arrayfun(@(x) find(r==x,1),tree{r(j)});
         end
-        paths(:,(1):(L(1)))=arrayfun(@(x)find(r==x,1),paths(:,1:L(1)));
-        
-        tree=tN;
+        paths(:,1:L(1))=arrayfun(@(x)find(r==x,1),paths(:,1:L(1)));
+        r=1:l; tree=tN;
         paths=repmat(paths(:,1:L(1)),1,modes);
     else
         for j=1:modes

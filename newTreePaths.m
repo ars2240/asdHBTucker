@@ -16,14 +16,12 @@ function nPaths = newTreePaths(asdTens,ocpsi,ctree,paths,tree,ind,options)
            curRes=1; %set current restaurant as root
 
             for k=2:L(1)
-                lp=0;
-                
                 %restaurant list
                 rList=tree{curRes};
                 rList=sort(rList);
 
                 %compute CRP part of pdf
-                pdf=histc(paths(:,k)',rList);
+                c=histc(paths(:,k)',rList);
 
                 for j=1:modes
                     %get counts
@@ -70,12 +68,12 @@ function nPaths = newTreePaths(asdTens,ocpsi,ctree,paths,tree,ind,options)
                     gcts2=gcts(:,rList);
 
                     %compute contribution to pdf
-                    pdf = getPDF(pdf, rList, cts1, cts2, gcts2, prior);
-                    lp = log(pdf) + lp;
+                    pdf = getPDF(c, rList, cts1, cts2, gcts2, prior);
+                    c=pdf;
                 end
                 
                 %pick new table
-                next=multi(exp(lp));
+                next=multi(pdf);
                 curRes=rList(next);
 
                 nPaths(i,k)=curRes; %sit at table

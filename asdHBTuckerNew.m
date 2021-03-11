@@ -31,7 +31,7 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
     end
     rng(options.rng); %seed RNG
     
-    modes=size(tree,1); %number of dependent modes
+    modes=size(psi,1); %number of dependent modes
     dims=size(asdTens); %dimensions of tensor
     cts=collapse(asdTens,[2,3]);
     bo = b;
@@ -75,8 +75,10 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
     switch options.topicModel
         case 'IndepTrees'
             [paths,r] = newTreePathsInit(oPaths,tree,b,options);
-            
         case 'PAM'
+            if ~exist('prob','var')
+                prob = tree;
+            end
             [tpl, r]=initPAM(dims,options);
             paths=ones(dims(1),sum(L));
             
@@ -84,7 +86,6 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
             for i=1:modes
                 ctree{i}=zeros(dims(1),dims(i+1),length(r{i}));
             end
-            
         case 'None'
             r=cell(modes,1); %initialize
             path=zeros(1,sum(L));
@@ -94,7 +95,6 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
             end         
             paths=repmat(path,dims(1),1);
             tree=cell(modes,1); %initialize
-            
         otherwise
             error('Error. \nNo topic model type selected');
     end
