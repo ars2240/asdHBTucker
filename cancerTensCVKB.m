@@ -20,8 +20,8 @@
     % mex drawZscPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
     tpl=10; % topics per level
     gam0 = 0.1;
-    options.L = 2;
-    options.topicType = 'CP';
+    options.L = 3;
+    % options.topicType = 'CP';
 	%options.topicModel = 'PAM';
     options.par = 0;
     options.maxIter = 100;
@@ -36,8 +36,10 @@
     options.print = 1;
     % options.cutoff = 0.1;
     % options.sparse = 0;
+    options.weights = [1, 3];
     options.topicsgoal = 500;
     dom = 'Genes';
+    tail = '_weighted3x';
     
     disp(options); %print options
     
@@ -99,8 +101,8 @@
             save(['data/cancerHBTCV3KB', int2str(nBest), '_L',...
                 int2str(options.L(1)), '_tpl', int2str(tpl), '_', ...
                 int2str(f), '_', options.topicModel, '_', ...
-                options.topicType, '_', dom, '.mat'],'phi', 'testPhi', ...
-                'psi', 'prob', 'samples', 'paths', 'options');
+                options.topicType, '_', dom, tail, '.mat'],'phi', ...
+                'testPhi', 'psi', 'prob', 'samples', 'paths', 'options');
         else
             tree=KB.tree;
             testPhi = asdHBTuckerNew(asd, psi, samples, paths, tree, ...
@@ -109,8 +111,8 @@
             save(['data/cancerHBTCV3KB', int2str(nBest), '_L',...
                 int2str(options.L(1)), '_tpl', int2str(tpl), '_', ...
                 int2str(f), '_', options.topicModel, '_', ...
-                options.topicType, '_', dom, '.mat'],'phi', 'testPhi', ...
-                'psi', 'tree', 'samples', 'paths', 'options');
+                options.topicType, '_', dom, tail, '.mat'],'phi', ...
+                'testPhi', 'psi', 'tree', 'samples', 'paths', 'options');
         end
 
         %compute LL

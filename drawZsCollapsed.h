@@ -29,15 +29,15 @@
 void drawZs(double *sampIn, double *sampOut, double *p, size_t sampCols,
         size_t sampRows, double *phi, const mxArray *psi,
         double *pth, double *l, const mwSize *phiDims, int pri,
-        double *cut, int topic);
+        double *cut, int topic, double *weights);
 void drawZsPar(double *sampIn, double *sampOut, double *p, size_t sampCols,
         size_t sampRows, double *phi, const mxArray *psi,
         double *pth, double *l, const mwSize *phiDims, int pri,
-        double *cut, int topic);
+        double *cut, int topic, double *weights);
 void drawZ(int j, double *sampIn, double *sampOut, double *p,
         size_t sampCols, size_t sampRows, double *phi, const mxArray *psi,
         double *psis, double *pth, double *l, const mwSize *phiDims,
-        double *a, double *cut, int topic);
+        double *a, double *cut, int topic, double *weights);
 int indices(long long int x, int m, const mwSize *dims);
 void normalize(double *pdf, double sum, int size);
 long long int multi(double *pdf, int size);

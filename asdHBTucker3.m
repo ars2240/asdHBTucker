@@ -55,6 +55,10 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
         options.L=L;
     end
     
+    if length(options.weights)==1
+        options.weights=repelem(weights,modes);
+    end
+    
     %calculate L1 norm of tensor
     l1NormX=sum(x.vals);
     if l1NormX==0

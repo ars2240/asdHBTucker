@@ -5,6 +5,7 @@ function [ options ] = init_options( )
 % print = whether or not loglikelihood & perplexity are printed
 % freq = how frequent loglikelihood & perplexity are printed
 % maxIter = number of Gibbs sample iterations
+% maxTop = maximum number of topics
 % gam = hyper parameter(s) of CRP
 % L = levels of hierarchical trees
 % pType = prior type
@@ -31,11 +32,13 @@ function [ options ] = init_options( )
 % cutoff = zeros out small values
 % rng = RNG seed
 % topicsgoal = ideal number of topics (0 to disable)
+% weights = exponent to weight modes in collapsed Gibbs (& CP topic model)
 
 options.par = 1;
 options.time = 1;
 options.print = 1;
 options.maxIter = 1000;
+options.maxTop = 500;
 options.freq = 10;
 options.gam = 0.1;
 options.L = 2;
@@ -57,5 +60,6 @@ options.npats = 1000;
 options.cutoff = 0;
 options.rng = 'shuffle';
 options.topicsgoal = 0;
+options.weights = 1;
 
 end

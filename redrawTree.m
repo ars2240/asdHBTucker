@@ -41,11 +41,20 @@ function [paths,tree,r,LL,ent] = redrawTree(dims,cpsi,ctree,paths,tree,r,options
 
             for k=2:L(1)
                 %get label of new table
-                newRes=find(~ismember(1:max(r+1),r),1);
+                m=max(r+1);
+                if isfield(options, 'maxTop') && m > (options.maxTop-L(1)+k)
+                    newRes=NaN;
+                else
+                    newRes=find(~ismember(1:max(r+1),r),1);
+                end
 
                 if ~isempty(tree{curRes})
                     %add new restaurant to list
-                    rList=[tree{curRes} newRes];
+                    if isnan(newRes)
+                        rList=tree{curRes};
+                    else
+                        rList=[tree{curRes} newRes];
+                    end
                     [rList, order]=sort(rList);
                     
                     %compute CRP part of pdf
@@ -77,6 +86,11 @@ function [paths,tree,r,LL,ent] = redrawTree(dims,cpsi,ctree,paths,tree,r,options
                            cts{j}(:,newRes,:)=0;
                            ctsA(:,newRes)=0;
                            gcts(:,newRes)=gammaln(prior);
+                        elseif isnan(newRes) && max(rList)>size(ctsA,2)
+                           m=max(rList);
+                           cts{j}(:,m,:)=0;
+                           ctsA(:,m)=0;
+                           gcts(:,m)=0;
                         end
 
                         %get counts
@@ -193,7 +207,12 @@ function [paths,tree,r,LL,ent] = redrawTree(dims,cpsi,ctree,paths,tree,r,options
 
                for k=2:L(j)
                    %get label of new table
-                   newRes=find(~ismember(1:max(r{j}+1),r{j}),1);
+                    m=max(r{j}+1);
+                    if isfield(options, 'maxTop') && m > (options.maxTop-L(1)+k)
+                        newRes=NaN;
+                    else
+                        newRes=find(~ismember(1:max(r{j}+1),r{j}),1);
+                    end
 
                    if newRes>size(ctsA,2)
                        %cts=padarray(cts,[0 1 0],'post');
@@ -202,11 +221,20 @@ function [paths,tree,r,LL,ent] = redrawTree(dims,cpsi,ctree,paths,tree,r,options
                        cts(:,newRes,:)=0;
                        ctsA(:,newRes)=0;
                        gcts(:,newRes)=gammaln(prior);
+                   elseif isnan(newRes) && max(rList)>size(ctsA,2)
+                       m=max(rList);
+                       cts(:,m,:)=0;
+                       ctsA(:,m)=0;
+                       gcts(:,m)=0;
                    end
 
                    if ~isempty(tree{j}{curRes})
                        %add new restaurant to list
-                       rList=[tree{j}{curRes} newRes];
+                        if isnan(newRes)
+                            rList=tree{j}{curRes};
+                        else
+                            rList=[tree{j}{curRes} newRes];
+                        end
                        [rList, order]=sort(rList);
 
                        %compute CRP part of pdf
