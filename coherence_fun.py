@@ -88,18 +88,24 @@ def coherence(fname, counts, indF, dim=1, splits=10, fmax=math.inf, fmin=0, sp=F
     rows = np.where(ind > 0)[0]
     ind = ind.iloc[rows, 0]
 
-    cf = cf[rows]
+    cf = cf[rows] > 0
     t, t2 = list(range(1, cf.ndim)), list(range(2, cf.ndim))
     t.remove(dim)
     ct2 = np.max(cf, axis=tuple(t2))
 
     cols = impose(np.logical_and(fmin < ct2.sum(axis=0), ct2.sum(axis=0) < fmax), sp)
     cts = cf[:, cols, :] if sp else cf[:, cols]
+    if dim == 2:
+        cols = impose(cts.sum(axis=[0, 1]) > 0, sp)
+        cts = cts[:, :, cols]
+        gp = impose(cts.sum(axis=0) > 0, sp)
+        _, cols = np.unique(gp, axis=1, return_index=True)
+        cts = cts[:, :, cols]
     phi = np.max(cts, axis=tuple(t))
-    if sp:
-        cols = impose(phi.sum(axis=0) > 0, sp)
-        phi = phi[:, cols]
     phi = impose(phi, sp)
+
+    if 'pwy' in fname.lower():
+        dim = (dim % 2) + 1
 
     if '{i}' not in fname:
         psi = load_file(root + fname, 'psi')
@@ -117,7 +123,10 @@ def coherence(fname, counts, indF, dim=1, splits=10, fmax=math.inf, fmin=0, sp=F
             p = psi
 
         if p.shape[1] == 1:
-            p = p[(dim - 1, 0)]
+            if 'hLDA' in fname:
+                p = p[(0, 0)]
+            else:
+                p = p[(dim - 1, 0)]
 
         """
         # t = {str(c): [{str(r): p[r, c]} for r in range(p.shape[0])] for c in range(p.shape[1])}
@@ -143,9 +152,20 @@ def coherence(fname, counts, indF, dim=1, splits=10, fmax=math.inf, fmin=0, sp=F
             if topics == 0:
                 t = [0]
             elif topics == 1:
-                t = np.array(tree[(dim - 1, 0)][(0, 0)][0]) - 1
+                if 'CP' in fname:
+                    t = np.array(tree[(0, 0)][0]) - 1
+                elif 'hLDA' in fname:
+                    t = np.array(tree[(0, 0)][(0, 0)][0]) - 1
+                else:
+                    t = np.array(tree[(dim - 1, 0)][(0, 0)][0]) - 1
             else:
-                t1 = np.array(tree[(dim - 1, 0)][(0, 0)][0]) - 1
+                if 'CP' in fname:
+                    t1 = np.array(tree[(0, 0)][0]) - 1
+                elif 'hLDA' in fname:
+                    t1 = np.array(tree[(0, 0)][(0, 0)][0]) - 1
+                else:
+                    t1 = np.array(tree[(dim - 1, 0)][(0, 0)][0]) - 1
+                t1 = np.append(t1, 0)
                 t = list(range(p.shape[1]))
                 [t.remove(i) for i in t1]
         else:
