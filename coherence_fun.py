@@ -47,13 +47,28 @@ def impose(x, sp):
     return x.todense() if sp else x
 
 
+def get_tl(fname, d):
+    if 'PAM' in fname:
+        if (d == 1 and 'pwy' not in fname.lower()) or (d == 2 and 'pwy' in fname.lower()):
+            tl = [None, [0], list(range(1, 11)), list(range(11, 21))]
+        else:
+            tl = [None, list(range(10)), list(range(10, 20)), list(range(20, 30))]
+    elif 'IndepTrees' in fname or 'hLDA' in fname:
+        tl = [None, 0, 1, 2]
+    else:
+        tl = [None]
+    if 'L2' in fname:
+        tl = tl[:-1]
+    return tl
+
+
 # compute coherence over topics
 def coh(X, t, n=5, eps=1e-5, topics=None, mean=True):
     x = (X > 0).astype(int)  # convert to whether or not a word occurs
     dw = np.dot(np.transpose(x), x) + eps  # word co-occurrence
     p = np.log(dw / (X.shape[0] * (1 + eps)))  # log probabilities
     d = np.diagonal(p)  # diagonal is occurrence of words
-    s = p - d - np.transpose(d)  # compute UCI/PMI score
+    s = p - np.add.outer(d, d)  # compute UCI/PMI score
 
     if topics is None:
         nt = t.shape[1]  # number of topics
