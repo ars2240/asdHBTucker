@@ -53,7 +53,7 @@ def get_tl(fname, d):
             tl = [None, [0], list(range(1, 11)), list(range(11, 21))]
         else:
             tl = [None, list(range(10)), list(range(10, 20)), list(range(20, 30))]
-    elif 'IndepTrees' in fname or 'hLDA' in fname:
+    elif 'IndepTrees' in fname or 'hlda' in fname.lower():
         tl = [None, 0, 1, 2]
     else:
         tl = [None]
