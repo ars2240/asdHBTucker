@@ -53,22 +53,27 @@ def get_tl(fname, d):
             tl = [None, [0], list(range(1, 11)), list(range(11, 21))]
         else:
             tl = [None, list(range(10)), list(range(10, 20)), list(range(20, 30))]
-    elif 'IndepTrees' in fname or 'hlda' in fname.lower():
+    elif 'IndepTrees' in fname or 'hLDA' in fname:
         tl = [None, 0, 1, 2]
     else:
         tl = [None]
-    if 'L2' in fname:
+    if 'L2' in fname and len(tl) > 1:
         tl = tl[:-1]
     return tl
 
 
 # compute coherence over topics
-def coh(X, t, n=5, eps=1e-5, topics=None, mean=True):
+def coh(X, t, n=5, eps=1e-5, topics=None, mean=True, meas='uci'):
     x = (X > 0).astype(int)  # convert to whether or not a word occurs
     dw = np.dot(np.transpose(x), x) + eps  # word co-occurrence
-    p = np.log(dw / (X.shape[0] * (1 + eps)))  # log probabilities
+    p = np.log(dw)  # log probabilities
+    if 'mass' not in meas.lower():
+        p -= np.log((X.shape[0] * (1 + eps)))
     d = np.diagonal(p)  # diagonal is occurrence of words
-    s = p - np.add.outer(d, d)  # compute UCI/PMI score
+    if 'mass' in meas.lower():
+        s = np.log(dw + 1) - d.transpose()
+    else:
+        s = p - np.add.outer(d, d)  # compute UCI/PMI score
 
     if topics is None:
         nt = t.shape[1]  # number of topics
@@ -78,8 +83,8 @@ def coh(X, t, n=5, eps=1e-5, topics=None, mean=True):
     c = np.zeros(nt)  # initialize topic coherence vector
     ui = []  # list of unique words
     for i in range(nt):
-        idx = np.argsort(t[:, topics[i]])[-n:]  # get top n words in topic
-        c[i] = np.sum(np.tril(s[idx, idx]))  # get topic coherence
+        idx = np.argsort(-t[:, topics[i]])[:n]  # get top n words in topic
+        c[i] = np.sum(np.tril(s[np.ix_(idx, idx)]))  # get topic coherence
         ui.extend(idx)
     nu = len(np.unique(ui))/len(ui)  # % of top words that are unique
 
@@ -89,7 +94,7 @@ def coh(X, t, n=5, eps=1e-5, topics=None, mean=True):
 
 
 def coherence(fname, counts, indF, dim=1, splits=10, fmax=math.inf, fmin=0, sp=False, root='./data/',
-              coh_meas='u_mass', topics=None):
+              coh_meas='uci', topics=None):
 
     coh_tr, coh_te, nu = np.zeros(splits), np.zeros(splits), np.zeros(splits)
 
@@ -188,11 +193,12 @@ def coherence(fname, counts, indF, dim=1, splits=10, fmax=math.inf, fmin=0, sp=F
 
         # training
         rowsT = np.where(ind != (i + 1))
-        coh_tr[i], nu[i] = coh(phi[rowsT[0], :], p, topics=t)
+        coh_tr[i], nu[i] = coh(phi[rowsT[0], :], p, topics=t, meas=coh_meas)
+        print(coh_tr[i])
 
         # validation/test
         rowsV = np.where(ind == (i + 1))
-        coh_te[i], _ = coh(phi[rowsV[0], :], p, topics=t)
+        coh_te[i], _ = coh(phi[rowsV[0], :], p, topics=t, meas=coh_meas)
 
     return coh_tr, coh_te, nu
 

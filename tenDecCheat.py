@@ -41,7 +41,7 @@ def get_csv(file):
 
 
 def ten_dec(fname='cancerSparseND4', indF='cancerCVInd', rank=5, fselect='min dupe', fmin=0, fmax=1000, thresh=0,
-            head='toy_tensorlyCP_nonNeg_{fmin}_{fmax}', sp=True, decomp=True, norm=True, ll=1000,
+            head='asd_tensorlyCP_nonNeg_{fmin}_{fmax}', sp=True, decomp=True, norm=True, ll=1000,
             hist=False, train_split=True):
 
     check_folder('./data')
@@ -101,7 +101,12 @@ def ten_dec(fname='cancerSparseND4', indF='cancerCVInd', rank=5, fselect='min du
     if 'thresh' in fselect:
         # change elements below threashold to zero
         X[X < thresh] = 0
-    if 'dupe' in fselect:
+    if 'simp_dupe' in fselect:
+        # simpler version of dupe
+        gp = impose(X.sum(axis=0) > 0, sp)
+        _, cols = np.unique(gp, axis=1, return_index=True)
+        X = X[:, :, cols]
+    elif 'dupe' in fselect:
         s = X.shape
         # check for and remove duplicate slices
         dupes = []
@@ -297,6 +302,8 @@ def ten_dec(fname='cancerSparseND4', indF='cancerCVInd', rank=5, fselect='min du
             # print("{0}, {1}, {2}".format(j, l, time.time() - start_time))
         print('Log-likelihood: {0}'.format(l/X.shape[0]))
 
-
+"""
 for i in range(12):
     ten_dec(fname='toy.mat', rank=5, fselect='', train_split=False)
+"""
+ten_dec(fname='asdSparseND', indF='asdCVInd', fselect='min max simp_dupe', rank=200, fmin=200, fmax=2000)
