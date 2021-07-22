@@ -20,6 +20,7 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
     % store original tensor
     odims=size(x); %dimensions of tensor
     modes=length(odims)-1;  %number of dependent modes
+    options.varRat=zeros(options.maxIter+1,1);
     
     % remove zeros
     cts=collapse(x,[2,3]);
@@ -141,8 +142,9 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
                 [samples,p]=drawZsCollapsedPar(samples,cphi,cpsi,paths,...
                     L,options.pType);
             otherwise
-                [samples,p]=drawZsCollapsed(samples,cphi,cpsi,paths,L,...
+                [samples,p,var]=drawZsCollapsed2(samples,cphi,cpsi,paths,L,...
                     options);
+                options.varRat(1)=mean(var(:,1)./var(:,2));
         end
         zLL=sum(log(p)); zEnt=entropy(p);
         zTime=toc(zStart);
@@ -225,6 +227,11 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
         elseif options.collapsed==1 || options.topicsgoal>0
             [psi,~,~]=drawpsi(dims, modes, samples, r, options);
         end
+        c = zeros(1, modes); nu = zeros(1, modes);
+        for i = 1:modes
+            [c(i), nu(i)] = coh(collapse(x,4-i,@max), psi{i}, options);
+        end
+        cm = mean(c);
         if options.map == 1
             coreDims=coreSize(modes, dims, r);
             phi = drawCoreMAP(samples,paths,coreDims,r,options);
@@ -251,6 +258,7 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
             options.best.psi = psi; options.best.samples = samples;
             options.best.paths = paths; options.best.r = r;
             options.best.gamma = options.gam; options.best.iter = 0;
+            options.best.cm = cm; options.best.c=c; options.best.nu=nu;
             if strcmp(options.topicModel,'PAM')
                 options.best.prob = prob;
             else
@@ -270,13 +278,13 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
         elseif options.print == 1
             div = diversity(psi);
             fileID = fopen('verbose.txt','w');
-            output_header=sprintf('%6s %13s %13s %13s %13s %13s %6s %13s %13s %13s %13s',...
+            output_header=sprintf('%6s %13s %13s %13s %13s %13s %6s %13s %13s %13s %13s %13s',...
                 'iter', 'loglikelihood', 'mixture LL', 'entropy',...
-                'tree LL','z LL', 'ntop', 'gamma', 'div1', 'div2', 'norm');
+                'tree LL','z LL', 'ntop', 'gamma', 'div1', 'div2', 'norm','cm');
             fprintf(fileID,'%s\n',output_header);
             fprintf(fileID,...
-                '%6i %13.2e %13.2e %13.2e %13.2e %13.2e %6i %13.2e %13.2e %13.2e %13.2e\n',...
-                0,LL,LL2,ent,treeLL,zLL,nt,options.gam(1),div(1),div(2),n);
+                '%6i %13.2e %13.2e %13.2e %13.2e %13.2e %6i %13.2e %13.2e %13.2e %13.2e %13.2e\n',...
+                0,LL,LL2,ent,treeLL,zLL,nt,options.gam(1),div(1),div(2),n, cm);
             fclose(fileID);
         end
     end
@@ -359,8 +367,9 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
                         [samples,p]=drawZsCollapsedPar(samples,cphi,...
                             cpsi,paths,L,options.pType);
                     otherwise
-                        [samples,p]=drawZsCollapsed(samples,cphi,cpsi,...
+                        [samples,p,var]=drawZsCollapsed2(samples,cphi,cpsi,...
                             paths,L,options);
+                        options.varRat(nIter+2)=mean(var(:,1)./var(:,2));
                 end
                 zLL=sum(log(p)); zEnt=entropy(p);
                 zTime=toc(zStart);
@@ -439,6 +448,11 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
             elseif (options.collapsed==1 || options.topicsgoal>0) && nIter<(options.maxIter-1)
                 [psi,~,~]=drawpsi(dims, modes, samples, r, options);
             end
+            c = zeros(1, modes); nu = zeros(1, modes);
+            for i = 1:modes
+                [c(i), nu(i)] = coh(collapse(x,4-i,@max), psi{i}, options);
+            end
+            cm = mean(c);
             if options.map == 1
                 coreDims=coreSize(modes, dims, r);
                 phi = drawCoreMAP(samples,paths,coreDims,r,options);
@@ -458,18 +472,22 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
             end
             %display(samples);
         	%disp([LL, treeLL, zLL]);
-            if options.keepBest > 0 && options.best.LL < LL && LL~=0
+            if options.keepBest > 0 && (options.keepBest <= 2 && ...
+                    options.best.LL < LL && LL~=0) || ...
+                    (options.keepBest > 2 && options.best.cm < cm && ...
+                    cm ~=0)
                 options.best.LL = LL; options.best.phi = phi;
                 options.best.psi = psi; options.best.samples = samples;
                 options.best.paths = paths; options.best.r = r;
                 options.best.gamma = options.gam;
-                options.best.iter = nIter;
+                options.best.iter = nIter; options.best.cm = cm;
+                options.best.c=c; options.best.nu=nu;
                 if strcmp(options.topicModel,'PAM')
                     options.best.prob = prob;
                 else
                     options.best.tree = tree;
                 end
-            elseif options.keepBest == 1
+            elseif mod(options.keepBest, 2) == 1
                 LL = options.best.LL; phi = options.best.phi;
                 psi = options.best.psi; samples = options.best.samples;
                 paths = options.best.paths; r = options.best.r;
@@ -490,8 +508,8 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
                 div = diversity(psi);
                 fileID = fopen('verbose.txt','a');
                 fprintf(fileID,...
-                    '%6i %13.2e %13.2e %13.2e %13.2e %13.2e %6i %13.2e %13.2e %13.2e %13.2e\n',...
-                    nIter,LL,LL2,ent,treeLL,zLL,nt,options.gam(1),div(1),div(2),n);
+                    '%6i %13.2e %13.2e %13.2e %13.2e %13.2e %6i %13.2e %13.2e %13.2e %13.2e %13.2e\n',...
+                    nIter,LL,LL2,ent,treeLL,zLL,nt,options.gam(1),div(1),div(2),n,cm);
                 fclose(fileID);
             end
         end
@@ -500,7 +518,8 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
         if nIter>=options.maxIter
             cont=0;
         elseif options.topicsgoal>0 && strcmp(options.topicModel,'IndepTrees')
-            d=(modes*max(prod(L-1),1));
+            %d=(modes*max(prod(L-1),1));
+            d=(max(prod(L-1),1));
             ng=(options.topicsgoal/nt)^(1/d);
             ng=max(min(ng,2),0.5);
             options.gam=ng*options.gam;

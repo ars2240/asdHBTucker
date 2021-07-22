@@ -19,7 +19,7 @@
 void drawZs(double *sampIn, double *sampOut, double *p, size_t sampCols,
         size_t sampRows, double *phi, const mxArray *psi,
         double *pth, double *l, const mwSize *phiDims, int pri,
-        double *cut, int topic, double *weights)
+        double *cut, int topic, double *weights, double *var)
 {
     int j, i, k;
     
@@ -67,7 +67,7 @@ void drawZs(double *sampIn, double *sampOut, double *p, size_t sampCols,
 
     for(j=0; j<sampRows; j++){
         drawZ(j,sampIn,sampOut,p,sampCols,sampRows,phi,psi,psiSum,pth,l,
-                phiDims,alpha,cut,topic,weights,modes,size,ma);  
+                phiDims,alpha,cut,topic,weights,modes,size,ma,var);  
     }
 }
 
@@ -75,7 +75,7 @@ void drawZs(double *sampIn, double *sampOut, double *p, size_t sampCols,
 void drawZsPar (double *sampIn, double *sampOut, double *p, size_t sampCols,
         size_t sampRows, double *phi, const mxArray *psi,
         double *pth, double *l, const mwSize *phiDims, int pri,
-        double *cut, int topic, double *weights)
+        double *cut, int topic, double *weights, double *var)
 {
     int j, i, k;
     
@@ -119,7 +119,7 @@ void drawZsPar (double *sampIn, double *sampOut, double *p, size_t sampCols,
         #pragma omp for
         for(j=0; j<sampRows; j++){
             drawZ(j,sampIn,sampOut,p,sampCols,sampRows,phi,psi,psiSum,pth,
-                    l,phiDims,alpha,cut,topic,weights,modes,size,ma); 
+                    l,phiDims,alpha,cut,topic,weights,modes,size,ma,var); 
         }
     }
 }
@@ -129,7 +129,7 @@ void drawZ(int j, double *sampIn, double *sampOut, double *p,
         size_t sampCols, size_t sampRows, double *phi, const mxArray *psi,
         double *psis, double *pth, double *l, const mwSize *phiDims,
         double *a, double *cut, int topic, double *weights, int modes,
-        int size, int ma)
+        int size, int ma, double *var)
 {
     int x = sampIn[0*sampRows+j]-1; //get evidence variable
     int y; //response variable
@@ -151,79 +151,72 @@ void drawZ(int j, double *sampIn, double *sampOut, double *p,
         }
     }
     
-    // get pdf from phi and psi
-    double pdf[size]; double pdf1; double sum = 0;
-    int ind, ip, s, st, lsum, psiSum; float t;
+    double pdf1[modes*ma]; int s[modes*ma];
     double *psik; const mwSize *psikDims;
+    int ind, ip, lsum, psiSum;
+    lsum=0; psiSum=0;
+    for(k=0; k<modes; k++){
+        zo = sampIn[(k+1+modes)*sampRows+j]-1;
+        y = sampIn[(k+1)*sampRows+j]-1;
+        psik = mxGetPr(mxGetCell(psi,k));
+        psikDims = mxGetDimensions(mxGetCell(psi,k));
+        for(ind=0; ind<l[k]; ind++){
+            ip = pth[x+(ind+lsum)*phiDims[0]]-1;
+            s[ma*k+ind] = ((ip==zo) ? 1 : 0);
+            pdf1[ma*k+ind] = log(psik[y+ip*psikDims[0]]+a[k+1]-s[ma*k+ind]);
+            pdf1[ma*k+ind] -= log(psis[ip+psiSum]-s[ma*k+ind]);
+            pdf1[ma*k+ind] *= weights[k];
+            if(pdf1[ma*k+ind] != pdf1[ma*k+ind]) {
+                mexPrintf("k = %d\n", k); mexPrintf("ind = %d\n", ind);
+                mexPrintf("x = %d\n", x); mexPrintf("lsum = %d\n", lsum);
+                mexPrintf("ip = %d\n", ip); mexPrintf("j = %d\n", j);
+                mexPrintf("zo = %d\n", zo); mexPrintf("y = %d\n", y);
+                mexPrintf("modes = %d\n", modes);
+                mexPrintf("phi = %f\n", phi[x+i*phiDims[0]]);
+                mexPrintf("a = %f\n", a[k+1]);
+                mexPrintf("s = %d\n", s[ma*k+ind]);
+                mexPrintf("psik = %f\n", psik[y+ip*psikDims[0]]);
+                mexPrintf("psis = %f\n", psis[ip+psiSum]);
+                mexPrintf("pdf1 = %f\n", pdf1[ma*k+ind]);
+                mexErrMsgIdAndTxt("MyProg:sum:NaN", "Sum NaN.");
+            }
+        }
+        var[k*sampRows+j]=variance(&pdf1[ma*k],l[k]);
+        psiSum += psikDims[1];
+        lsum += l[k];
+    }
+    
+    double pdf[size]; double pdf2; double sum = 0; int st;
     for(i=0; i<size; i++){
         if (topic == 0 || indices(i,0,&phiDims[1]) == indices(i,1,&phiDims[1])){
-            pdf1=0; st=1; lsum=0; psiSum=0;
+            pdf2=0; st=1;
             for(k=0; k<modes; k++){
                 ind = indices(i,k,&phiDims[1]);
-                ip = pth[x+(ind+lsum)*phiDims[0]]-1;
-                lsum += l[k];
-                zo = sampIn[(1+modes+k)*sampRows+j]-1;
-                y = sampIn[(k+1)*sampRows+j]-1;
-                s = ((ip==zo) ? 1 : 0);
-                st *= s;
-                psik = mxGetPr(mxGetCell(psi,k));
-                psikDims = mxGetDimensions(mxGetCell(psi,k));
-                pdf1 += weights[k]*log(psik[y+ip*psikDims[0]]+a[k+1]-s);
-                pdf1 -= weights[k]*log(psis[ip+psiSum]-s);
-                if(pdf1 != pdf1) {
-                    mexPrintf("i = %d\n", i); mexPrintf("k = %d\n", k);
-                    mexPrintf("ind = %d\n", ind); mexPrintf("x = %d\n", x);
-                    mexPrintf("lsum = %d\n", lsum); mexPrintf("ip = %d\n", ip);
-                    mexPrintf("j = %d\n", j); mexPrintf("zo = %d\n", zo);
-                    mexPrintf("y = %d\n", y); mexPrintf("modes = %d\n", modes);
-                    mexPrintf("phi = %f\n", phi[x+i*phiDims[0]]);
-                    mexPrintf("a = %f\n", a[k+1]); mexPrintf("s = %d\n", s);
-                    mexPrintf("psik = %f\n", psik[y+ip*psikDims[0]]);
-                    mexPrintf("psis = %f\n", psis[ip+psiSum]);
-                    mexPrintf("pdf1 = %f\n", pdf1);
-                    mexErrMsgIdAndTxt("MyProg:sum:NaN", "Sum NaN.");
-                }
-                psiSum += psikDims[1];
+                st *= s[ma*k+ind];
+                pdf2 += pdf1[ma*k+ind];
             }
-            pdf1 += log(phi[x+i*phiDims[0]]+a[0]-st);
+            pdf2 += log(phi[x+i*phiDims[0]]+a[0]-st);
             //mexPrintf("phi = %f\n", phi[x+i*phiDims[0]]);
             //mexPrintf("a = %f\n", a[0]); mexPrintf("st = %d\n", st);
-            if(pdf1 != pdf1) {
+            if(pdf2 != pdf2) {
                 mexPrintf("j = %d\n", j);
                 mexPrintf("x = %d\n", x); mexPrintf("i = %d\n", i);
                 mexPrintf("phi = %f\n", phi[x+i*phiDims[0]]);
                 mexPrintf("a = %f\n", a[0]); mexPrintf("st = %d\n", st);
-                mexPrintf("pdf1 = %f\n", pdf1); mexPrintf("modes = %d\n", modes);
-                pdf1=0; st=1; lsum=0; psiSum=0;
-                for(k=0; k<modes; k++){
-                    ind = indices(i,k,&phiDims[1]);
-                    ip = pth[x+(ind+lsum)*phiDims[0]]-1;
-                    lsum += l[k];
-                    zo = sampIn[(1+modes+k)*sampRows+j]-1;
-                    y = sampIn[(k+1)*sampRows+j]-1;
-                    s = ((ip==zo) ? 1 : 0);
-                    psik = mxGetPr(mxGetCell(psi,k));
-                    psikDims = mxGetDimensions(mxGetCell(psi,k));
-                    mexPrintf("k = %d\n", k); mexPrintf("ind = %d\n", ind);
-                    mexPrintf("lsum = %d\n", lsum); mexPrintf("ip = %d\n", ip);
-                    mexPrintf("zo = %d\n", zo); mexPrintf("y = %d\n", y);
-                    mexPrintf("a = %f\n", a[k+1]); mexPrintf("s = %d\n", s);
-                    mexPrintf("psik = %f\n", psik[y+ip*psikDims[0]]);
-                    mexPrintf("psis = %f\n", psis[ip+psiSum]);
-                }
+                mexPrintf("pdf2 = %f\n", pdf2); mexPrintf("modes = %d\n", modes);
                 mexErrMsgIdAndTxt("MyProg:sum:NaN", "Sum NaN.");
             }
-            pdf[i] = exp(pdf1);
+            pdf[i] = exp(pdf2);
             pdf[i] = pdf[i] > *cut ? pdf[i] : 0.0;
             sum = sum + pdf[i];
             //mexPrintf("pdf[%d] = %f\n", i, pdf[i]);
             if(sum >= DBL_MAX) {
-                mexPrintf("pdf1 = %f\n", pdf1);
+                mexPrintf("pdf2 = %f\n", pdf2);
                 mexPrintf("pdf[%d] = %f\n", i, pdf[i]);
                 mexErrMsgIdAndTxt("MyProg:sum:overflow", "Sum overflow.");
             }
             if(sum != sum) {
-                mexPrintf("pdf1 = %f\n", pdf1);
+                mexPrintf("pdf2 = %f\n", pdf2);
                 mexPrintf("pdf[%d] = %f\n", i, pdf[i]);
                 mexErrMsgIdAndTxt("MyProg:sum:NaN", "Sum NaN.");
             }
@@ -285,6 +278,25 @@ void normalize(double *pdf, double sum, int size){
     }
 }
 
+double variance(double *pdf, int size){
+    double pdfS=0; int i;
+    double pdf2[size];
+    for(i=0; i<size; i++){
+        pdf2[i]=exp(pdf[i]);
+        pdfS+=pdf2[i];
+    }
+    
+    normalize(pdf2, pdfS, size);
+    
+    double var=0;
+    for(i=0; i<size; i++){
+        var+=pdf2[i]*(1-pdf2[i]);
+    }
+    var /= size;
+    
+    return var;
+}
+
 /* generates single value from multinomial pdf
   pdf = vector of probabilities
   x = sample */
@@ -338,13 +350,14 @@ void mexFunction(int nlhs, mxArray *plhs[],
     double *cutoff; // zero out values < cutoff
     char *topic; // Cartesian or Level
     double *weights; // exponent to weight modes
+    double *var; // variance
     
     /* Check number of inputs and outputs */
     if(nrhs != 6) {
         mexErrMsgIdAndTxt("MyToolbox:arrayProduct:nrhs",
                           "Seven inputs required.");
     }
-    if(nlhs != 2) {
+    if(nlhs != 3) {
         mexErrMsgIdAndTxt("MyToolbox:arrayProduct:nlhs",
                           "Two outputs required.");
     }
@@ -365,14 +378,16 @@ void mexFunction(int nlhs, mxArray *plhs[],
     /* create the output matrix */
     plhs[0] = mxCreateDoubleMatrix((mwSize)nrows,(mwSize)ncols,mxREAL);
     plhs[1] = mxCreateDoubleMatrix(nrows,1,mxREAL);
+    plhs[2] = mxCreateDoubleMatrix((mwSize)nrows,(mwSize)(ncols-1)/2,mxREAL);
 
     /* get a pointer to the real data in the output matrix */
     sOut = mxGetPr(plhs[0]);
     prob = mxGetPr(plhs[1]);
+    var = mxGetPr(plhs[2]);
     
     int tb = strcmp(topic,"Cartesian");
     
     /* call the computational routine */
     drawZs(sIn,sOut,prob,ncols,nrows,core,aux,path,L,coreDims,prior,
-            cutoff,tb, weights);
+            cutoff,tb,weights,var);
 }

@@ -20,9 +20,9 @@
     % mex drawZscPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
     tpl=10; % topics per level
     gam0 = 0.1;
-    options.L = 3;
+    options.L = 2;
     % options.topicType = 'CP';
-	%options.topicModel = 'PAM';
+	% options.topicModel = 'PAM';
     options.par = 0;
     options.maxIter = 100;
     options.pType = 0;
@@ -31,15 +31,15 @@
     options.topicsPerLevel{1}=tpl;
     options.topicsPerLevel{2}=tpl;
     % options.collapsed = 0;
-    options.keepBest = 1;
+    options.keepBest = 3;
     options.time = 0;
     options.print = 1;
     % options.cutoff = 0.1;
     % options.sparse = 0;
-    options.weights = [1, 3];
+    options.weights = [1.8, 1.6];
     options.topicsgoal = 500;
     dom = 'Genes';
-    tail = '_weighted3x';
+    tail = '_weighted1.8x_1.6x_coh';
     
     disp(options); %print options
     
@@ -59,6 +59,11 @@
     [~,gP,~]=unique(double(asdGP)', 'rows');
     asd=asd(:,:,gP);
     
+    % for hLDA
+    %ind = asd.subs; imd(:,2)=1;
+    %v = asd.values;
+    %asd = sptensor(ind,v,max(ind),@max);
+    
     if strcmp(dom,'Pwy')
         asd=permute(asd,[1 3 2]);
     end
@@ -72,26 +77,27 @@
         b=cvInd==f; %logical indices of test fold
         ind=find(~b);
         fprintf('Fold # %6i\n',f);
-        KB.LL=-inf;
+        KB.cm=-inf;
         for k=1:nBest
             options.gam=gam0;
             if strcmp(options.topicModel,'PAM')
-                [~, ~, ~, ~, ~, prob, options, ll, ~] = ...
+                [~, ~, ~, ~, ~, prob, options, ~, ~] = ...
                 asdHBTucker3(asd(ind,:,:),options);
             else
-                [~, ~, ~, ~, ~, options, ll, ~] = ...
+                [~, ~, ~, ~, ~, options, ~, ~] = ...
                 asdHBTucker3(asd(ind,:,:),options);
             end
+            cm = options.best.cm;
             %fprintf('%13.6e, %13.6e\n',ll, options.gam(1));
-            fprintf('%13.6e %2i\n',ll, options.best.iter);
-            if ll>KB.LL && ll~=0
+            fprintf('%13.6e %2i\n',cm, options.best.iter);
+            if cm>KB.cm && cm~=0
                 KB = options.best;
                 if strcmp(options.topicModel,'PAM')
                     KB.prob = prob;
                 end
             end
         end
-        fprintf('Best LL: %13.6e\n',KB.LL);
+        fprintf('Best CM: %13.6e\n',KB.cm);
         phi=KB.phi; psi=KB.psi; samples=KB.samples;
         paths=KB.paths; options.gam=KB.gamma;
         if strcmp(options.topicModel,'PAM')

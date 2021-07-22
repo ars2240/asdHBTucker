@@ -19,6 +19,7 @@ function [ options ] = init_options( )
 % topicType = topic/tree correspondence
 %   Cartesian = full
 %   Level = diagonal
+%   CP = CP decomposition
 % treeReps = number of iterations of tree per large iteration
 % btReps = number of iterations of Bayesian Tucker per large iteration
 % collapsed = whether or not collapsed Gibbs sampler is used
@@ -33,6 +34,7 @@ function [ options ] = init_options( )
 % rng = RNG seed
 % topicsgoal = ideal number of topics (0 to disable)
 % weights = exponent to weight modes in collapsed Gibbs (& CP topic model)
+% coh = coherence function options
 
 options.par = 1;
 options.time = 1;
@@ -61,5 +63,16 @@ options.cutoff = 0;
 options.rng = 'shuffle';
 options.topicsgoal = 0;
 options.weights = 1;
+
+% coherence options
+% n = number of topics considered
+% eps = epsilon added to avoid underflow errors
+% mean = whether or not to take the mean of coherences
+% topics = topics considered
+options.coh.n = 5;
+options.coh.eps = 1e-5;
+options.coh.mean = true;
+options.coh.topics = [];
+options.coh.measure = 'uci';
 
 end

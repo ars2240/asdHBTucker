@@ -147,7 +147,7 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
                 LL=LL+sum(log(p));
                 ent=ent+entropy(p);
             otherwise
-                [samples,p]=drawZsCollapsed(samples,cphi,ocpsi,paths,...
+                [samples,p,~]=drawZsCollapsed2(samples,cphi,ocpsi,paths,...
                     L,options);
                 LL=LL+sum(log(p));
                 ent=ent+entropy(p);
@@ -280,7 +280,7 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
                         ent=ent+entropy(p);
                     otherwise
                         ts = samples;
-                        [samples,p]=drawZsCollapsed(samples,cphi,tcpsi,...
+                        [samples,p,~]=drawZsCollapsed2(samples,cphi,tcpsi,...
                             paths,L,options);
                         LL=LL+sum(log(p));
                         ent=ent+entropy(p);
