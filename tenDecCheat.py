@@ -9,6 +9,7 @@
 # Dependencies:
 #   Packages: numpy, scipy, tensorly
 
+from file_manip import *
 import numpy as np
 import os
 import pandas as pd
@@ -16,28 +17,6 @@ import scipy.io
 import scipy.stats as stats
 import sparse
 import time
-
-
-# impose dense on variables that may be sparse
-def impose(x, sp):
-    if sp:
-        return x.todense()
-    else:
-        return x
-
-
-# check if folder exists; if not, create it
-def check_folder(path):
-    if not os.path.exists(path):
-        os.mkdir(path)
-
-
-# gets csv file from path
-def get_csv(file):
-    if os.path.exists(file):
-        return pd.read_csv(file, header=None).to_numpy()
-    else:
-        raise Exception('Cannot find file: ' + file)
 
 
 def ten_dec(fname='cancerSparseND4', indF='cancerCVInd', rank=5, fselect='min dupe', fmin=0, fmax=1000, thresh=0,
@@ -51,15 +30,8 @@ def ten_dec(fname='cancerSparseND4', indF='cancerCVInd', rank=5, fselect='min du
     for var in dic.keys():
         head = head.replace('{' + var + '}', str(dic[var]))
 
-    if '.pik' in fname:
-        import pickle
-        with open(fname, "rb") as f:
-            cts = pickle.load(f)[0]
-    elif '.mat' in fname:
-        mdict = scipy.io.loadmat(fname)  # import dataset from matlab
-        cts = mdict.get('sparse')
-    else:
-        cts = np.array(pd.read_csv(fname + '.csv', header=0, index_col=0, dtype={0: str}))
+    cts = load_file(fname)
+    cts = cts.astype(int)
 
     if sp:
         import tensorly.contrib.sparse as tl
@@ -83,29 +55,38 @@ def ten_dec(fname='cancerSparseND4', indF='cancerCVInd', rank=5, fselect='min du
         indT = indT[indT < X.shape[0]]
         X = X[indT]
 
+    if 'r8' in fname:
+        a1, a2 = 2, 1
+    else:
+        a1, a2 = 1, 2
+
     if 'min' in fselect:
         # remove slices with min or fewer occurances
-        cols = impose(X.astype(bool).max(axis=2).sum(axis=0) > fmin, sp)
+        cols = impose(X.astype(bool).max(axis=a2).sum(axis=0) > fmin, sp)
         # print(np.where((X.astype(bool).sum(axis=(0, 2)) <= fmin).todense())[0])
-        X = X[:, cols, :]
+        X = X[:, :, cols] if 'r8' in fname else X[:, cols, :]
     if 'max' in fselect:
         # remove slices with max or more occurances
-        cols = impose(X.astype(bool).max(axis=2).sum(axis=0) < fmax, sp)
+        cols = impose(X.astype(bool).max(axis=a2).sum(axis=0) < fmax, sp)
         # print((X.astype(bool).sum(axis=(0, 2)) >= fmin).todense())
-        X = X[:, cols, :]
+        X = X[:, :, cols] if 'r8' in fname else X[:, cols, :]
     # clean up pathways
-    cols = impose(X.astype(bool).max(axis=1).sum(axis=0) > 0, sp)
-    X = X[:, :, cols]
-    _, cols = np.unique(impose(X.astype(bool).max(axis=1), sp), axis=1, return_index=True)
-    X = X[:, :, cols]
+    cols = impose(X.astype(bool).max(axis=a1).sum(axis=0) > 0, sp)
+    X = X[:, cols, :] if 'r8' in fname else X[:, :, cols]
+    _, cols = np.unique(impose(X.astype(bool).max(axis=a1), sp), axis=1, return_index=True)
+    X = X[:, cols, :] if 'r8' in fname else X[:, :, cols]
     if 'thresh' in fselect:
         # change elements below threashold to zero
         X[X < thresh] = 0
     if 'simp_dupe' in fselect:
         # simpler version of dupe
         gp = impose(X.sum(axis=0) > 0, sp)
-        _, cols = np.unique(gp, axis=1, return_index=True)
-        X = X[:, :, cols]
+        if 'r8' in fname:
+            _, cols = np.unique(gp, axis=0, return_index=True)
+            X = X[:, cols, :]
+        else:
+            _, cols = np.unique(gp, axis=1, return_index=True)
+            X = X[:, :, cols]
     elif 'dupe' in fselect:
         s = X.shape
         # check for and remove duplicate slices
@@ -208,13 +189,13 @@ def ten_dec(fname='cancerSparseND4', indF='cancerCVInd', rank=5, fselect='min du
             np.savetxt('./data/{0}_{1}_{2}.csv'.format(head, rank, i), impose(f, sp), delimiter=',')
     else:
         file = './data/{0}_{1}_weights.csv'.format(head, rank)
-        weights = get_csv(file)
+        weights = load_csv(file)
         if sp:
             weights = sparse.COO(weights)
         factors = []
         for i in range(3):
             file = './data/{0}_{1}_{2}.csv'.format(head, rank, i)
-            factors.append(get_csv(file))
+            factors.append(load_csv(file))
             if sp:
                 factors[i] = sparse.COO(factors[i])
 
@@ -306,4 +287,4 @@ def ten_dec(fname='cancerSparseND4', indF='cancerCVInd', rank=5, fselect='min du
 for i in range(12):
     ten_dec(fname='toy.mat', rank=5, fselect='', train_split=False)
 """
-ten_dec(fname='asdSparseND', indF='asdCVInd', fselect='min max simp_dupe', rank=200, fmin=200, fmax=2000)
+ten_dec(fname='r8_sparse.csv', indF='r8CVInd', fselect='min max simp_dupe', rank=200, fmin=200, fmax=2000)

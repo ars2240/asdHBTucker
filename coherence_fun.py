@@ -9,42 +9,14 @@
 # Dependencies:
 #   Packages: gensim, numpy, pandas
 
-from gensim.corpora import Dictionary
-from gensim.matutils import Dense2Corpus
-from gensim.models.coherencemodel import CoherenceModel
+# from gensim.corpora import Dictionary
+# from gensim.matutils import Dense2Corpus
+# from gensim.models.coherencemodel import CoherenceModel
+from file_manip import *
 import math
 import numpy as np
 import pandas as pd
-import pickle
-import scipy.io
 import sparse
-
-
-def load_csv(f):
-    try:
-        d = pd.read_csv(f, header=None, dtype=float)
-        d2 = d.iloc[0, 0]
-    except ValueError:
-        d, d2 = [], float('nan')
-    if math.isnan(d2):
-        d = pd.read_csv(f, header=0, index_col=0, dtype={0: str})
-    return np.array(d)
-
-
-def load_file(f, s=''):
-    if '.pik' in f:
-        with open(f, "rb") as f:
-            d = pickle.load(f)[0]
-    elif '.mat' in f:
-        mdict = scipy.io.loadmat(f)  # import dataset from matlab
-        d = mdict.get(s)
-    else:
-        d = load_csv(f)
-    return d
-
-
-def impose(x, sp):
-    return x.todense() if sp else x
 
 
 def get_tl(fname, d):
@@ -99,6 +71,7 @@ def coherence(fname, counts, indF, dim=1, splits=10, fmax=math.inf, fmin=0, sp=F
     coh_tr, coh_te, nu = np.zeros(splits), np.zeros(splits), np.zeros(splits)
 
     cf = load_file(counts, 'sparse')
+    cf = cf.astype(int)
 
     if sp:
         s = np.max(cf[:, :-1], axis=0)
@@ -108,14 +81,26 @@ def coherence(fname, counts, indF, dim=1, splits=10, fmax=math.inf, fmin=0, sp=F
     rows = np.where(ind > 0)[0]
     ind = ind.iloc[rows, 0]
 
-    cf = cf[rows] > 0
-    t, t2 = list(range(1, cf.ndim)), list(range(2, cf.ndim))
-    t.remove(dim)
-    ct2 = np.max(cf, axis=tuple(t2))
+    if 'r8' in counts:
+        cf = cf[rows]
+        t, t2 = list(range(1, cf.ndim)), list([1])
+        t.remove(dim)
+        ct2 = np.sum(cf, axis=tuple(t2))
+    else:
+        cf = cf[rows] > 0
+        t, t2 = list(range(1, cf.ndim)), list(range(2, cf.ndim))
+        t.remove(dim)
+        ct2 = np.max(cf, axis=tuple(t2))
 
     cols = impose(np.logical_and(fmin < ct2.sum(axis=0), ct2.sum(axis=0) < fmax), sp)
-    cts = cf[:, cols, :] if sp else cf[:, cols]
-    if dim == 2:
+    if 'r8' in counts:
+        cts = cf[:, :, cols] if sp else cf[:, cols]
+    else:
+        cts = cf[:, cols, :] if sp else cf[:, cols]
+    if dim == 1 and 'r8' in counts:
+        cols = impose(cts.sum(axis=[0, 2]) > 0, sp)
+        cts = cts[:, cols, :]
+    if dim == 2 and 'r8' not in counts:
         cols = impose(cts.sum(axis=[0, 1]) > 0, sp)
         cts = cts[:, :, cols]
         gp = impose(cts.sum(axis=0) > 0, sp)
@@ -194,7 +179,6 @@ def coherence(fname, counts, indF, dim=1, splits=10, fmax=math.inf, fmin=0, sp=F
         # training
         rowsT = np.where(ind != (i + 1))
         coh_tr[i], nu[i] = coh(phi[rowsT[0], :], p, topics=t, meas=coh_meas)
-        print(coh_tr[i])
 
         # validation/test
         rowsV = np.where(ind == (i + 1))

@@ -12,7 +12,7 @@
 from coherence_fun import coherence, get_tl
 import numpy as np
 
-fname = 'asdHBTCV3KB10_L2_tpl10_{i}_IndepTrees_Cartesian_Genes_weighted.8x_1x_coh.mat'
+fname = 'r8HBTCV3KB10_L2_tpl10_{i}_IndepTrees_CP_Genes_coh.mat'
 # fname = 'asdHBTCV3KB10_L2_tpl10_{i}_IndepTrees_Cartesian_Genes.mat'
 # fname = 'asdHBTCV3KB10_L2_tpl10_{i}_IndepTrees_CP_Genes_coh.mat'
 # fname = 'cancerHBTCV3KB10_L2_tpl10_{i}_PAM_Cartesian_Genes.mat'
@@ -22,11 +22,14 @@ fname = 'asdHBTCV3KB10_L2_tpl10_{i}_IndepTrees_Cartesian_Genes_weighted.8x_1x_co
 # fname = 'cancerHBTCV3KB10_L3_tpl10_{i}_Level_PAM.mat'
 # fname = 'cancerHBTCV3KB10_L3_tpl0.1_{i}_Cartesian_IndepTrees.mat'
 # fname = 'asd_tensorlyCP_nonNeg_200_2000_200_1.csv'
-coh_meas = 'umass'  # coherence measure
+coh_meas = 'uci'  # coherence measure
+# coh_meas = 'umass'  # coherence measure
 # counts = 'cancerSparseND4.csv'  # count file name
-counts = 'asdSparseND.csv'
+# counts = 'asdSparseND.csv'
+counts = 'r8_sparse.csv'
 # indF = 'cancerCVInd'  # index file name
-indF = 'asdCVInd'
+# indF = 'asdCVInd'
+indF = 'r8CVInd'
 
 print('Mean Train Coherence\tMean Test Coherence\tUnique %')
 for d in [1, 2]:
