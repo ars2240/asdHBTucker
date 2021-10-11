@@ -35,9 +35,10 @@ def get_tl(fname, d):
 
 
 # compute coherence over topics
-def coh(X, t, n=5, eps=1e-5, topics=None, mean=True, meas='uci'):
+def coh(X, t, n=5, eps=1e-5, topics=None, mean=True, meas='uci', rmz=False):
     x = (X > 0).astype(int)  # convert to whether or not a word occurs
     dw = np.dot(np.transpose(x), x) + eps  # word co-occurrence
+    # print(np.diagonal(dw))
     p = np.log(dw)  # log probabilities
     if 'mass' not in meas.lower():
         p -= np.log((X.shape[0] * (1 + eps)))
@@ -54,19 +55,35 @@ def coh(X, t, n=5, eps=1e-5, topics=None, mean=True, meas='uci'):
         nt = len(topics)
     c = np.zeros(nt)  # initialize topic coherence vector
     ui = []  # list of unique words
+    nw = min(t.shape[0], x.shape[1])
     for i in range(nt):
-        idx = np.argsort(-t[:, topics[i]])[:n]  # get top n words in topic
-        c[i] = np.sum(np.tril(s[np.ix_(idx, idx)]))  # get topic coherence
-        ui.extend(idx)
+        t2 = np.array([(-t[j, topics[i]], j) for j in range(nw)], dtype=[('x', 'f4'), ('y', 'f4')])
+        idx = np.argsort(t2, order=('x', 'y'))[:n]  # get top n words in topic
+        # print(idx)
+        # print(t[idx, topics[i]])
+        # print(dw[np.ix_(idx, idx)])
+        if t[idx[0], topics[i]] == np.min(t[:, topics[i]]) and rmz:
+            c[i] = np.nan
+        else:
+            dw2 = dw[np.ix_(idx, idx)]
+            lt = np.tril(s[np.ix_(idx, idx)])
+            c[i] = np.sum(lt[dw2 > 1]) if rmz else np.sum(lt)  # get topic coherence
+            ui.extend(idx)
+        # print(c[i])
     nu = len(np.unique(ui))/len(ui)  # % of top words that are unique
 
-    c = np.mean(c) if mean else c
+    unique, counts = np.unique(ui, return_counts=True)
+    # ar = np.argsort(-counts)
+    # print(np.asarray((unique[ar], counts[ar])))
+
+    c = np.nanmean(c) if mean else c
+    #print(c)
 
     return c, nu
 
 
-def coherence(fname, counts, indF, dim=1, splits=10, fmax=math.inf, fmin=0, sp=False, root='./data/',
-              coh_meas='uci', topics=None):
+def coherence(fname, counts, indF, dim=1, splits=10, fmax=math.inf, fmin=0, fmin2=0, sp=False, root='./data/',
+              coh_meas='uci', topics=None, rmz=False):
 
     coh_tr, coh_te, nu = np.zeros(splits), np.zeros(splits), np.zeros(splits)
 
@@ -98,10 +115,11 @@ def coherence(fname, counts, indF, dim=1, splits=10, fmax=math.inf, fmin=0, sp=F
     else:
         cts = cf[:, cols, :] if sp else cf[:, cols]
     if dim == 1 and 'r8' in counts:
-        cols = impose(cts.sum(axis=[0, 2]) > 0, sp)
+        cols = impose(cts.sum(axis=[0, 2]) > fmin2, sp)
+        # print(cols)
         cts = cts[:, cols, :]
     if dim == 2 and 'r8' not in counts:
-        cols = impose(cts.sum(axis=[0, 1]) > 0, sp)
+        cols = impose(cts.sum(axis=[0, 1]) > fmin2, sp)
         cts = cts[:, :, cols]
         gp = impose(cts.sum(axis=0) > 0, sp)
         _, cols = np.unique(gp, axis=1, return_index=True)
@@ -178,11 +196,11 @@ def coherence(fname, counts, indF, dim=1, splits=10, fmax=math.inf, fmin=0, sp=F
 
         # training
         rowsT = np.where(ind != (i + 1))
-        coh_tr[i], nu[i] = coh(phi[rowsT[0], :], p, topics=t, meas=coh_meas)
+        coh_tr[i], nu[i] = coh(phi[rowsT[0], :], p, topics=t, meas=coh_meas, rmz=rmz)
 
         # validation/test
         rowsV = np.where(ind == (i + 1))
-        coh_te[i], _ = coh(phi[rowsV[0], :], p, topics=t, meas=coh_meas)
+        coh_te[i], _ = coh(phi[rowsV[0], :], p, topics=t, meas=coh_meas, rmz=rmz)
 
     return coh_tr, coh_te, nu
 

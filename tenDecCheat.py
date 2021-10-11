@@ -62,18 +62,22 @@ def ten_dec(fname='cancerSparseND4', indF='cancerCVInd', rank=5, fselect='min du
 
     if 'min' in fselect:
         # remove slices with min or fewer occurances
-        cols = impose(X.astype(bool).max(axis=a2).sum(axis=0) > fmin, sp)
+        X1 = X.astype(int).sum(axis=a2) if 'r8' in fname else X.astype(bool).max(axis=a2)
+        cols = impose(X1.sum(axis=0) > fmin, sp)
         # print(np.where((X.astype(bool).sum(axis=(0, 2)) <= fmin).todense())[0])
         X = X[:, :, cols] if 'r8' in fname else X[:, cols, :]
     if 'max' in fselect:
         # remove slices with max or more occurances
-        cols = impose(X.astype(bool).max(axis=a2).sum(axis=0) < fmax, sp)
+        X1 = X.astype(int).sum(axis=a2) if 'r8' in fname else X.astype(bool).max(axis=a2)
+        cols = impose(X1.sum(axis=0) < fmax, sp)
         # print((X.astype(bool).sum(axis=(0, 2)) >= fmin).todense())
         X = X[:, :, cols] if 'r8' in fname else X[:, cols, :]
     # clean up pathways
-    cols = impose(X.astype(bool).max(axis=a1).sum(axis=0) > 0, sp)
+    X2 = X.astype(int).sum(axis=a1) if 'r8' in fname else X.astype(bool).max(axis=a1)
+    cols = impose(X2.sum(axis=0) > 0, sp)
     X = X[:, cols, :] if 'r8' in fname else X[:, :, cols]
-    _, cols = np.unique(impose(X.astype(bool).max(axis=a1), sp), axis=1, return_index=True)
+    X2 = X.astype(int).sum(axis=a1) if 'r8' in fname else X.astype(bool).max(axis=a1)
+    _, cols = np.unique(impose(X2, sp), axis=1, return_index=True)
     X = X[:, cols, :] if 'r8' in fname else X[:, :, cols]
     if 'thresh' in fselect:
         # change elements below threashold to zero
@@ -287,4 +291,4 @@ def ten_dec(fname='cancerSparseND4', indF='cancerCVInd', rank=5, fselect='min du
 for i in range(12):
     ten_dec(fname='toy.mat', rank=5, fselect='', train_split=False)
 """
-ten_dec(fname='r8_sparse.csv', indF='r8CVInd', fselect='min max simp_dupe', rank=200, fmin=200, fmax=2000)
+ten_dec(fname='r8_sparse.csv', indF='r8CVInd', fselect='min max', rank=200, fmin=200, fmax=2000)
