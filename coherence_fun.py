@@ -72,18 +72,20 @@ def coh(X, t, n=5, eps=1e-5, topics=None, mean=True, meas='uci', rmz=False):
         # print(c[i])
     nu = len(np.unique(ui))/len(ui)  # % of top words that are unique
 
+    """
     unique, counts = np.unique(ui, return_counts=True)
-    # ar = np.argsort(-counts)
-    # print(np.asarray((unique[ar], counts[ar])))
+    ar = np.argsort(-counts)
+    print(np.asarray((unique[ar], counts[ar])))
+    """
 
     c = np.nanmean(c) if mean else c
-    #print(c)
+    # print(c)
 
     return c, nu
 
 
 def coherence(fname, counts, indF, dim=1, splits=10, fmax=math.inf, fmin=0, fmin2=0, sp=False, root='./data/',
-              coh_meas='uci', topics=None, rmz=False):
+              coh_meas='uci', topics=None, rmz=False, bad=None):
 
     coh_tr, coh_te, nu = np.zeros(splits), np.zeros(splits), np.zeros(splits)
 
@@ -124,11 +126,24 @@ def coherence(fname, counts, indF, dim=1, splits=10, fmax=math.inf, fmin=0, fmin
         gp = impose(cts.sum(axis=0) > 0, sp)
         _, cols = np.unique(gp, axis=1, return_index=True)
         cts = cts[:, :, cols]
+    if bad is not None and 'r8' in counts:
+        cols = list(range(cts.shape[2]))
+        for b in bad:
+            cols.remove(b)
+        cts = cts[:, :, cols]
+    if bad is not None and 'r8' not in counts:
+        cols = list(range(cts.shape[1]))
+        for b in bad:
+            cols.remove(b)
+        cts = cts[:, cols, :]
     phi = np.max(cts, axis=tuple(t))
     phi = impose(phi, sp)
 
     if 'pwy' in fname.lower():
         dim = (dim % 2) + 1
+
+    if '{d}' in fname:
+        fname = fname.replace('{d}', str(dim))
 
     if '{i}' not in fname:
         psi = load_file(root + fname, 'psi')
@@ -150,6 +165,13 @@ def coherence(fname, counts, indF, dim=1, splits=10, fmax=math.inf, fmin=0, fmin
                 p = p[(0, 0)]
             else:
                 p = p[(dim - 1, 0)]
+
+        if bad is not None and p.shape[0] == phi.shape[1] + len(bad) and (('r8' not in counts and dim == 1) or
+                                                                          ('r8' in counts and dim == 2)):
+            cols = list(range(p.shape[0]))
+            for b in bad:
+                cols.remove(b)
+            p = p[cols, :]
 
         """
         # t = {str(c): [{str(r): p[r, c]} for r in range(p.shape[0])] for c in range(p.shape[1])}
