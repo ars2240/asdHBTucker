@@ -38,6 +38,8 @@ def get_tl(fname, d):
 def coh(X, t, n=5, eps=1e-5, topics=None, mean=True, meas='uci', rmz=False):
     x = (X > 0).astype(int)  # convert to whether or not a word occurs
     dw = np.dot(np.transpose(x), x) + eps  # word co-occurrence
+    # a = np.where(dw < 1)
+    # [print(x) for x in a[0]]
     # print(np.diagonal(dw))
     p = np.log(dw)  # log probabilities
     if 'mass' not in meas.lower():
@@ -62,6 +64,8 @@ def coh(X, t, n=5, eps=1e-5, topics=None, mean=True, meas='uci', rmz=False):
         # print(idx)
         # print(t[idx, topics[i]])
         # print(dw[np.ix_(idx, idx)])
+        # a = np.where(dw[np.ix_(idx, idx)] < 1)
+        # [print(idx[x]) for x in a[0]]
         if t[idx[0], topics[i]] == np.min(t[:, topics[i]]) and rmz:
             c[i] = np.nan
         else:
