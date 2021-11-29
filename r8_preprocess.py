@@ -1,17 +1,9 @@
-# https://github.com/kaize0409/HyperGAT_TextClassification
+# Modified from https://github.com/kaize0409/HyperGAT_TextClassification
 
-from nltk.corpus import stopwords
-import nltk
-from nltk.wsd import lesk
-from nltk.corpus import wordnet as wn
-from r8_utils import clean_str, show_statisctic, clean_document, clean_str_simple_version
-import collections
+from r8_utils import show_statisctic, clean_document, clean_str_simple_version
 from collections import Counter
-import csv
-import random
 import numpy as np
 import pickle
-import json
 from nltk import tokenize
 from sklearn.utils import class_weight
 
@@ -68,7 +60,7 @@ def read_file(dataset, LDA=True):
 	for i in word_set:
 		vocab_dic[i] = len(vocab_dic) + 1
 
-	print('Total_number_of_words: ' + str(len(vocab)))
+	print('Total_number_of_words: ' + str(vocab_size))
 	print('Total_number_of_categories: ' + str(len(labels_dic)))
 
 	doc_train_list = []
@@ -90,53 +82,24 @@ def read_file(dataset, LDA=True):
 			for word in sentence:
 				temp.append(vocab_dic[word])
 			temp_doc.append(temp)
-		doc_test_list.append((temp_doc,labels_dic[label]))
+		doc_test_list.append((temp_doc, labels_dic[label]))
 
 	keywords_dic = {}
 	if LDA:
-		keywords_dic_original = pickle.load(open('data/' + dataset + '_LDA.p', "rb" ))
+		keywords_dic_original = pickle.load(open('data/' + dataset + '_LDA.p', "rb"))
 	
 		for i in keywords_dic_original:
 			if i in vocab_dic:
 				keywords_dic[vocab_dic[i]] = keywords_dic_original[i]
 
-	train_set_y = [j for i,j in doc_train_list]
+	train_set_y = [j for i, j in doc_train_list]
 	
-	class_weights = class_weight.compute_class_weight('balanced',np.unique(train_set_y),train_set_y)
+	class_weights = class_weight.compute_class_weight('balanced', np.unique(train_set_y), train_set_y)
 
 	return doc_content_list, doc_train_list, doc_test_list, vocab_dic, labels_dic, max_num_sentence, keywords_dic, class_weights
 
 
-def loadGloveModel(gloveFile, vocab_dic, matrix_len):
-	print("Loading Glove Model")
-	f = open(gloveFile,'r')
-	gloveModel = {}
-	glove_embedding_dimension = 0
-	for line in f:
-		splitLine = line.split()
-		word = splitLine[0]
-		glove_embedding_dimension = len(splitLine[1:])
-		embedding = np.array([float(val) for val in splitLine[1:]])
-		gloveModel[word] = embedding
-	
-	words_found = 0
-	weights_matrix = np.zeros((matrix_len, glove_embedding_dimension))
-	weights_matrix[0] = np.zeros((glove_embedding_dimension, ))
-	
-	for word in vocab_dic:
-		if word in gloveModel:
-			weights_matrix[vocab_dic[word]] = gloveModel[word]
-			words_found += 1
-		else:
-			weights_matrix[vocab_dic[word]] = gloveModel['the']
-
-	print("Total ", len(vocab_dic), " words")
-	print("Done.",words_found," words loaded from", gloveFile)
-
-	return weights_matrix
-
-
-_, doc_train_list, _, vocab_dic, _, max_num_sentence, _, _ = read_file('R8')
+_, doc_train_list, _, vocab_dic, _, _, _, _ = read_file('R8')
 
 np.savetxt("r8_vocab.csv", list(vocab_dic.items()), delimiter=',', fmt='%s')
 
