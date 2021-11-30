@@ -1,5 +1,6 @@
 # Modified from https://github.com/kaize0409/HyperGAT_TextClassification
 
+import spacy
 import scipy.sparse as sp
 from nltk.corpus import stopwords
 from collections import Counter
@@ -29,7 +30,7 @@ def clean_str(string):
     return string.strip().lower()
 
 
-def clean_str_simple_version(string, dataset):
+def clean_str_simple_version(string):
 
     string = re.sub(r"\\", "", string)
     string = re.sub(r"\'", "", string)
@@ -71,7 +72,9 @@ def clean_document(doc_sentence_list, dataset):
 
     stop_words = stopwords.words('english')
     stop_words = set(stop_words)
+    stop_words.add('\'s')
     stemmer = WordNetLemmatizer()
+    nlp = spacy.load("en_core_web_sm")
 
     word_freq = Counter()
 
@@ -86,39 +89,64 @@ def clean_document(doc_sentence_list, dataset):
 
     highbar = word_freq.most_common(10)[-1][1]
     clean_docs = []
+    clean_docs_phrase = []
     for doc_sentences in doc_sentence_list:
         clean_doc = []
+        clean_doc_phrase = []
         count_num = 0
         for sentence in doc_sentences:
             temp = word_tokenize(clean_str(sentence))
             temp = ' '.join([stemmer.lemmatize(word) for word in temp])
+            doc = nlp(temp)
 
             words = temp.split()
+            phrases = [None] * len(words)
+            for chunk in doc.noun_chunks:
+                s, e = chunk.start, chunk.end
+                text = chunk.text.split()
+                r = range(len(text))
+                wb = list(r)
+                for i in r:
+                    word = text[i]
+                    if (word in stop_words) or (word_freq[word] < 5) or (word_freq[word] >= highbar) \
+                            or word.isnumeric() or len(word) <= 1:
+                        wb.remove(i)
+                phrase = ' '.join([text[i] for i in wb])
+                if len(phrase.split()) > 1:
+                    phrases[s:e] = [phrase] * (e - s)
             doc_words = []
-            for word in words:
+            doc_phrase = []
+            for i in range(len(words)):
+                word = words[i]
+                phrase = phrases[i]
                 if dataset == 'mr':
                     if not word in stop_words and not word.isnumeric() and len(word) > 1:
                         doc_words.append(word)
+                        doc_phrase.append(phrase)
                 elif (word not in stop_words) and (word_freq[word] >= 5) and (word_freq[word] < highbar)\
                         and not word.isnumeric() and len(word) > 1:
                     doc_words.append(word)
+                    doc_phrase.append(phrase)
 
-            clean_doc.append(doc_words)
-            count_num += len(doc_words)
+            if len(doc_words) > 0:
+                clean_doc.append(doc_words)
+                clean_doc_phrase.append(doc_phrase)
+                count_num += len(doc_words)
 
             if dataset == '20ng' and count_num > 2000:
                 break
             
         clean_docs.append(clean_doc)
+        clean_docs_phrase.append(clean_doc_phrase)
 
-    return clean_docs
+    return clean_docs, clean_docs_phrase
 
 
 def split_validation(train_set, valid_portion, SEED):
     np.random.seed(SEED)
 
-    train_set_x = [i for i,j in train_set]
-    train_set_y = [j for i,j in train_set]
+    train_set_x = [i for i, j in train_set]
+    train_set_y = [j for i, j in train_set]
 
     if valid_portion == 0.0:
         return (train_set_x, train_set_y)
