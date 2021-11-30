@@ -27,15 +27,15 @@ fname = 'r8pHBTCV3KB10_L2_tpl10_{i}_IndepTrees_Cartesian_Genes_t50_cohmass.mat'
 meas = ['uci', 'umass']  # coherence measures
 # counts = 'cancerSparseND4.csv'  # count file name
 # counts = 'asdSparseND.csv'
-counts = 'r8_sparse.csv'
+counts = 'r8p_sparse.csv'
 # indF = 'cancerCVInd'  # index file name
 # indF = 'asdCVInd'
 indF = 'r8CVInd'
-# bad = None
+bad = None
 # bad = [180, 194, 234]
 # bad = [0, 29, 180, 186, 194, 224, 234, 246, 247]
 # bad = [0, 29, 64, 81, 180, 186, 194, 224, 234, 242, 244, 245, 246, 247]
-bad = np.genfromtxt('r8_badwF.csv', delimiter=',')
+# bad = np.genfromtxt('r8_badwF.csv', delimiter=',')
 dims = [1, 2]
 
 for coh_meas in meas:
