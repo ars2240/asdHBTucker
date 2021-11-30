@@ -254,11 +254,11 @@ function [phi, psi, tree, samples, paths, varargout] = asdHBTucker3(x,options)
                 coreDims=coreSize(modes, dims, r);
                 phi = drawCoreMAP(samples,paths,coreDims,r,options);
             end
-            options.best.LL = LL; options.best.phi = phi;
+            options.best.LL = -inf; options.best.phi = phi;
             options.best.psi = psi; options.best.samples = samples;
             options.best.paths = paths; options.best.r = r;
             options.best.gamma = options.gam; options.best.iter = 0;
-            options.best.cm = cm; options.best.c=c; options.best.nu=nu;
+            options.best.cm = -inf; options.best.c=c; options.best.nu=nu;
             if strcmp(options.topicModel,'PAM')
                 options.best.prob = prob;
             else

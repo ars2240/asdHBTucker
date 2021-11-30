@@ -49,7 +49,8 @@ function phi = asdHBTuckerNew(asdTens, psi, oSamples, oPaths, tree, varargin)
     end
     
     % reshape x
-    x=sptensor(ind,vals);
+    s=size(asdTens);
+    x=sptensor(ind,vals,[max(ind(:,1)),s(2:end)]);
     
     L=options.L;
     LL=0; %initialize log-likelihood

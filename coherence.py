@@ -13,7 +13,7 @@ from coherence_fun import coherence, get_tl
 import numpy as np
 
 # fname = 'cancerHBTCV3KB10_L2_tpl10_{i}_IndepTrees_Cartesian_Genes_weighted32x_32x_cohmass.mat'
-fname = 'r8THBTCV3KB10_L2_tpl10_{i}_IndepTrees_Cartesian_Genes_t25_weighted32x_32x_cohmass.mat'
+fname = 'r8pHBTCV3KB10_L2_tpl10_{i}_IndepTrees_Cartesian_Genes_t50_cohmass.mat'
 # fname = 'r8HLDACV3KB10_L2_tpl10_{i}_IndepTrees_Cartesian_Pwy_coh.mat'
 # fname = 'asdHBTCV3KB10_L2_tpl10_{i}_IndepTrees_Cartesian_Genes.mat'
 # fname = 'cancerHBTCV3KB10_L2_tpl10_{i}_IndepTrees_CP_Genes_coh.mat'

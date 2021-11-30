@@ -1,5 +1,5 @@
 % try
-    asdSparse=csvread('cancerSparseND4.csv',1,1);
+    asdSparse=csvread('r8p_sparse.csv');
     asd=sptensor(asdSparse(:,1:3),asdSparse(:,4));
     %asd=sptensor(asdSparse(:,1:3),ones(size(asdSparse,1),1));
 
@@ -20,7 +20,7 @@
     % mex drawZscPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
     tpl=10; % topics per level
     gam0 = 0.1;
-    options.L = 2;
+    options.L = [2,2];
     % options.topicType = 'CP';
 	% options.topicModel = 'PAM';
     options.par = 0;
@@ -36,11 +36,11 @@
     options.print = 1;
     % options.cutoff = 0.1;
     % options.sparse = 0;
-    options.weights = [48, 48];
-    options.topicsgoal = 500;
+    options.weights = [1, 1];
+    options.topicsgoal = 100;
     dom = 'Genes';
     options.coh.measure = 'umass';
-    tail = '_weighted48x_48x_cohmass';
+    tail = '_t100_cohmass';
     
     if strcmp(options.topicType,'CP')
         options.topicsgoal = sqrt(options.topicsgoal);
@@ -52,18 +52,35 @@
     LL=zeros(nFolds,1); %initialize log-likelihood
     
     % remove bad genes
+    asdP=collapse(asd,[1,2],@sum);
+    gP=find(asdP>200 & asdP<2000);
+    asd=asd(:,:,gP);
+
+    %subset phrases by reverting to "none"
+    asdG=collapse(asd,3,@max);
+    asdGC=collapse(asdG>0,1);
+    s = asd.subs;
+    noneP=mode(asd.subs(:,2));
+    gG=find(asdGC<=10);
+    rows = ismember(s(:,2), gG);
+    s(rows,2) = noneP;
+    asd=sptensor(s,asd.vals);
+
     asdG=collapse(asd,3,@max);
     asdGC=collapse(asdG>0,1);
     %asdGC=collapse(asdG,1);
-    gG=find(asdGC>200 & asdGC<2000);
+    gG=find(asdGC>0);
     asd=asd(:,gG,:);
+
     % remove zero pathways
-    asdP=collapse(asd,[1,2]);
-    gP=find(asdP>0);
-    asd=asd(:,:,gP);
-    asdGP=collapse(asd,1);
-    [~,gP,~]=unique(double(asdGP)', 'rows');
-    asd=asd(:,:,gP);
+    % asdGP=collapse(asd,1);
+    % [~,gP,~]=unique(double(asdGP)', 'rows');
+    % asd=asd(:,:,gP);
+
+    % bad=[0, 29, 64, 81, 180, 186, 194, 224, 234, 242, 244, 245, 246, 247] + 1;
+    % bad = csvread('r8_badwF.csv') + 1;
+    % good=setdiff(1:size(asd,3),bad);
+    % asd=asd(:,:,good);
     
     % for hLDA
     %ind = asd.subs; imd(:,2)=1;
@@ -110,7 +127,7 @@
             prob=KB.prob;
             testPhi = asdHBTuckerNew(asd, psi, samples, paths, prob, ...
                 b, options);
-            save(['data/cancerHBTCV3KB', int2str(nBest), '_L',...
+            save(['data/r8pHBTCV3KB', int2str(nBest), '_L',...
                 int2str(options.L(1)), '_tpl', int2str(tpl), '_', ...
                 int2str(f), '_', options.topicModel, '_', ...
                 options.topicType, '_', dom, tail, '.mat'],'phi', ...
@@ -120,7 +137,7 @@
             testPhi = asdHBTuckerNew(asd, psi, samples, paths, tree, ...
                 b, options);
             %save data
-            save(['data/cancerHBTCV3KB', int2str(nBest), '_L',...
+            save(['data/r8pHBTCV3KB', int2str(nBest), '_L',...
                 int2str(options.L(1)), '_tpl', int2str(tpl), '_', ...
                 int2str(f), '_', options.topicModel, '_', ...
                 options.topicType, '_', dom, tail, '.mat'],'phi', ...
