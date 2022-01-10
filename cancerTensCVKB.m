@@ -66,7 +66,7 @@
     asd=asd(:,:,gP);
     
     % for hLDA
-    %ind = asd.subs; imd(:,2)=1;
+    %ind = asd.subs; ind(:,2)=1;
     %v = asd.values;
     %asd = sptensor(ind,v,max(ind),@max);
     

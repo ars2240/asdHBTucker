@@ -36,11 +36,11 @@
     options.print = 1;
     % options.cutoff = 0.1;
     % options.sparse = 0;
-    options.weights = [1, 1];
-    options.topicsgoal = 100;
+    options.weights = [.25, 1];
+    options.topicsgoal = 50;
     dom = 'Genes';
     options.coh.measure = 'umass';
-    tail = '_t100_cohmass';
+    tail = '_weighted.25x_1x_t50_cohmass';
     
     if strcmp(options.topicType,'CP')
         options.topicsgoal = sqrt(options.topicsgoal);
@@ -63,14 +63,20 @@
     noneP=mode(asd.subs(:,2));
     gG=find(asdGC<=10);
     rows = ismember(s(:,2), gG);
-    s(rows,2) = noneP;
+    s(:,2) = s(:,2) + size(asd,3);
+    s(rows,2) = s(rows,3);
+    rows = find(s(:,2) == noneP + size(asd,3));
+    s(rows,2) = s(rows,3);
+    %s(:,2) = 1;
     asd=sptensor(s,asd.vals);
 
     asdG=collapse(asd,3,@max);
     asdGC=collapse(asdG>0,1);
     %asdGC=collapse(asdG,1);
     gG=find(asdGC>0);
-    asd=asd(:,gG,:);
+    if length(gG) < size(asd,2)
+        asd=asd(:,gG,:);
+    end
 
     % remove zero pathways
     % asdGP=collapse(asd,1);
@@ -78,15 +84,18 @@
     % asd=asd(:,:,gP);
 
     % bad=[0, 29, 64, 81, 180, 186, 194, 224, 234, 242, 244, 245, 246, 247] + 1;
-    % bad = csvread('r8_badwF.csv') + 1;
-    % good=setdiff(1:size(asd,3),bad);
-    % asd=asd(:,:,good);
+    bad = csvread('r8_badP.csv') + 1;
+    good=setdiff(1:size(asd,3),bad);
+    asd=asd(:,:,good);
+    good=setdiff(1:size(asd,2),bad);
+    asd=asd(:,good,:);
+
+    % csvwrite('r8p_sparse3.csv',[asd.subs, asd.vals]);
     
     % for hLDA
-    %ind = asd.subs; imd(:,2)=1;
+    %ind = asd.subs; ind(:,2)=1;
     %v = asd.values;
     %asd = sptensor(ind,v,max(ind),@max);
-    
     if strcmp(dom,'Pwy')
         asd=permute(asd,[1 3 2]);
     end
@@ -127,7 +136,7 @@
             prob=KB.prob;
             testPhi = asdHBTuckerNew(asd, psi, samples, paths, prob, ...
                 b, options);
-            save(['data/r8pHBTCV3KB', int2str(nBest), '_L',...
+            save(['data/r8p2HBTCV3KB', int2str(nBest), '_L',...
                 int2str(options.L(1)), '_tpl', int2str(tpl), '_', ...
                 int2str(f), '_', options.topicModel, '_', ...
                 options.topicType, '_', dom, tail, '.mat'],'phi', ...
@@ -137,7 +146,7 @@
             testPhi = asdHBTuckerNew(asd, psi, samples, paths, tree, ...
                 b, options);
             %save data
-            save(['data/r8pHBTCV3KB', int2str(nBest), '_L',...
+            save(['data/r8p2HBTCV3KB', int2str(nBest), '_L',...
                 int2str(options.L(1)), '_tpl', int2str(tpl), '_', ...
                 int2str(f), '_', options.topicModel, '_', ...
                 options.topicType, '_', dom, tail, '.mat'],'phi', ...
