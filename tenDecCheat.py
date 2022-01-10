@@ -18,7 +18,7 @@ import time
 
 
 def ten_dec(fname='cancerSparseND4', indF='cancerCVInd', rank=5, fselect='min dupe', fmin=0, fmax=1000, thresh=0,
-            head='r8p_tensorlyCP_nonNeg_{fmin}_{fmax}', sp=True, decomp=True, norm=True, ll=1000,
+            head='r8p2_tensorlyCP_nonNeg_{fmin}_{fmax}', sp=True, decomp=True, norm=True, ll=1000,
             hist=False, train_split=True):
 
     check_folder('./data')
@@ -290,4 +290,4 @@ for i in range(12):
     ten_dec(fname='toy.mat', rank=5, fselect='', train_split=False)
 """
 # ten_dec(fname='r8p_sparse.csv', indF='r8CVInd', fselect='min max', rank=200, fmin=200, fmax=2000)
-ten_dec(fname='r8p_sparse2.csv', indF='r8CVInd', fselect='', rank=200, fmin=200, fmax=2000)
+ten_dec(fname='r8p_sparse3.csv', indF='r8CVInd', fselect='', rank=200, fmin=200, fmax=2000)

@@ -105,7 +105,8 @@ def coherence(fname, counts, indF, dim=1, splits=10, fmax=math.inf, fmin=0, fmin
     ind = ind.iloc[rows, 0]
 
     if 'r8' in counts:
-        cf = cf[rows]
+        if cf.shape[0] != len(rows):
+            cf = cf[rows]
         t, t2 = list(range(1, cf.ndim)), list([1])
         t.remove(dim)
         ct2 = np.sum(cf, axis=tuple(t2))
