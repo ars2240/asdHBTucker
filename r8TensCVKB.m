@@ -20,7 +20,7 @@
     % mex drawZscPar.c CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp";
     tpl=10; % topics per level
     gam0 = 0.1;
-    options.L = [2,2];
+    options.L = [2 1];
     % options.topicType = 'CP';
 	% options.topicModel = 'PAM';
     options.par = 0;
@@ -32,15 +32,18 @@
     options.topicsPerLevel{2}=tpl;
     % options.collapsed = 0;
     options.keepBest = 3;
-    options.time = 0;
+    options.time = 1;
     options.print = 1;
     % options.cutoff = 0.1;
     % options.sparse = 0;
-    options.weights = [.25, 1];
+    % options.weights = [.25, 1];
     options.topicsgoal = 50;
-    dom = 'Genes';
+    options.save = 0;
+    % dom = 'Genes';
+    dom = 'Pwy';
     options.coh.measure = 'umass';
-    tail = '_weighted.25x_1x_t50_cohmass';
+    % tail = '_weighted.25x_1x_t50_cohmass';
+    tail = '_cohmass';
     
     if strcmp(options.topicType,'CP')
         options.topicsgoal = sqrt(options.topicsgoal);
@@ -93,19 +96,20 @@
     % csvwrite('r8p_sparse3.csv',[asd.subs, asd.vals]);
     
     % for hLDA
-    %ind = asd.subs; ind(:,2)=1;
-    %v = asd.values;
-    %asd = sptensor(ind,v,max(ind),@max);
+    ind = asd.subs; ind(:,2)=1;
+    v = asd.values;
+    asd = sptensor(ind,v,max(ind),@max);
+
     if strcmp(dom,'Pwy')
         asd=permute(asd,[1 3 2]);
     end
-    %asd=collapse(asd,3,@max);
-    %asd=sptensor([asd.subs,ones(size(asd.subs,1),1)], asd.vals, [asd.size, 1]);
+    asd=collapse(asd,3,@max);
+    asd=sptensor([asd.subs,ones(size(asd.subs,1),1)], asd.vals, [asd.size, 1]);
     
     % multiply by factor
     %asd=asd*10;
 
-    for f=1:nFolds
+    for f=1:1%:nFolds
         b=cvInd==f; %logical indices of test fold
         ind=find(~b);
         fprintf('Fold # %6i\n',f);
@@ -136,21 +140,25 @@
             prob=KB.prob;
             testPhi = asdHBTuckerNew(asd, psi, samples, paths, prob, ...
                 b, options);
-            save(['data/r8p2HBTCV3KB', int2str(nBest), '_L',...
-                int2str(options.L(1)), '_tpl', int2str(tpl), '_', ...
-                int2str(f), '_', options.topicModel, '_', ...
-                options.topicType, '_', dom, tail, '.mat'],'phi', ...
-                'testPhi', 'psi', 'prob', 'samples', 'paths', 'options');
+            if options.save == 1
+                save(['data/r8p2HBTCV3KB', int2str(nBest), '_L',...
+                    int2str(options.L(1)), '_tpl', int2str(tpl), '_', ...
+                    int2str(f), '_', options.topicModel, '_', ...
+                    options.topicType, '_', dom, tail, '.mat'],'phi', ...
+                    'testPhi', 'psi', 'prob', 'samples', 'paths', 'options');
+            end
         else
             tree=KB.tree;
             testPhi = asdHBTuckerNew(asd, psi, samples, paths, tree, ...
                 b, options);
             %save data
-            save(['data/r8p2HBTCV3KB', int2str(nBest), '_L',...
-                int2str(options.L(1)), '_tpl', int2str(tpl), '_', ...
-                int2str(f), '_', options.topicModel, '_', ...
-                options.topicType, '_', dom, tail, '.mat'],'phi', ...
-                'testPhi', 'psi', 'tree', 'samples', 'paths', 'options');
+            if options.save == 1
+                save(['data/r8p2HBTCV3KB', int2str(nBest), '_L',...
+                    int2str(options.L(1)), '_tpl', int2str(tpl), '_', ...
+                    int2str(f), '_', options.topicModel, '_', ...
+                    options.topicType, '_', dom, tail, '.mat'],'phi', ...
+                    'testPhi', 'psi', 'tree', 'samples', 'paths', 'options');
+            end
         end
 
         %compute LL

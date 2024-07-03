@@ -51,7 +51,7 @@ def ten_dec(fname='cancerSparseND4', indF='cancerCVInd', rank=5, fselect='min du
         # training set
         indT, _ = np.where(ind > 0)
         indT = indT[indT < X.shape[0]]
-        X = X[indT]
+        X = X if 'r8p_sparse3' in fname else X[indT]
 
     if 'r8' in fname:
         a1, a2 = 2, 1
@@ -185,10 +185,12 @@ def ten_dec(fname='cancerSparseND4', indF='cancerCVInd', rank=5, fselect='min du
 
     phiT = tl.tensor(X, dtype=tl.float32)
     if decomp:
+        start_time = time.time()
         weights, factors = non_negative_parafac(phiT, rank=rank, init='random')
         np.savetxt('./data/{0}_{1}_weights.csv'.format(head, rank), impose(weights, sp), delimiter=',')
         for i, f in enumerate(factors):
             np.savetxt('./data/{0}_{1}_{2}.csv'.format(head, rank, i), impose(f, sp), delimiter=',')
+        print("Decomp Time: {0}".format(time.time() - start_time))
     else:
         file = './data/{0}_{1}_weights.csv'.format(head, rank)
         weights = load_csv(file)
@@ -289,5 +291,7 @@ def ten_dec(fname='cancerSparseND4', indF='cancerCVInd', rank=5, fselect='min du
 for i in range(12):
     ten_dec(fname='toy.mat', rank=5, fselect='', train_split=False)
 """
+ten_dec(fname='cancerSparseND4.csv', indF='cancerCVInd', fselect='min max', rank=200, fmin=200, fmax=2000)
 # ten_dec(fname='r8p_sparse.csv', indF='r8CVInd', fselect='min max', rank=200, fmin=200, fmax=2000)
-ten_dec(fname='r8p_sparse3.csv', indF='r8CVInd', fselect='', rank=200, fmin=200, fmax=2000)
+# ten_dec(fname='r8p_sparse3.csv', indF='r8CVInd', fselect='', rank=200, fmin=200, fmax=2000)
+# ten_dec(fname='asdSparseND.csv', indF='asdCVInd', fselect='', rank=200, fmin=200, fmax=2000)

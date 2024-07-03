@@ -63,6 +63,7 @@ options.cutoff = 0;
 options.rng = 'shuffle';
 options.topicsgoal = 0;
 options.weights = 1;
+options.save = 1;
 
 % coherence options
 % n = number of topics considered
