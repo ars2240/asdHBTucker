@@ -291,7 +291,8 @@ def ten_dec(fname='cancerSparseND4', indF='cancerCVInd', rank=5, fselect='min du
 for i in range(12):
     ten_dec(fname='toy.mat', rank=5, fselect='', train_split=False)
 """
-ten_dec(fname='cancerSparseND4.csv', indF='cancerCVInd', fselect='min max', rank=200, fmin=200, fmax=2000)
+# ten_dec(fname='cancerSparseND4.csv', indF='cancerCVInd', fselect='min max', rank=200, fmin=200, fmax=2000)
 # ten_dec(fname='r8p_sparse.csv', indF='r8CVInd', fselect='min max', rank=200, fmin=200, fmax=2000)
 # ten_dec(fname='r8p_sparse3.csv', indF='r8CVInd', fselect='', rank=200, fmin=200, fmax=2000)
 # ten_dec(fname='asdSparseND.csv', indF='asdCVInd', fselect='', rank=200, fmin=200, fmax=2000)
+ten_dec(fname='cnn_sparse2.csv', indF='cnnCVInd', fselect='', rank=200, fmin=30000, fmax=50000)
