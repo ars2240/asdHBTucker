@@ -1,5 +1,5 @@
 # asdHBTucker
-## Conditional Hierarchical Bayesian Tucker Decomposition for Genetic Data Analysis
+Conditional Hierarchical Bayesian Tucker Decomposition for Genetic Data Analysis
 
 Author: Adam Sandler
 
